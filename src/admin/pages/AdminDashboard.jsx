@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { CalendarCheck, Clock, Image, Inbox, Tag, TrendingUp } from "lucide-react";
+import { CalendarCheck, CalendarClock, CalendarX, Clock, Image, Inbox, Tag, TrendingUp, XCircle } from "lucide-react";
+import { eachDayOfInterval, endOfMonth, format, getDay, startOfMonth } from "date-fns";
 import { supabase } from "../../lib/supabaseClient.js";
 import AdminLayout from "../components/AdminLayout.jsx";
 import StatCard from "../components/StatCard.jsx";
@@ -10,11 +11,20 @@ const OPEN_STATUSES = ["Nieuw", "Gelezen", "Contact opgenomen", "Wacht op reacti
 
 const monthLabel = (date) => date.toLocaleDateString("nl-NL", { month: "short", year: "2-digit" });
 
-function buildCharts(rows) {
+function monthCapacity(date, rules) {
+  if (!rules.length) return 0;
+  const days = eachDayOfInterval({ start: startOfMonth(date), end: endOfMonth(date) });
+  return days.reduce((sum, day) => {
+    const rule = rules.find((r) => r.day_of_week === getDay(day));
+    return sum + (rule?.is_available ? rule.max_bookings_per_day : 0);
+  }, 0);
+}
+
+function buildCharts(rows, availabilityRules) {
   const now = new Date();
   const months = Array.from({ length: 12 }).map((_, index) => {
     const date = new Date(now.getFullYear(), now.getMonth() - (11 - index), 1);
-    return { key: `${date.getFullYear()}-${date.getMonth()}`, label: monthLabel(date), value: 0 };
+    return { key: `${date.getFullYear()}-${date.getMonth()}`, label: monthLabel(date), value: 0, date };
   });
   const monthIndex = new Map(months.map((month, index) => [month.key, index]));
 
@@ -42,6 +52,14 @@ function buildCharts(rows) {
       .sort((a, b) => b.value - a.value)
       .slice(0, 8);
 
+  const occupancy = months.map((month) => {
+    const capacity = monthCapacity(month.date, availabilityRules);
+    const pct = capacity > 0 ? Math.round((month.value / capacity) * 100) : 0;
+    return { label: month.label, value: Math.min(pct, 100) };
+  });
+
+  const busiestMonth = [...months].sort((a, b) => b.value - a.value)[0];
+
   return {
     perMonth: months,
     perShootType: toSortedItems(byShootType),
@@ -51,6 +69,8 @@ function buildCharts(rows) {
       { label: "Met modelkorting", value: modelCount },
       { label: "Regulier", value: regularCount },
     ],
+    occupancy,
+    busiestMonth: busiestMonth?.value ? busiestMonth.label : "-",
   };
 }
 
@@ -63,10 +83,22 @@ export default function AdminDashboard() {
     popularShoot: "-",
     albumCount: 0,
     packageCount: 0,
+    confirmedThisMonth: 0,
+    cancelledCount: 0,
+    blockedDaysThisMonth: 0,
+    nextShoot: null,
   });
   const [recentBookings, setRecentBookings] = useState([]);
   const [recentChanges, setRecentChanges] = useState([]);
-  const [charts, setCharts] = useState({ perMonth: [], perShootType: [], perStatus: [], perPackage: [], modelVsRegular: [] });
+  const [charts, setCharts] = useState({
+    perMonth: [],
+    perShootType: [],
+    perStatus: [],
+    perPackage: [],
+    modelVsRegular: [],
+    occupancy: [],
+    busiestMonth: "-",
+  });
 
   useEffect(() => {
     let active = true;
@@ -75,6 +107,9 @@ export default function AdminDashboard() {
       const startOfMonth = new Date();
       startOfMonth.setDate(1);
       startOfMonth.setHours(0, 0, 0, 0);
+
+      const endOfMonthDate = new Date(startOfMonth.getFullYear(), startOfMonth.getMonth() + 1, 1);
+      const todayStr = format(new Date(), "yyyy-MM-dd");
 
       const yearAgo = new Date();
       yearAgo.setFullYear(yearAgo.getFullYear() - 1);
@@ -89,6 +124,11 @@ export default function AdminDashboard() {
         latestBookingsRes,
         changesRes,
         chartRowsRes,
+        confirmedRes,
+        cancelledRes,
+        blockedRes,
+        nextShootRes,
+        availabilityRulesRes,
       ] = await Promise.all([
         supabase.from("bookings").select("id", { count: "exact", head: true }).eq("status", "Nieuw"),
         supabase.from("bookings").select("id", { count: "exact", head: true }).gte("created_at", startOfMonth.toISOString()),
@@ -106,6 +146,25 @@ export default function AdminDashboard() {
           .from("bookings")
           .select("shoot_type, status, model_discount, created_at, packages(title)")
           .gte("created_at", yearAgo.toISOString()),
+        supabase
+          .from("bookings")
+          .select("id", { count: "exact", head: true })
+          .gte("confirmed_at", startOfMonth.toISOString())
+          .lt("confirmed_at", endOfMonthDate.toISOString()),
+        supabase.from("bookings").select("id", { count: "exact", head: true }).eq("status", "Geannuleerd"),
+        supabase
+          .from("blocked_periods")
+          .select("start_datetime, end_datetime")
+          .lte("start_datetime", endOfMonthDate.toISOString())
+          .gte("end_datetime", startOfMonth.toISOString()),
+        supabase
+          .from("bookings")
+          .select("customer_name, shoot_type, booking_date, start_time")
+          .gte("booking_date", todayStr)
+          .not("status", "in", "(Geannuleerd,Gearchiveerd)")
+          .order("booking_date", { ascending: true })
+          .limit(1),
+        supabase.from("availability_rules").select("day_of_week, is_available, max_bookings_per_day"),
       ]);
 
       if (!active) return;
@@ -117,6 +176,14 @@ export default function AdminDashboard() {
       });
       const popularShoot = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || "-";
 
+      const blockedDaysThisMonth = new Set();
+      (blockedRes.data || []).forEach((period) => {
+        eachDayOfInterval({
+          start: new Date(Math.max(new Date(period.start_datetime), startOfMonth)),
+          end: new Date(Math.min(new Date(period.end_datetime), endOfMonthDate)),
+        }).forEach((day) => blockedDaysThisMonth.add(format(day, "yyyy-MM-dd")));
+      });
+
       setStats({
         newCount: newRes.count || 0,
         monthCount: monthRes.count || 0,
@@ -124,10 +191,14 @@ export default function AdminDashboard() {
         popularShoot,
         albumCount: albumRes.count || 0,
         packageCount: packageRes.count || 0,
+        confirmedThisMonth: confirmedRes.count || 0,
+        cancelledCount: cancelledRes.count || 0,
+        blockedDaysThisMonth: blockedDaysThisMonth.size,
+        nextShoot: nextShootRes.data?.[0] || null,
       });
       setRecentBookings(latestBookingsRes.data || []);
       setRecentChanges(changesRes.data || []);
-      setCharts(buildCharts(chartRowsRes.data || []));
+      setCharts(buildCharts(chartRowsRes.data || [], availabilityRulesRes.data || []));
       setLoading(false);
     }
 
@@ -146,7 +217,16 @@ export default function AdminDashboard() {
         <StatCard label="Nieuwe boekingen" value={loading ? "-" : stats.newCount} icon={Inbox} />
         <StatCard label="Deze maand" value={loading ? "-" : stats.monthCount} icon={CalendarCheck} />
         <StatCard label="Openstaand" value={loading ? "-" : stats.openCount} icon={Clock} />
+        <StatCard label="Bevestigd deze maand" value={loading ? "-" : stats.confirmedThisMonth} icon={CalendarCheck} />
+        <StatCard label="Geannuleerd (totaal)" value={loading ? "-" : stats.cancelledCount} icon={XCircle} />
+        <StatCard label="Drukste maand" value={loading ? "-" : charts.busiestMonth} icon={TrendingUp} />
         <StatCard label="Populairste shoot" value={loading ? "-" : stats.popularShoot} icon={TrendingUp} />
+        <StatCard
+          label="Eerstvolgende shoot"
+          value={loading ? "-" : stats.nextShoot ? `${stats.nextShoot.booking_date} ${stats.nextShoot.start_time?.slice(0, 5) || ""}` : "Geen"}
+          icon={CalendarClock}
+        />
+        <StatCard label="Geblokkeerde dagen deze maand" value={loading ? "-" : stats.blockedDaysThisMonth} icon={CalendarX} />
         <StatCard label="Portfolio-albums" value={loading ? "-" : stats.albumCount} icon={Image} />
         <StatCard label="Gepubliceerde pakketten" value={loading ? "-" : stats.packageCount} icon={Tag} />
       </div>
@@ -221,10 +301,17 @@ export default function AdminDashboard() {
               <BarList items={charts.perPackage} />
             </div>
           </div>
-          <div className="rounded-lg bg-card p-6 shadow-soft warm-border lg:col-span-2">
+          <div className="rounded-lg bg-card p-6 shadow-soft warm-border">
             <h2 className="display-title text-xl font-semibold text-coffee">Model-aanvragen (laatste 12 maanden)</h2>
             <div className="mt-4">
               <BarList items={charts.modelVsRegular} />
+            </div>
+          </div>
+          <div className="rounded-lg bg-card p-6 shadow-soft warm-border">
+            <h2 className="display-title text-xl font-semibold text-coffee">Bezetting per maand</h2>
+            <p className="mt-1 text-xs text-coffee/60">Boekingen t.o.v. totale capaciteit uit het weekrooster (indicatief).</p>
+            <div className="mt-4">
+              <BarList items={charts.occupancy} valueSuffix="%" />
             </div>
           </div>
         </div>

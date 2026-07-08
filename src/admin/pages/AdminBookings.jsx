@@ -1,10 +1,12 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Archive, Download, Star, Trash2 } from "lucide-react";
+import { Archive, CalendarPlus, Download, Star, Trash2 } from "lucide-react";
 import AdminLayout from "../components/AdminLayout.jsx";
 import DataTable from "../components/DataTable.jsx";
 import AdminButton from "../components/AdminButton.jsx";
+import AdminCalendar from "../components/AdminCalendar.jsx";
 import ConfirmDialog from "../components/ConfirmDialog.jsx";
+import { supabase } from "../../lib/supabaseClient.js";
 import { useAdminAuth } from "../hooks/useAdminAuth.js";
 import { useBookings, updateBookingStatus, deleteBooking } from "../hooks/useBookings.js";
 import { bookingStatuses, shootTypeOptions } from "../utils/bookingStatuses.js";
@@ -13,15 +15,36 @@ import { downloadCsv } from "../utils/csvExport.js";
 export default function AdminBookings() {
   const navigate = useNavigate();
   const { user } = useAdminAuth();
+  const [viewMode, setViewMode] = useState("table");
+  const [calendarView, setCalendarView] = useState("month");
+  const [calendarDate, setCalendarDate] = useState(new Date());
   const [status, setStatus] = useState("");
   const [shootType, setShootType] = useState("");
+  const [packageId, setPackageId] = useState("");
+  const [packages, setPackages] = useState([]);
   const [search, setSearch] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [sort, setSort] = useState("newest");
   const [deleteTarget, setDeleteTarget] = useState(null);
 
-  const { bookings, loading, error, reload } = useBookings({ status, shootType, search, dateFrom, dateTo, sort });
+  const { bookings, loading, error, reload } = useBookings({
+    status,
+    shootType,
+    packageId,
+    search,
+    dateFrom,
+    dateTo,
+    sort,
+  });
+
+  useEffect(() => {
+    supabase
+      .from("packages")
+      .select("id, title")
+      .order("sort_order", { ascending: true })
+      .then(({ data }) => setPackages(data || []));
+  }, []);
 
   const columns = useMemo(
     () => [
@@ -33,6 +56,11 @@ export default function AdminBookings() {
       { key: "customer_name", label: "Naam" },
       { key: "customer_email", label: "E-mail" },
       { key: "shoot_type", label: "Shoot" },
+      {
+        key: "booking_date",
+        label: "Datum shoot",
+        render: (row) => (row.booking_date ? `${row.booking_date} ${row.start_time?.slice(0, 5) || ""}` : "-"),
+      },
       { key: "status", label: "Status" },
       {
         key: "created_at",
@@ -96,11 +124,44 @@ export default function AdminBookings() {
           <h1 className="display-title text-3xl font-semibold text-coffee">Boekingen</h1>
           <p className="mt-1 text-sm text-coffee/70">{bookings.length} resultaten</p>
         </div>
-        <AdminButton variant="secondary" onClick={handleExport}>
-          <Download size={14} /> Exporteer CSV
-        </AdminButton>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex gap-1.5 rounded-full bg-linen/70 p-1">
+            <button
+              type="button"
+              onClick={() => setViewMode("table")}
+              className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${viewMode === "table" ? "bg-cocoa text-card" : "text-coffee/70 hover:bg-card"}`}
+            >
+              Tabel
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("calendar")}
+              className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${viewMode === "calendar" ? "bg-cocoa text-card" : "text-coffee/70 hover:bg-card"}`}
+            >
+              Kalender
+            </button>
+          </div>
+          <AdminButton onClick={() => navigate("/admin/bookings/nieuw")}>
+            <CalendarPlus size={14} /> Nieuwe boeking
+          </AdminButton>
+          <AdminButton variant="secondary" onClick={handleExport}>
+            <Download size={14} /> Exporteer CSV
+          </AdminButton>
+        </div>
       </div>
 
+      {viewMode === "calendar" ? (
+        <div className="mt-5">
+          <AdminCalendar
+            view={calendarView}
+            date={calendarDate}
+            onViewChange={setCalendarView}
+            onDateChange={setCalendarDate}
+            onBookingClick={(booking) => navigate(`/admin/bookings/${booking.id}`)}
+          />
+        </div>
+      ) : (
+        <>
       <div className="mt-5 grid gap-3 rounded-lg bg-card p-4 shadow-soft warm-border sm:grid-cols-2 lg:grid-cols-6">
         <input
           type="text"
@@ -133,6 +194,18 @@ export default function AdminBookings() {
             </option>
           ))}
         </select>
+        <select
+          value={packageId}
+          onChange={(event) => setPackageId(event.target.value)}
+          className="rounded-lg border border-cocoa/20 bg-cream px-3 py-2 text-sm outline-none focus:border-cocoa"
+        >
+          <option value="">Alle pakketten</option>
+          {packages.map((pkg) => (
+            <option key={pkg.id} value={pkg.id}>
+              {pkg.title}
+            </option>
+          ))}
+        </select>
         <input
           type="date"
           value={dateFrom}
@@ -152,6 +225,7 @@ export default function AdminBookings() {
         >
           <option value="newest">Nieuwste eerst</option>
           <option value="oldest">Oudste eerst</option>
+          <option value="shoot_date">Datum shoot</option>
         </select>
       </div>
 
@@ -167,6 +241,8 @@ export default function AdminBookings() {
           columns={columns}
         />
       </div>
+        </>
+      )}
 
       <ConfirmDialog
         open={Boolean(deleteTarget)}

@@ -2,6 +2,9 @@ import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
   CalendarCheck,
+  CalendarClock,
+  CalendarX,
+  CalendarPlus,
   Image,
   FolderHeart,
   Tag,
@@ -16,6 +19,9 @@ import {
 const navItems = [
   { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/admin/bookings", label: "Boekingen", icon: CalendarCheck },
+  { to: "/admin/beschikbaarheid", label: "Beschikbaarheid", icon: CalendarClock },
+  { to: "/admin/geblokkeerde-dagen", label: "Geblokkeerde dagen", icon: CalendarX },
+  { to: "/admin/tijdslots", label: "Tijdslots", icon: CalendarPlus },
   { to: "/admin/albums", label: "Albums", icon: FolderHeart },
   { to: "/admin/portfolio", label: "Foto's", icon: Image },
   { to: "/admin/packages", label: "Pakketten", icon: Tag },

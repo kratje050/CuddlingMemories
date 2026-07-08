@@ -1,222 +1,273 @@
-import { Send, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ArrowRight, Send, ShieldCheck } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import AvailabilityBanner from "../components/AvailabilityBanner.jsx";
+import { format } from "date-fns";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import Button from "../components/Button.jsx";
 import FAQItem from "../components/FAQItem.jsx";
 import SEO from "../components/SEO.jsx";
 import SectionTitle from "../components/SectionTitle.jsx";
+import StepIndicator from "../components/booking/StepIndicator.jsx";
+import ShootTypeStep from "../components/booking/ShootTypeStep.jsx";
+import PackageStep from "../components/booking/PackageStep.jsx";
+import BookingCalendar from "../components/booking/BookingCalendar.jsx";
+import TimeSlotStep from "../components/booking/TimeSlotStep.jsx";
+import DetailsStep from "../components/booking/DetailsStep.jsx";
+import BookingSummaryContent from "../components/booking/BookingSummaryContent.jsx";
 import { getPublishedPackages, getVisibleFaqs } from "../lib/api.js";
+import { getBookableShootTypes } from "../lib/bookingAvailability.js";
 import { usePageMeta } from "../lib/usePageMeta.js";
-import { shootTypeOptions as shootOptions } from "../lib/constants.js";
+
+const emptyDetails = { naam: "", email: "", omgeving: "", bericht: "", privacy: false };
 
 export default function Contact() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const requestedShoot = params.get("shoot");
-  const selectedShoot = useMemo(
-    () => (shootOptions.includes(requestedShoot) ? requestedShoot : "Zwangerschapsshoot"),
-    [requestedShoot]
-  );
+
   const { title, description } = usePageMeta(
     "contact",
     "Contact en boeken",
-    "Boek een fotoshoot bij Cuddling Memories via het formulier voor zwangerschap, newborn, cakesmash, gezin, portret, motherhood en buiten fotografie."
+    "Boek een fotoshoot bij Cuddling Memories via de kalender voor zwangerschap, newborn, cakesmash, gezin, portret, motherhood en buiten fotografie."
   );
-  const [status, setStatus] = useState("idle");
+
+  const [step, setStep] = useState(0);
+  const [bookableTypes, setBookableTypes] = useState([]);
   const [packages, setPackages] = useState([]);
   const [faqs, setFaqs] = useState([]);
+  const [loadingBase, setLoadingBase] = useState(true);
+
+  const [shootType, setShootType] = useState(null);
+  const [packageId, setPackageId] = useState(null);
+  const [date, setDate] = useState(null);
+  const [time, setTime] = useState(null);
+  const [details, setDetails] = useState(emptyDetails);
+  const [botField, setBotField] = useState("");
+  const [detailsError, setDetailsError] = useState("");
+  const [submitStatus, setSubmitStatus] = useState("idle");
+  const [submitError, setSubmitError] = useState("");
   const formRenderedAt = useRef(Date.now());
 
   useEffect(() => {
-    const select = document.getElementById("shoot");
-    if (select) select.value = selectedShoot;
-  }, [selectedShoot]);
-
-  useEffect(() => {
     let active = true;
-    getPublishedPackages()
-      .then((data) => {
-        if (active) setPackages(data);
+    Promise.all([getBookableShootTypes(), getPublishedPackages(), getVisibleFaqs()])
+      .then(([types, pkgs, faqRows]) => {
+        if (!active) return;
+        setBookableTypes(types);
+        setPackages(pkgs);
+        setFaqs(faqRows);
+        if (requestedShoot && types.includes(requestedShoot)) {
+          setShootType(requestedShoot);
+          setStep(1);
+        }
       })
       .catch(() => {
-        if (active) setPackages([]);
-      });
-    getVisibleFaqs()
-      .then((data) => {
-        if (active) setFaqs(data);
+        if (active) {
+          setBookableTypes([]);
+          setPackages([]);
+          setFaqs([]);
+        }
       })
-      .catch(() => {
-        if (active) setFaqs([]);
+      .finally(() => {
+        if (active) setLoadingBase(false);
       });
     return () => {
       active = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    setStatus("sending");
-    const form = event.currentTarget;
-    const formData = new FormData(form);
-    const payload = Object.fromEntries(formData.entries());
-    payload.privacy = formData.get("privacy") === "on";
-    payload.renderedAt = formRenderedAt.current;
+  const packagesForShoot = useMemo(
+    () => packages.filter((pkg) => pkg.shoot_type === shootType),
+    [packages, shootType]
+  );
+  const selectedPackage = useMemo(() => packages.find((pkg) => pkg.id === packageId) || null, [packages, packageId]);
+
+  const goTo = (nextStep) => {
+    window.scrollTo({ top: window.scrollY, behavior: "instant" });
+    setStep(nextStep);
+  };
+
+  const handleShootSelect = (option) => {
+    setShootType(option);
+    setPackageId(null);
+    goTo(1);
+  };
+
+  const handlePackageSelect = (id) => {
+    setPackageId(id);
+    goTo(2);
+  };
+
+  const handleDateSelect = (day) => {
+    setDate(day);
+    setTime(null);
+    goTo(3);
+  };
+
+  const handleTimeSelect = (slot) => {
+    setTime(slot);
+    goTo(4);
+  };
+
+  const handleDetailsNext = () => {
+    if (!details.naam || !details.email || !details.omgeving || !details.bericht || !details.privacy) {
+      setDetailsError("Vul alle verplichte velden in en accepteer de privacyverklaring.");
+      return;
+    }
+    setDetailsError("");
+    goTo(5);
+  };
+
+  const handleSubmit = async () => {
+    setSubmitStatus("sending");
+    setSubmitError("");
 
     try {
       const response = await fetch("/api/create-booking", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          naam: details.naam,
+          email: details.email,
+          shoot: shootType,
+          bookingDate: format(date, "yyyy-MM-dd"),
+          startTime: time.start,
+          packageId: packageId || "",
+          omgeving: details.omgeving,
+          bericht: details.bericht,
+          privacy: details.privacy,
+          "bot-field": botField,
+          renderedAt: formRenderedAt.current,
+        }),
       });
 
-      if (response.ok) {
+      const body = await response.json().catch(() => ({}));
+
+      if (response.ok && body.ok) {
         navigate("/bedankt");
         return;
       }
 
-      setStatus("error");
+      setSubmitStatus("error");
+      setSubmitError(body.message || "Aanvraag versturen is niet gelukt. Probeer het opnieuw.");
     } catch {
-      setStatus("error");
+      setSubmitStatus("error");
+      setSubmitError("Aanvraag versturen is niet gelukt. Controleer je internetverbinding en probeer het opnieuw.");
     }
   };
+
+  const backButton = step > 0 && step < 5 && (
+    <button
+      type="button"
+      onClick={() => goTo(step - 1)}
+      className="mb-5 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.1em] text-coffee/60 transition hover:text-cocoa"
+    >
+      <ArrowLeft size={14} /> Vorige stap
+    </button>
+  );
 
   return (
     <>
       <SEO title={title} description={description} />
       <section className="pt-36">
-        <div className="container-soft grid gap-10 pb-16 lg:grid-cols-[0.85fr_1.15fr]">
-          <div>
-            <SectionTitle centered={false} eyebrow="Boeken" title="Vertel mij over jouw gewenste shoot" />
-            <p className="mt-6 text-base leading-8 text-coffee/78">
-              Vul het formulier in met je gewenste shoot en periode. Daarna stemmen we samen af wat mooi past bij jouw
-              moment.
+        <div className="container-soft pb-16">
+          <SectionTitle centered={false} eyebrow="Boeken" title="Vertel mij over jouw gewenste shoot" />
+          <p className="mt-6 max-w-2xl text-base leading-8 text-coffee/78">
+            Bekijk hieronder welke momenten nog beschikbaar zijn. Kies een shoot, pakket en een datum die voor jou
+            past. Na je aanvraag neem ik contact met je op om alles definitief af te stemmen.
+          </p>
+
+          <div className="mt-10 rounded-lg bg-linen p-5 shadow-soft warm-border">
+            <ShieldCheck className="text-cocoa" size={22} />
+            <p className="mt-2 text-sm leading-6 text-coffee/78">
+              Elke aanvraag is een <strong>boekingsaanvraag</strong>, nog geen definitieve boeking. Zodra ik 'm
+              bevestig, is het tijdslot voor jou gereserveerd.
             </p>
-            <div className="mt-8 rounded-lg bg-linen p-6 shadow-soft warm-border">
-              <ShieldCheck className="text-cocoa" size={26} />
-              <h2 className="mt-4 display-title text-2xl font-semibold text-coffee">Alle aanvragen via dit formulier</h2>
-              <p className="mt-3 text-sm leading-7 text-coffee/75">
-                Zo blijft alle informatie overzichtelijk bij elkaar en kan Demy zorgvuldig reageren op jouw aanvraag.
-              </p>
-            </div>
-            <AvailabilityBanner />
-            <img src="/images/instagram/instagram-09.jpg" alt="Zachte newborn fotografie door Cuddling Memories" className="mt-8 aspect-[4/3] w-full rounded-lg object-cover shadow-soft warm-border" />
           </div>
 
-          <form
-            name="booking"
-            method="POST"
-            action="/bedankt"
-            data-netlify="true"
-            netlify-honeypot="bot-field"
-            onSubmit={handleSubmit}
-            className="rounded-lg bg-card p-5 shadow-soft warm-border md:p-8"
-          >
-            <input type="hidden" name="form-name" value="booking" />
-            <input type="hidden" name="renderedAt" value={formRenderedAt.current} />
-            <p className="hidden">
-              <label>
-                Laat dit veld leeg
-                <input name="bot-field" tabIndex="-1" autoComplete="off" />
-              </label>
-            </p>
-            <div className="grid gap-5 md:grid-cols-2">
-              <label className="grid gap-2 text-sm font-semibold text-coffee">
-                Naam
-                <input
-                  name="naam"
-                  type="text"
-                  required
-                  className="rounded-lg border border-cocoa/20 bg-cream px-4 py-3 text-sm outline-none transition focus:border-cocoa"
-                />
-              </label>
-              <label className="grid gap-2 text-sm font-semibold text-coffee">
-                E-mailadres
-                <input
-                  name="email"
-                  type="email"
-                  required
-                  className="rounded-lg border border-cocoa/20 bg-cream px-4 py-3 text-sm outline-none transition focus:border-cocoa"
-                />
-              </label>
-              <label className="grid gap-2 text-sm font-semibold text-coffee md:col-span-2">
-                Gewenste shoot
-                <select
-                  id="shoot"
-                  name="shoot"
-                  defaultValue={selectedShoot}
-                  required
-                  className="rounded-lg border border-cocoa/20 bg-cream px-4 py-3 text-sm outline-none transition focus:border-cocoa"
-                >
-                  {shootOptions.map((option) => (
-                    <option key={option}>{option}</option>
-                  ))}
-                </select>
-              </label>
-              <label className="grid gap-2 text-sm font-semibold text-coffee">
-                Gewenste periode of datum
-                <input
-                  name="periode"
-                  type="text"
-                  required
-                  placeholder="Bijv. september of een voorkeursdatum"
-                  className="rounded-lg border border-cocoa/20 bg-cream px-4 py-3 text-sm outline-none transition focus:border-cocoa"
-                />
-              </label>
-              <label className="grid gap-2 text-sm font-semibold text-coffee md:col-span-2">
-                Gekozen pakket <span className="font-normal text-coffee/50">(optioneel)</span>
-                <select
-                  name="packageId"
-                  defaultValue=""
-                  className="rounded-lg border border-cocoa/20 bg-cream px-4 py-3 text-sm outline-none transition focus:border-cocoa"
-                >
-                  <option value="">Nog geen voorkeur</option>
-                  {packages.map((pkg) => (
-                    <option key={pkg.id} value={pkg.id}>
-                      {pkg.title}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="grid gap-2 text-sm font-semibold text-coffee">
-                Locatie of omgeving
-                <input
-                  name="omgeving"
-                  type="text"
-                  required
-                  placeholder="Bijv. Groningen, Friesland of Zoutkamp"
-                  className="rounded-lg border border-cocoa/20 bg-cream px-4 py-3 text-sm outline-none transition focus:border-cocoa"
-                />
-              </label>
-              <label className="grid gap-2 text-sm font-semibold text-coffee md:col-span-2">
-                Bericht
-                <textarea
-                  name="bericht"
-                  required
-                  rows="6"
-                  className="resize-none rounded-lg border border-cocoa/20 bg-cream px-4 py-3 text-sm outline-none transition focus:border-cocoa"
-                ></textarea>
-              </label>
-              <label className="flex gap-3 rounded-lg bg-linen/70 p-4 text-sm leading-6 text-coffee/78 md:col-span-2">
-                <input name="privacy" type="checkbox" required className="mt-1 h-4 w-4 accent-cocoa" />
-                <span>
-                  Ik ga akkoord met de{" "}
-                  <Link to="/privacybeleid" className="underline hover:text-cocoa" target="_blank">
-                    privacyverklaring
-                  </Link>{" "}
-                  en geef toestemming om mijn aanvraag te beantwoorden.
-                </span>
-              </label>
+          {loadingBase ? (
+            <p className="mt-10 text-sm text-coffee/60">Even laden...</p>
+          ) : (
+            <div className="mt-10 grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
+              <div className="rounded-lg bg-card p-5 shadow-soft warm-border md:p-8">
+                <div className="mb-6 overflow-x-auto">
+                  <StepIndicator current={step} />
+                </div>
+
+                {backButton}
+
+                {step === 0 && (
+                  <ShootTypeStep options={bookableTypes} value={shootType} onSelect={handleShootSelect} />
+                )}
+
+                {step === 1 && (
+                  <div>
+                    <PackageStep packages={packagesForShoot} value={packageId} onSelect={handlePackageSelect} />
+                    <button
+                      type="button"
+                      onClick={() => goTo(2)}
+                      className="mt-4 text-xs font-semibold uppercase tracking-[0.1em] text-coffee/60 underline-offset-4 hover:text-cocoa hover:underline"
+                    >
+                      {packagesForShoot.length > 0 ? "Verder zonder specifiek pakket" : "Volgende stap"}
+                    </button>
+                  </div>
+                )}
+
+                {step === 2 && <BookingCalendar shootType={shootType} value={date} onSelect={handleDateSelect} />}
+
+                {step === 3 && (
+                  <TimeSlotStep date={date} shootType={shootType} value={time} onSelect={handleTimeSelect} />
+                )}
+
+                {step === 4 && (
+                  <div>
+                    <DetailsStep values={details} onChange={setDetails} />
+                    <input
+                      type="text"
+                      value={botField}
+                      onChange={(event) => setBotField(event.target.value)}
+                      tabIndex={-1}
+                      autoComplete="off"
+                      aria-hidden="true"
+                      className="absolute h-0 w-0 opacity-0"
+                      style={{ left: "-9999px" }}
+                    />
+                    {detailsError && (
+                      <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800">{detailsError}</p>
+                    )}
+                    <Button type="button" onClick={handleDetailsNext} className="mt-6 gap-2">
+                      Volgende <ArrowRight size={16} />
+                    </Button>
+                  </div>
+                )}
+
+                {step === 5 && (
+                  <div>
+                    <p className="mb-5 text-sm text-coffee/75">Controleer je aanvraag en verstuur 'm hieronder.</p>
+                    <BookingSummaryContent shootType={shootType} pkg={selectedPackage} date={date} time={time} details={details} />
+                    {submitStatus === "error" && (
+                      <p className="mt-5 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800">{submitError}</p>
+                    )}
+                    <Button
+                      type="button"
+                      onClick={handleSubmit}
+                      disabled={submitStatus === "sending"}
+                      className="mt-6 w-full gap-2"
+                    >
+                      {submitStatus === "sending" ? "Bezig met verzenden" : "Boeking aanvragen"} <Send size={16} />
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              <aside className="h-fit rounded-lg bg-linen/70 p-5 shadow-soft warm-border lg:sticky lg:top-28">
+                <h2 className="fine-label text-sm font-semibold text-cocoa">Jouw keuzes</h2>
+                <div className="mt-4">
+                  <BookingSummaryContent shootType={shootType} pkg={selectedPackage} date={date} time={time} details={details} />
+                </div>
+              </aside>
             </div>
-            {status === "error" && (
-              <p className="mt-5 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800">
-                Verzenden is niet gelukt. Controleer of de Gmail SMTP-gegevens in Netlify zijn ingevuld en probeer het daarna opnieuw.
-              </p>
-            )}
-            <Button type="submit" className="mt-7 w-full gap-2" disabled={status === "sending"}>
-              {status === "sending" ? "Bezig met verzenden" : "Aanvraag versturen"} <Send size={16} />
-            </Button>
-          </form>
+          )}
         </div>
       </section>
 

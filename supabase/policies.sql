@@ -196,3 +196,34 @@ create policy "portfolio_bucket_admin_update" on storage.objects
   for update using (bucket_id = 'portfolio' and is_admin()) with check (bucket_id = 'portfolio' and is_admin());
 create policy "portfolio_bucket_admin_delete" on storage.objects
   for delete using (bucket_id = 'portfolio' and is_admin());
+
+-- ---------------------------------------------------------------------------
+-- Boekingssysteem: availability_rules, shoot_type_settings, blocked_periods,
+-- manual_slots, booking_settings — volledig admin-only (ook lezen). Publieke
+-- bezoekers krijgen beschikbaarheid nooit rechtstreeks uit deze tabellen,
+-- uitsluitend via de berekende output van get_available_slots() (aangeroepen
+-- met de service-role key vanuit netlify/functions/get-available-slots.ts).
+-- Zo lekt er nooit interne info (bv. de reden achter een blokkade) naar de
+-- site. book_slot()/reschedule_booking() zijn de enige schrijfpaden die
+-- publieke bezoekers indirect raken, en die zijn security definer (zie
+-- schema.sql) — geen aparte RLS-uitzondering hier nodig.
+-- ---------------------------------------------------------------------------
+alter table availability_rules enable row level security;
+create policy "availability_rules_admin_all" on availability_rules
+  for all using (is_admin()) with check (is_admin());
+
+alter table shoot_type_settings enable row level security;
+create policy "shoot_type_settings_admin_all" on shoot_type_settings
+  for all using (is_admin()) with check (is_admin());
+
+alter table blocked_periods enable row level security;
+create policy "blocked_periods_admin_all" on blocked_periods
+  for all using (is_admin()) with check (is_admin());
+
+alter table manual_slots enable row level security;
+create policy "manual_slots_admin_all" on manual_slots
+  for all using (is_admin()) with check (is_admin());
+
+alter table booking_settings enable row level security;
+create policy "booking_settings_admin_all" on booking_settings
+  for all using (is_admin()) with check (is_admin());

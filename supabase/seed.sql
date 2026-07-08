@@ -159,6 +159,42 @@ insert into faq (question, answer, sort_order) values
 ('Hoe werkt de online galerij?', 'Je bekijkt de beelden online en kiest daar jouw favorieten. Daarna worden de gekozen foto''s zorgvuldig afgewerkt.', 7);
 
 -- ---------------------------------------------------------------------------
+-- availability_rules (7 rijen, day_of_week 0=zondag .. 6=zaterdag)
+-- Standaard: di–za 09:00–17:00 met pauze 12:30–13:00, zo+ma dicht.
+-- Direct aanpasbaar via /admin/beschikbaarheid na livegang.
+-- ---------------------------------------------------------------------------
+insert into availability_rules (day_of_week, start_time, end_time, break_start_time, break_end_time, is_available, max_bookings_per_day) values
+(0, '09:00', '17:00', null, null, false, 3),
+(1, '09:00', '17:00', null, null, false, 3),
+(2, '09:00', '17:00', '12:30', '13:00', true, 3),
+(3, '09:00', '17:00', '12:30', '13:00', true, 3),
+(4, '09:00', '17:00', '12:30', '13:00', true, 3),
+(5, '09:00', '17:00', '12:30', '13:00', true, 3),
+(6, '09:00', '17:00', '12:30', '13:00', true, 3);
+
+-- ---------------------------------------------------------------------------
+-- shoot_type_settings (9 rijen, één per shootTypeOptions-waarde)
+-- Duren zoals aangeleverd (Newborn 120, Cakesmash 90, Portret 45, Gezin 60,
+-- Zwangerschap 60); overige shoot-types op een redelijke default van 60 min.
+-- ---------------------------------------------------------------------------
+insert into shoot_type_settings (shoot_type, duration_minutes, buffer_before_minutes, buffer_after_minutes, max_per_day, is_bookable, allowed_days) values
+('Portretshoot', 45, 15, 15, 2, true, '{0,1,2,3,4,5,6}'),
+('Cakesmash', 90, 15, 15, 2, true, '{0,1,2,3,4,5,6}'),
+('Zwangerschapsshoot', 60, 15, 15, 2, true, '{0,1,2,3,4,5,6}'),
+('Gezinsshoot', 60, 15, 15, 2, true, '{0,1,2,3,4,5,6}'),
+('Newbornshoot', 120, 15, 15, 2, true, '{0,1,2,3,4,5,6}'),
+('Motherhood', 60, 15, 15, 2, true, '{0,1,2,3,4,5,6}'),
+('Buiten shoot', 60, 15, 15, 2, true, '{0,1,2,3,4,5,6}'),
+('Model staan met 50% korting', 60, 15, 15, 2, true, '{0,1,2,3,4,5,6}'),
+('Anders', 60, 15, 15, 2, true, '{0,1,2,3,4,5,6}');
+
+-- ---------------------------------------------------------------------------
+-- booking_settings (1 rij)
+-- ---------------------------------------------------------------------------
+insert into booking_settings (min_days_notice, max_months_ahead, default_buffer_minutes, default_duration_minutes, allow_same_day_booking, booking_mode) values
+(2, 6, 15, 60, false, 'request_only');
+
+-- ---------------------------------------------------------------------------
 -- admin_profiles: bewust leeg. Voeg je eerste admin toe via Supabase Auth +
 -- een insert hier (zie README, sectie "Admin-gebruiker toevoegen").
 -- ---------------------------------------------------------------------------

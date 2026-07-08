@@ -74,6 +74,9 @@ export default function AdminCrudList({
       if (field.type === "number") {
         payload[field.name] = payload[field.name] === "" ? null : Number(payload[field.name]);
       }
+      if (field.type === "select" && payload[field.name] === "") {
+        payload[field.name] = null;
+      }
     });
 
     const query = editingId
@@ -152,9 +155,9 @@ export default function AdminCrudList({
                   className="h-4 w-4 accent-cocoa"
                 />
               )}
-              {(field.type === "text" || field.type === "number" || !field.type) && (
+              {["text", "number", "date", "datetime-local", "time"].includes(field.type || "text") && (
                 <input
-                  type={field.type === "number" ? "number" : "text"}
+                  type={field.type || "text"}
                   step={field.step}
                   required={field.required}
                   value={values[field.name]}

@@ -1,301 +1,14 @@
--- Cuddling Memories Fotografie — Supabase schema
--- Voer dit als eerste uit in de Supabase SQL Editor (Project > SQL Editor > New query).
+-- Cuddling Memories Fotografie — Boekingssysteem-migratie
+-- Bevat ALLEEN het nieuwe deel t.o.v. de eerder al uitgevoerde schema.sql/
+-- policies.sql/seed.sql: de 5 nieuwe tabellen, de bookings-uitbreiding, de
+-- beschikbaarheids-/boekingsfuncties, de bijbehorende RLS-policies en de
+-- seed-data (weekrooster + shoot-type-instellingen + booking_settings).
+-- Voer dit één keer volledig uit in de Supabase SQL Editor (Project > SQL
+-- Editor > New query > plak dit hele bestand > Run).
 
-create extension if not exists pgcrypto;
-
--- ---------------------------------------------------------------------------
--- Herbruikbare trigger die updated_at automatisch bijwerkt bij elke UPDATE.
--- ---------------------------------------------------------------------------
-create or replace function set_updated_at()
-returns trigger
-language plpgsql
-as $$
-begin
-  new.updated_at = now();
-  return new;
-end;
-$$;
-
--- ---------------------------------------------------------------------------
--- 1. site_settings — één rij met algemene website-instellingen.
--- ---------------------------------------------------------------------------
-create table site_settings (
-  id uuid primary key default gen_random_uuid(),
-  site_name text not null default 'Cuddling Memories Fotografie',
-  logo_text text not null default 'Cuddling Memories',
-  subtitle text not null default 'Fotografie',
-  primary_email text,
-  instagram_url text,
-  facebook_url text,
-  hero_title text,
-  hero_subtitle text,
-  footer_text text,
-  default_seo_title text,
-  default_seo_description text,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create trigger trg_site_settings_updated_at
-  before update on site_settings
-  for each row execute function set_updated_at();
-
--- ---------------------------------------------------------------------------
--- 2. pages — hoofdtekst + SEO per pagina (slug is de sleutel, bv. 'home').
--- ---------------------------------------------------------------------------
-create table pages (
-  id uuid primary key default gen_random_uuid(),
-  slug text not null unique,
-  title text,
-  subtitle text,
-  content text,
-  meta_title text,
-  meta_description text,
-  is_published boolean not null default true,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create trigger trg_pages_updated_at
-  before update on pages
-  for each row execute function set_updated_at();
-
--- ---------------------------------------------------------------------------
--- 3. page_sections — losse blokken binnen een pagina (bv. werkwijze-stappen).
--- ---------------------------------------------------------------------------
-create table page_sections (
-  id uuid primary key default gen_random_uuid(),
-  page_slug text not null references pages(slug) on update cascade on delete cascade,
-  section_key text not null,
-  title text,
-  subtitle text,
-  content text,
-  button_text text,
-  button_url text,
-  image_url text,
-  sort_order int not null default 0,
-  is_visible boolean not null default true,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  unique (page_slug, section_key)
-);
-
-create trigger trg_page_sections_updated_at
-  before update on page_sections
-  for each row execute function set_updated_at();
-
--- ---------------------------------------------------------------------------
--- 4. portfolio_albums
--- ---------------------------------------------------------------------------
-create table portfolio_albums (
-  id uuid primary key default gen_random_uuid(),
-  title text not null,
-  slug text not null unique,
-  description text,
-  category text not null,
-  cover_image_url text,
-  is_featured boolean not null default false,
-  is_published boolean not null default true,
-  sort_order int not null default 0,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create trigger trg_portfolio_albums_updated_at
-  before update on portfolio_albums
-  for each row execute function set_updated_at();
-
--- ---------------------------------------------------------------------------
--- 5. portfolio_photos
--- ---------------------------------------------------------------------------
-create table portfolio_photos (
-  id uuid primary key default gen_random_uuid(),
-  album_id uuid references portfolio_albums(id) on delete cascade,
-  title text,
-  alt_text text not null,
-  image_url text not null,
-  thumbnail_url text,
-  category text,
-  is_featured boolean not null default false,
-  sort_order int not null default 0,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create trigger trg_portfolio_photos_updated_at
-  before update on portfolio_photos
-  for each row execute function set_updated_at();
-
--- ---------------------------------------------------------------------------
--- 6. packages
--- price_unit/shoot_type zijn toegevoegd t.o.v. de basislijst: nodig zodat de
--- prijscalculator en het boekingsformulier "Extra beeld"/"Reiskosten" (per
--- stuk/per km) kunnen onderscheiden van echte shoot-pakketten.
--- ---------------------------------------------------------------------------
-create table packages (
-  id uuid primary key default gen_random_uuid(),
-  title text not null,
-  slug text not null unique,
-  price numeric(10,2) not null,
-  price_unit text not null default 'shoot' check (price_unit in ('shoot', 'item', 'km')),
-  shoot_type text,
-  description text,
-  included_images int,
-  extra_info text,
-  button_text text not null default 'Boek dit pakket',
-  is_featured boolean not null default false,
-  is_published boolean not null default true,
-  sort_order int not null default 0,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create trigger trg_packages_updated_at
-  before update on packages
-  for each row execute function set_updated_at();
-
--- ---------------------------------------------------------------------------
--- 7. bookings
--- is_important is toegevoegd t.o.v. de basislijst: nodig voor de expliciet
--- gevraagde "markeer als belangrijk"-functie in de boekingen-admin.
--- ---------------------------------------------------------------------------
-create table bookings (
-  id uuid primary key default gen_random_uuid(),
-  customer_name text not null,
-  customer_email text not null,
-  shoot_type text not null,
-  preferred_date date,
-  preferred_period text,
-  location text,
-  message text,
-  status text not null default 'Nieuw' check (status in (
-    'Nieuw', 'Gelezen', 'Contact opgenomen', 'Wacht op reactie',
-    'Datum ingepland', 'Aanbetaling gevraagd', 'Aanbetaling ontvangen',
-    'Shoot geweest', 'Galerij verstuurd', 'Afgerond', 'Geannuleerd', 'Gearchiveerd'
-  )),
-  source text not null default 'website',
-  budget numeric(10,2),
-  package_id uuid references packages(id) on delete set null,
-  model_discount boolean not null default false,
-  privacy_accepted boolean not null default false,
-  is_important boolean not null default false,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create trigger trg_bookings_updated_at
-  before update on bookings
-  for each row execute function set_updated_at();
-
-create index idx_bookings_status on bookings (status);
-create index idx_bookings_created_at on bookings (created_at desc);
-
--- ---------------------------------------------------------------------------
--- 8. booking_notes
--- ---------------------------------------------------------------------------
-create table booking_notes (
-  id uuid primary key default gen_random_uuid(),
-  booking_id uuid not null references bookings(id) on delete cascade,
-  note text not null,
-  created_by text,
-  created_at timestamptz not null default now()
-);
-
-create index idx_booking_notes_booking_id on booking_notes (booking_id);
-
--- ---------------------------------------------------------------------------
--- 9. booking_status_history
--- ---------------------------------------------------------------------------
-create table booking_status_history (
-  id uuid primary key default gen_random_uuid(),
-  booking_id uuid not null references bookings(id) on delete cascade,
-  old_status text,
-  new_status text not null,
-  changed_by text,
-  created_at timestamptz not null default now()
-);
-
-create index idx_booking_status_history_booking_id on booking_status_history (booking_id);
-
--- ---------------------------------------------------------------------------
--- 10. testimonials
--- ---------------------------------------------------------------------------
-create table testimonials (
-  id uuid primary key default gen_random_uuid(),
-  name text not null,
-  text text not null,
-  rating int not null default 5 check (rating between 1 and 5),
-  shoot_type text,
-  is_visible boolean not null default true,
-  sort_order int not null default 0,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create trigger trg_testimonials_updated_at
-  before update on testimonials
-  for each row execute function set_updated_at();
-
--- ---------------------------------------------------------------------------
--- 11. faq
--- ---------------------------------------------------------------------------
-create table faq (
-  id uuid primary key default gen_random_uuid(),
-  question text not null,
-  answer text not null,
-  category text,
-  is_visible boolean not null default true,
-  sort_order int not null default 0,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create trigger trg_faq_updated_at
-  before update on faq
-  for each row execute function set_updated_at();
-
--- ---------------------------------------------------------------------------
--- 12. admin_profiles — koppelt Supabase Auth-gebruikers aan adminrechten.
--- Er is bewust geen publieke registratie: rijen worden alleen handmatig
--- aangemaakt door de sitebeheerder (zie README, sectie "Admin-gebruiker
--- toevoegen").
--- ---------------------------------------------------------------------------
-create table admin_profiles (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null unique references auth.users(id) on delete cascade,
-  email text not null,
-  name text,
-  role text not null default 'admin',
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create trigger trg_admin_profiles_updated_at
-  before update on admin_profiles
-  for each row execute function set_updated_at();
-
--- ---------------------------------------------------------------------------
--- View voor het dashboard-kaartje "laatste 5 aangepaste onderdelen".
--- ---------------------------------------------------------------------------
-create view recent_content_changes as
-  select id, 'pages'::text as table_name, coalesce(title, slug) as label, updated_at from pages
-  union all
-  select id, 'page_sections'::text, coalesce(title, section_key), updated_at from page_sections
-  union all
-  select id, 'portfolio_albums'::text, title, updated_at from portfolio_albums
-  union all
-  select id, 'packages'::text, title, updated_at from packages
-  union all
-  select id, 'testimonials'::text, name, updated_at from testimonials
-  union all
-  select id, 'faq'::text, question, updated_at from faq;
-
--- ---------------------------------------------------------------------------
--- Storage bucket voor portfolio-foto's (publiek leesbaar).
--- ---------------------------------------------------------------------------
-insert into storage.buckets (id, name, public)
-values ('portfolio', 'portfolio', true)
-on conflict (id) do nothing;
+-- =============================================================================
+-- Deel 1 — nieuwe tabellen, bookings-uitbreiding en functies (uit schema.sql)
+-- =============================================================================
 
 -- ---------------------------------------------------------------------------
 -- 13. availability_rules — vast weekrooster: exact 7 rijen (day_of_week 0-6,
@@ -432,7 +145,6 @@ create index idx_bookings_booking_date on bookings (booking_date);
 -- Beschikbaarheids-/boekingslogica
 -- ---------------------------------------------------------------------------
 
--- Statussen die een tijdslot NIET meer bezet houden.
 create or replace function fn_is_slot_freeing_status(p_status text)
 returns boolean
 language sql
@@ -441,17 +153,11 @@ as $$
   select p_status in ('Geannuleerd', 'Gearchiveerd');
 $$;
 
--- Is een datum (volledig of deels) geblokkeerd? Houdt rekening met
--- eenmalige én jaarlijks terugkerende blokkades (recurring_rule = 'yearly'
--- matcht dan alleen op maand+dag, ongeacht het jaar van start_datetime).
 create or replace function fn_range_blocked(p_range_start timestamptz, p_range_end timestamptz)
 returns boolean
 language sql
 stable
 as $$
-  -- Bij jaarlijks terugkerende blokkades wordt de opgeslagen periode
-  -- (start én eind, met dezelfde offset) verschoven naar het jaar van de
-  -- opgevraagde reeks, zodat alleen maand/dag effectief vergeleken worden.
   select exists (
     select 1 from blocked_periods b
     where
@@ -467,11 +173,6 @@ as $$
   );
 $$;
 
--- Genereert de vrije tijdslots voor één specifieke datum + shoot-type,
--- rekening houdend met weekrooster/pauze, shoot-type-instellingen, actieve
--- handmatige tijdslots (die een normaal gesloten dag kunnen openen),
--- blokkades, en bestaande niet-geannuleerde boekingen (incl. buffers).
--- Kandidaat-starttijden lopen in stappen van 15 minuten.
 create or replace function fn_generate_day_slots(p_date date, p_shoot_type text)
 returns table(slot_start time, slot_end time)
 language plpgsql
@@ -501,8 +202,6 @@ begin
   select * into v_rule from availability_rules where day_of_week = v_dow;
   v_rule_found := found;
 
-  -- Is er een actieve handmatige opening op deze dag voor dit shoot-type?
-  -- (EXISTS geeft altijd true/false terug, nooit NULL, ook als er geen rij is.)
   select exists (
     select 1 from manual_slots m
     where m.is_active
@@ -515,7 +214,7 @@ begin
     v_has_manual
     or (v_rule_found and v_rule.is_available and v_dow = any(v_shoot.allowed_days))
   ) then
-    return; -- dag volledig gesloten voor dit shoot-type
+    return;
   end if;
 
   v_day_max := coalesce(v_rule.max_bookings_per_day, 3);
@@ -530,17 +229,13 @@ begin
   where booking_date = p_date and shoot_type = p_shoot_type and not fn_is_slot_freeing_status(status);
 
   if v_day_count >= v_day_max or v_shoot_count >= v_shoot_max then
-    return; -- dag/shoot-type al vol
+    return;
   end if;
 
   if fn_range_blocked(p_date::timestamptz, (p_date + 1)::timestamptz) then
-    return; -- hele dag geblokkeerd
+    return;
   end if;
 
-  -- Bepaal het te doorzoeken tijdvenster: reguliere openingstijd, of anders
-  -- (als de dag alleen via een manual_slot open is) 07:00-21:00 als ruime
-  -- buitengrens — de manual_slot- en blokkade-checks per kandidaat filteren
-  -- de echte grenzen alsnog scherp.
   if v_rule_found and v_rule.is_available then
     v_window_start := v_rule.start_time;
     v_window_end := v_rule.end_time;
@@ -551,7 +246,6 @@ begin
 
   v_candidate := v_window_start;
   while v_candidate + make_interval(mins => v_shoot.duration_minutes) <= v_window_end loop
-    -- Sla de pauze over.
     if v_rule.break_start_time is not null and v_rule.break_end_time is not null
        and v_candidate < v_rule.break_end_time
        and (v_candidate + make_interval(mins => v_shoot.duration_minutes)) > v_rule.break_start_time
@@ -576,8 +270,6 @@ begin
                ) && tstzrange(v_cand_start, v_cand_end)
        )
     then
-      -- Als de dag alleen via een manual_slot open is, moet de kandidaat
-      -- ook echt binnen zo'n slot vallen.
       if v_has_manual or (v_rule_found and v_rule.is_available and v_dow = any(v_shoot.allowed_days)) then
         if (v_rule_found and v_rule.is_available and v_dow = any(v_shoot.allowed_days))
            or exists (
@@ -600,10 +292,6 @@ begin
 end;
 $$;
 
--- Publieke leesfunctie: maand-overzicht (per dag status) of dag-overzicht
--- (concrete vrije tijdslots). Wordt alleen aangeroepen vanuit
--- netlify/functions/get-available-slots.ts met de service-role key, nooit
--- rechtstreeks met de anon-key (de onderliggende tabellen zijn admin-only).
 create or replace function get_available_slots(
   p_mode text,
   p_shoot_type text,
@@ -673,10 +361,6 @@ begin
 end;
 $$;
 
--- Schrijffunctie: valideert + boekt in één transactie (row-level lock op de
--- boekingen van die dag) zodat dubbele boekingen echt niet kunnen ontstaan,
--- ook niet bij gelijktijdige aanvragen. Callable door zowel anon (publieke
--- aanvraag, geforceerd status/source) als een ingelogde admin (vrije status).
 create or replace function book_slot(p_payload jsonb)
 returns jsonb
 language plpgsql
@@ -719,12 +403,6 @@ begin
     end if;
   end if;
 
-  -- Advisory lock per kalenderdag (transactie-scope, automatisch vrij bij
-  -- commit/rollback): een gewone "select ... for update" vergrendelt alleen
-  -- bestaande rijen, en biedt dus geen bescherming als twee aanvragen
-  -- tegelijk de EERSTE boeking van een nog lege dag proberen te plaatsen.
-  -- Deze lock dwingt af dat gelijktijdige aanvragen voor dezelfde dag altijd
-  -- na elkaar (nooit tegelijk) worden beoordeeld.
   perform pg_advisory_xact_lock(hashtext(v_booking_date::text));
 
   if not exists (select 1 from fn_generate_day_slots(v_booking_date, v_shoot_type) s where s.slot_start = v_start_time)
@@ -733,10 +411,6 @@ begin
     raise exception 'SLOT_TAKEN';
   end if;
 
-  -- Extra check, ook voor admin-handmatige boekingen: harde overlap-toets
-  -- (fn_generate_day_slots dekt dit voor publieke aanvragen al, maar een
-  -- admin mag buiten de normale kandidaat-tijden om boeken zolang er geen
-  -- daadwerkelijke overlap is).
   v_cand_start := (v_booking_date + v_start_time) - make_interval(mins => v_shoot.buffer_before_minutes);
   v_cand_end := (v_booking_date + v_end_time) + make_interval(mins => v_shoot.buffer_after_minutes);
 
@@ -765,7 +439,6 @@ begin
     raise exception 'DATE_UNAVAILABLE';
   end if;
 
-  -- Is dit tijdslot alleen mogelijk dankzij een handmatige opening?
   select m.id into v_manual_slot_id
   from manual_slots m
   where m.is_active and m.current_bookings < m.max_bookings
@@ -824,8 +497,6 @@ $$;
 grant execute on function book_slot(jsonb) to anon, authenticated;
 grant execute on function get_available_slots(text, text, int, int, date) to service_role;
 
--- Herplannen (admin-kalender, slepen): hergebruikt dezelfde overlap-toets,
--- alleen bereikbaar voor admins.
 create or replace function reschedule_booking(p_booking_id uuid, p_new_date date, p_new_start_time time)
 returns jsonb
 language plpgsql
@@ -852,7 +523,6 @@ begin
   select * into v_shoot from shoot_type_settings where shoot_type = v_booking.shoot_type;
   v_new_end := p_new_start_time + make_interval(mins => coalesce(v_booking.duration_minutes, v_shoot.duration_minutes));
 
-  -- Zelfde advisory-lock-strategie als book_slot() — zie toelichting daar.
   perform pg_advisory_xact_lock(hashtext(p_new_date::text));
 
   v_cand_start := (p_new_date + p_new_start_time) - make_interval(mins => coalesce(v_booking.buffer_before_minutes, 0));
@@ -892,11 +562,6 @@ $$;
 
 grant execute on function reschedule_booking(uuid, date, time) to authenticated;
 
--- Publieke helperfunctie: welke shoot-types zijn op dit moment boekbaar op de
--- site? shoot_type_settings zelf is admin-only (RLS); deze functie is
--- security definer zodat anon 'm toch mag aanroepen, en geeft bewust alleen
--- de namen terug (geen duur/buffers/etc.) — dezelfde least-privilege-aanpak
--- als book_slot()/get_available_slots().
 create or replace function get_bookable_shoot_types()
 returns text[]
 language sql
@@ -910,3 +575,54 @@ as $$
 $$;
 
 grant execute on function get_bookable_shoot_types() to anon, authenticated;
+
+-- =============================================================================
+-- Deel 2 — RLS-policies voor de 5 nieuwe tabellen (uit policies.sql)
+-- =============================================================================
+
+alter table availability_rules enable row level security;
+create policy "availability_rules_admin_all" on availability_rules
+  for all using (is_admin()) with check (is_admin());
+
+alter table shoot_type_settings enable row level security;
+create policy "shoot_type_settings_admin_all" on shoot_type_settings
+  for all using (is_admin()) with check (is_admin());
+
+alter table blocked_periods enable row level security;
+create policy "blocked_periods_admin_all" on blocked_periods
+  for all using (is_admin()) with check (is_admin());
+
+alter table manual_slots enable row level security;
+create policy "manual_slots_admin_all" on manual_slots
+  for all using (is_admin()) with check (is_admin());
+
+alter table booking_settings enable row level security;
+create policy "booking_settings_admin_all" on booking_settings
+  for all using (is_admin()) with check (is_admin());
+
+-- =============================================================================
+-- Deel 3 — seed-data (uit seed.sql)
+-- =============================================================================
+
+insert into availability_rules (day_of_week, start_time, end_time, break_start_time, break_end_time, is_available, max_bookings_per_day) values
+(0, '09:00', '17:00', null, null, false, 3),
+(1, '09:00', '17:00', null, null, false, 3),
+(2, '09:00', '17:00', '12:30', '13:00', true, 3),
+(3, '09:00', '17:00', '12:30', '13:00', true, 3),
+(4, '09:00', '17:00', '12:30', '13:00', true, 3),
+(5, '09:00', '17:00', '12:30', '13:00', true, 3),
+(6, '09:00', '17:00', '12:30', '13:00', true, 3);
+
+insert into shoot_type_settings (shoot_type, duration_minutes, buffer_before_minutes, buffer_after_minutes, max_per_day, is_bookable, allowed_days) values
+('Portretshoot', 45, 15, 15, 2, true, '{0,1,2,3,4,5,6}'),
+('Cakesmash', 90, 15, 15, 2, true, '{0,1,2,3,4,5,6}'),
+('Zwangerschapsshoot', 60, 15, 15, 2, true, '{0,1,2,3,4,5,6}'),
+('Gezinsshoot', 60, 15, 15, 2, true, '{0,1,2,3,4,5,6}'),
+('Newbornshoot', 120, 15, 15, 2, true, '{0,1,2,3,4,5,6}'),
+('Motherhood', 60, 15, 15, 2, true, '{0,1,2,3,4,5,6}'),
+('Buiten shoot', 60, 15, 15, 2, true, '{0,1,2,3,4,5,6}'),
+('Model staan met 50% korting', 60, 15, 15, 2, true, '{0,1,2,3,4,5,6}'),
+('Anders', 60, 15, 15, 2, true, '{0,1,2,3,4,5,6}');
+
+insert into booking_settings (min_days_notice, max_months_ahead, default_buffer_minutes, default_duration_minutes, allow_same_day_booking, booking_mode) values
+(2, 6, 15, 60, false, 'request_only');

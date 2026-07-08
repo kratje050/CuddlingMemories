@@ -1,7 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../../lib/supabaseClient.js";
 
-export function useBookings({ status = "", shootType = "", search = "", dateFrom = "", dateTo = "", sort = "newest" } = {}) {
+export function useBookings({
+  status = "",
+  shootType = "",
+  packageId = "",
+  search = "",
+  dateFrom = "",
+  dateTo = "",
+  sort = "newest",
+} = {}) {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -10,15 +18,17 @@ export function useBookings({ status = "", shootType = "", search = "", dateFrom
     setLoading(true);
     setError("");
 
-    let query = supabase.from("bookings").select("*");
+    let query = supabase.from("bookings").select("*, packages(id, title)");
 
     if (status) query = query.eq("status", status);
     if (shootType) query = query.eq("shoot_type", shootType);
+    if (packageId) query = query.eq("package_id", packageId);
     if (search) query = query.or(`customer_name.ilike.%${search}%,customer_email.ilike.%${search}%`);
     if (dateFrom) query = query.gte("created_at", `${dateFrom}T00:00:00`);
     if (dateTo) query = query.lte("created_at", `${dateTo}T23:59:59`);
 
-    query = query.order("created_at", { ascending: sort === "oldest" });
+    if (sort === "shoot_date") query = query.order("booking_date", { ascending: true, nullsFirst: false });
+    else query = query.order("created_at", { ascending: sort === "oldest" });
 
     const { data, error: queryError } = await query;
     if (queryError) {
@@ -28,7 +38,7 @@ export function useBookings({ status = "", shootType = "", search = "", dateFrom
       setBookings(data || []);
     }
     setLoading(false);
-  }, [status, shootType, search, dateFrom, dateTo, sort]);
+  }, [status, shootType, packageId, search, dateFrom, dateTo, sort]);
 
   useEffect(() => {
     reload();

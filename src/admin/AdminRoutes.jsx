@@ -5,6 +5,10 @@ import AdminLogin from "./pages/AdminLogin.jsx";
 import AdminDashboard from "./pages/AdminDashboard.jsx";
 import AdminBookings from "./pages/AdminBookings.jsx";
 import AdminBookingDetail from "./pages/AdminBookingDetail.jsx";
+import AdminBookingNew from "./pages/AdminBookingNew.jsx";
+import AdminAvailability from "./pages/AdminAvailability.jsx";
+import AdminBlockedPeriods from "./pages/AdminBlockedPeriods.jsx";
+import AdminManualSlots from "./pages/AdminManualSlots.jsx";
 import AdminSettings from "./pages/AdminSettings.jsx";
 import AdminPages from "./pages/AdminPages.jsx";
 import AdminAlbums from "./pages/AdminAlbums.jsx";
@@ -37,10 +41,42 @@ export default function AdminRoutes() {
           }
         />
         <Route
+          path="bookings/nieuw"
+          element={
+            <RequireAdmin>
+              <AdminBookingNew />
+            </RequireAdmin>
+          }
+        />
+        <Route
           path="bookings/:id"
           element={
             <RequireAdmin>
               <AdminBookingDetail />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="beschikbaarheid"
+          element={
+            <RequireAdmin>
+              <AdminAvailability />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="geblokkeerde-dagen"
+          element={
+            <RequireAdmin>
+              <AdminBlockedPeriods />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="tijdslots"
+          element={
+            <RequireAdmin>
+              <AdminManualSlots />
             </RequireAdmin>
           }
         />

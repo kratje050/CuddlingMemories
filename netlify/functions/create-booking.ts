@@ -1,18 +1,7 @@
 import nodemailer from "nodemailer";
 import { getStore } from "@netlify/blobs";
 import { createClient } from "@supabase/supabase-js";
-
-const shootOptions = [
-  "Portretshoot",
-  "Cakesmash",
-  "Zwangerschapsshoot",
-  "Gezinsshoot",
-  "Newbornshoot",
-  "Motherhood",
-  "Buiten shoot",
-  "Model staan met 50% korting",
-  "Anders",
-];
+import { shootTypeOptions } from "../../src/lib/constants.js";
 
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const MIN_FILL_TIME_MS = 2500;
@@ -37,13 +26,16 @@ const escapeHtml = (value: unknown) =>
     .replaceAll("\n", "<br>");
 
 const isEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+const isDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value);
+const isTime = (value: string) => /^\d{2}:\d{2}$/.test(value);
 
 const normalizePayload = (payload: Record<string, unknown>) => {
   const values = {
     naam: clean(payload.naam, 120),
     email: clean(payload.email, 180),
     shoot: clean(payload.shoot, 80),
-    periode: clean(payload.periode, 160),
+    bookingDate: clean(payload.bookingDate, 10),
+    startTime: clean(payload.startTime, 5),
     omgeving: clean(payload.omgeving, 160),
     bericht: clean(payload.bericht, 2500),
     privacy: payload.privacy === true || payload.privacy === "on" || payload.privacy === "true",
@@ -57,15 +49,24 @@ const normalizePayload = (payload: Record<string, unknown>) => {
     return { spam: true, values };
   }
 
-  if (!values.naam || !isEmail(values.email) || !shootOptions.includes(values.shoot)) {
+  if (!values.naam || !isEmail(values.email) || !shootTypeOptions.includes(values.shoot)) {
     throw new Error("Controleer je naam, e-mailadres en gewenste shoot.");
   }
 
-  if (!values.periode || !values.omgeving || !values.bericht || !values.privacy) {
+  if (!isDate(values.bookingDate) || !isTime(values.startTime)) {
+    throw new Error("Kies een datum en tijdslot uit de kalender.");
+  }
+
+  if (!values.omgeving || !values.bericht || !values.privacy) {
     throw new Error("Vul alle verplichte velden in en accepteer de privacyverklaring.");
   }
 
   return { spam: false, values };
+};
+
+const formatDateTime = (dateStr: string, timeStr: string) => {
+  const [year, month, day] = dateStr.split("-");
+  return `${day}-${month}-${year}, ${timeStr}`;
 };
 
 const renderText = (values: ReturnType<typeof normalizePayload>["values"]) => `Nieuwe boekingsaanvraag via Cuddling Memories Fotografie
@@ -73,7 +74,7 @@ const renderText = (values: ReturnType<typeof normalizePayload>["values"]) => `N
 Naam: ${values.naam}
 E-mailadres: ${values.email}
 Gewenste shoot: ${values.shoot}
-Gewenste periode of datum: ${values.periode}
+Datum en tijd: ${formatDateTime(values.bookingDate, values.startTime)}
 Locatie of omgeving: ${values.omgeving}
 
 Bericht:
@@ -90,7 +91,7 @@ const renderHtml = (values: ReturnType<typeof normalizePayload>["values"]) => `<
         <p><strong>Naam:</strong> ${escapeHtml(values.naam)}</p>
         <p><strong>E-mailadres:</strong> ${escapeHtml(values.email)}</p>
         <p><strong>Gewenste shoot:</strong> ${escapeHtml(values.shoot)}</p>
-        <p><strong>Gewenste periode of datum:</strong> ${escapeHtml(values.periode)}</p>
+        <p><strong>Datum en tijd:</strong> ${escapeHtml(formatDateTime(values.bookingDate, values.startTime))}</p>
         <p><strong>Locatie of omgeving:</strong> ${escapeHtml(values.omgeving)}</p>
         <div style="margin-top:20px;padding-top:18px;border-top:1px solid #e6d1bd;">
           <strong>Bericht:</strong>
@@ -145,26 +146,41 @@ function getSupabaseAdmin() {
   return createClient(url, serviceKey, { auth: { persistSession: false } });
 }
 
-async function saveBooking(values: ReturnType<typeof normalizePayload>["values"]) {
+// Bij een conflict laat de book_slot()-database-functie in Supabase (zie
+// supabase/schema.sql) een specifieke foutcode achter (RAISE EXCEPTION
+// '<CODE>'). Die code komt hier als error.message binnen en wordt vertaald
+// naar een nette Nederlandse melding voor de bezoeker.
+const BOOKING_ERROR_MESSAGES: Record<string, string> = {
+  SLOT_TAKEN: "Dit tijdslot is net geboekt. Kies een ander moment.",
+  DATE_UNAVAILABLE: "Deze datum is helaas niet beschikbaar.",
+  MIN_NOTICE: "Je kunt minimaal 2 dagen vooruit boeken.",
+  MAX_AHEAD: "Deze datum ligt te ver in de toekomst. Kies een moment dichterbij.",
+  NOT_BOOKABLE: "Voor deze shoot zijn geen beschikbare momenten gevonden.",
+};
+
+async function bookSlot(values: ReturnType<typeof normalizePayload>["values"]) {
   const supabase = getSupabaseAdmin();
 
-  const { error } = await supabase.from("bookings").insert({
-    customer_name: values.naam,
-    customer_email: values.email,
-    shoot_type: values.shoot,
-    preferred_period: values.periode,
-    location: values.omgeving,
-    message: values.bericht,
-    privacy_accepted: values.privacy,
-    package_id: values.packageId,
-    model_discount: values.shoot === "Model staan met 50% korting",
-    status: "Nieuw",
-    source: "website",
+  const { data, error } = await supabase.rpc("book_slot", {
+    p_payload: {
+      customer_name: values.naam,
+      customer_email: values.email,
+      shoot_type: values.shoot,
+      booking_date: values.bookingDate,
+      start_time: values.startTime,
+      package_id: values.packageId,
+      location: values.omgeving,
+      message: values.bericht,
+      privacy_accepted: values.privacy,
+    },
   });
 
   if (error) {
-    throw new Error(`Boeking opslaan is mislukt: ${error.message}`);
+    const message = BOOKING_ERROR_MESSAGES[error.message] || "Boeken is niet gelukt. Probeer het opnieuw of kies een ander moment.";
+    throw new Error(message);
   }
+
+  return data;
 }
 
 async function isRateLimited(req: Request) {
@@ -199,10 +215,11 @@ export default async (req: Request) => {
       return json(200, { ok: true });
     }
 
-    // De boeking in Supabase is de bron van waarheid; als dit faalt, faalt de
-    // hele aanvraag. De e-mailnotificatie is secundair: als die faalt, wordt
-    // dat gelogd maar blokkeert de (al opgeslagen) boeking niet.
-    await saveBooking(values);
+    // De boeking in Supabase (via book_slot(), inclusief conflict-check) is
+    // de bron van waarheid; als dit faalt, faalt de hele aanvraag. De
+    // e-mailnotificatie is secundair: als die faalt, wordt dat gelogd maar
+    // blokkeert de (al opgeslagen) boeking niet.
+    await bookSlot(values);
 
     try {
       await sendBookingEmail(values);

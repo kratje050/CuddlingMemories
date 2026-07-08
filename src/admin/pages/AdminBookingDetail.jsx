@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Archive, Mail, Star, Trash2 } from "lucide-react";
+import { ArrowLeft, Archive, CalendarCheck, Mail, Star, Trash2, XCircle } from "lucide-react";
+import { supabase } from "../../lib/supabaseClient.js";
 import AdminLayout from "../components/AdminLayout.jsx";
 import AdminButton from "../components/AdminButton.jsx";
 import ConfirmDialog from "../components/ConfirmDialog.jsx";
@@ -25,6 +26,7 @@ export default function AdminBookingDetail() {
   const [noteText, setNoteText] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [adminNotes, setAdminNotes] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -32,6 +34,7 @@ export default function AdminBookingDetail() {
     setBooking(result.booking);
     setNotes(result.notes);
     setHistory(result.history);
+    setAdminNotes(result.booking?.admin_notes || "");
     setLoading(false);
   }, [id]);
 
@@ -89,6 +92,28 @@ export default function AdminBookingDetail() {
     setSaving(false);
   };
 
+  const handleConfirm = async () => {
+    setSaving(true);
+    await updateBookingStatus(booking.id, "Datum ingepland", user?.email);
+    await supabase.from("bookings").update({ confirmed_at: new Date().toISOString() }).eq("id", booking.id);
+    await load();
+    setSaving(false);
+  };
+
+  const handleCancel = async () => {
+    setSaving(true);
+    await updateBookingStatus(booking.id, "Geannuleerd", user?.email);
+    await supabase.from("bookings").update({ cancelled_at: new Date().toISOString() }).eq("id", booking.id);
+    await load();
+    setSaving(false);
+  };
+
+  const handleSaveAdminNotes = async () => {
+    setSaving(true);
+    await supabase.from("bookings").update({ admin_notes: adminNotes }).eq("id", booking.id);
+    setSaving(false);
+  };
+
   return (
     <AdminLayout>
       <button
@@ -107,6 +132,12 @@ export default function AdminBookingDetail() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <AdminButton variant="secondary" onClick={handleConfirm} disabled={saving}>
+            <CalendarCheck size={14} /> Bevestigen
+          </AdminButton>
+          <AdminButton variant="secondary" onClick={handleCancel} disabled={saving}>
+            <XCircle size={14} /> Annuleren
+          </AdminButton>
           <AdminButton variant="secondary" onClick={handleToggleImportant} disabled={saving}>
             <Star size={14} className={booking.is_important ? "fill-cocoa" : ""} />
             {booking.is_important ? "Belangrijk" : "Markeer belangrijk"}
@@ -130,17 +161,38 @@ export default function AdminBookingDetail() {
             <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
               <Field label="E-mail" value={booking.customer_email} />
               <Field label="Gewenste shoot" value={booking.shoot_type} />
-              <Field label="Gewenste periode" value={booking.preferred_period || "-"} />
+              <Field
+                label="Datum shoot"
+                value={booking.booking_date ? `${booking.booking_date} · ${booking.start_time?.slice(0, 5)}-${booking.end_time?.slice(0, 5)}` : "Nog niet ingepland"}
+              />
+              <Field label="Duur / buffer" value={booking.duration_minutes ? `${booking.duration_minutes} min (buffer ${booking.buffer_before_minutes}/${booking.buffer_after_minutes} min)` : "-"} />
               <Field label="Locatie" value={booking.location || "-"} />
               <Field label="Gekozen pakket" value={booking.packages?.title || "Geen voorkeur"} />
               <Field label="Modelkorting" value={booking.model_discount ? "Ja" : "Nee"} />
               <Field label="Bron" value={booking.source} />
               <Field label="Privacy geaccepteerd" value={booking.privacy_accepted ? "Ja" : "Nee"} />
+              <Field label="Bevestigd op" value={booking.confirmed_at ? new Date(booking.confirmed_at).toLocaleString("nl-NL") : "-"} />
+              <Field label="Geannuleerd op" value={booking.cancelled_at ? new Date(booking.cancelled_at).toLocaleString("nl-NL") : "-"} />
+              <Field label="Laatste wijziging" value={new Date(booking.updated_at).toLocaleString("nl-NL")} />
             </dl>
             <div className="mt-4">
               <p className="fine-label text-[0.62rem] text-cocoa">Bericht</p>
               <p className="mt-2 whitespace-pre-line text-sm leading-7 text-coffee/85">{booking.message}</p>
             </div>
+          </div>
+
+          <div className="rounded-lg bg-card p-6 shadow-soft warm-border">
+            <h2 className="display-title text-xl font-semibold text-coffee">Interne notitie</h2>
+            <p className="mt-1 text-xs text-coffee/60">Eén vastgepinde notitie, los van de tijdlijn hieronder.</p>
+            <textarea
+              value={adminNotes}
+              onChange={(event) => setAdminNotes(event.target.value)}
+              rows={3}
+              className="mt-3 w-full resize-none rounded-lg border border-cocoa/20 bg-cream px-3 py-2 text-sm outline-none focus:border-cocoa"
+            />
+            <AdminButton type="button" variant="secondary" onClick={handleSaveAdminNotes} disabled={saving} className="mt-3">
+              Opslaan
+            </AdminButton>
           </div>
 
           <div className="rounded-lg bg-card p-6 shadow-soft warm-border">
