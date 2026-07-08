@@ -43,3 +43,18 @@ Vervang de testafbeeldingen door echte foto's en pas de image-paden in `src/data
 ## Netlify Forms
 
 Het boekingsformulier staat op `/contact`. Voor Netlify Forms is er ook een verborgen detectieformulier toegevoegd in `public/__forms.html`. Laat de veldnamen in beide formulieren gelijk wanneer je later velden wijzigt.
+
+## Gmail SMTP voor het contactformulier
+
+Het formulier verstuurt via de Netlify Function `/api/send-booking`. Zet deze omgevingsvariabelen in Netlify bij Site configuration > Environment variables:
+
+```txt
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=465
+SMTP_USER=ddytuber@gmail.com
+SMTP_PASS=je-gmail-app-wachtwoord
+EMAIL_FROM=Cuddling Memories Fotografie <ddytuber@gmail.com>
+ADMIN_NOTIFICATION_EMAIL=ddytuber@gmail.com
+```
+
+Zet `SMTP_PASS` nooit in GitHub. Gebruik hiervoor een Gmail app-wachtwoord.
