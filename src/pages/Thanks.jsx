@@ -7,7 +7,7 @@ export default function Thanks() {
     <>
       <SEO
         title="Bedankt"
-        description="Bedankt voor je aanvraag bij Cuddling Memories Fotografie. Demy neemt contact met je op."
+        description="Bedankt voor je aanvraag bij Cuddling Memories Fotografie. Ik neem contact met je op."
       />
       <section className="min-h-[70vh] pt-36">
         <div className="container-soft pb-16">
@@ -16,8 +16,8 @@ export default function Thanks() {
             <p className="script-line mt-5 text-4xl text-cocoa">Bedankt</p>
             <h1 className="display-title mt-2 text-4xl font-semibold text-coffee md:text-5xl">Je aanvraag is verstuurd</h1>
             <p className="mt-5 text-sm leading-7 text-coffee/75">
-              Demy leest je bericht en reageert zo snel mogelijk met de volgende stap voor jouw shoot. Je
-              boekingsaanvraag is nog niet definitief — pas zodra Demy 'm bevestigt, is het tijdslot echt voor jou
+              Ik lees je bericht en reageer zo snel mogelijk met de volgende stap voor jouw shoot. Je
+              boekingsaanvraag is nog niet definitief — pas zodra ik 'm bevestig, is het tijdslot echt voor jou
               gereserveerd.
             </p>
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">

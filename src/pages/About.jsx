@@ -7,8 +7,8 @@ import { getPage } from "../lib/api.js";
 import { usePageMeta } from "../lib/usePageMeta.js";
 
 const fallbackParagraphs = [
-  "Demy legt echte, liefdevolle en pure momenten vast. Ze fotografeert gezinnen, moeders, kinderen, newborns en bijzondere mijlpalen in een warme, zachte en tijdloze stijl.",
-  "Haar aandacht gaat uit naar kleine details, warme blikken en momenten die vaak voorbij lijken te vliegen. Juist die beelden worden later steeds waardevoller.",
+  "Ik leg echte, liefdevolle en pure momenten vast. Ik fotografeer gezinnen, moeders, kinderen, newborns en bijzondere mijlpalen in een warme, zachte en tijdloze stijl.",
+  "Mijn aandacht gaat uit naar kleine details, warme blikken en momenten die vaak voorbij lijken te vliegen. Juist die beelden worden later steeds waardevoller.",
   "Voor de camera mag alles rustig en natuurlijk voelen. Er is ruimte om te wennen, te lachen, te knuffelen en gewoon jezelf te zijn, zonder dat het geforceerd wordt.",
 ];
 
