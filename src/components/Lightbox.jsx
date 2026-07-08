@@ -3,6 +3,8 @@ import { useEffect } from "react";
 
 export default function Lightbox({ items, activeIndex, onClose, onPrev, onNext }) {
   useEffect(() => {
+    if (activeIndex === null) return undefined;
+
     const handleKeyDown = (event) => {
       if (event.key === "Escape") onClose();
       if (event.key === "ArrowLeft") onPrev();
@@ -14,7 +16,7 @@ export default function Lightbox({ items, activeIndex, onClose, onPrev, onNext }
       document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "";
     };
-  }, [onClose, onPrev, onNext]);
+  }, [activeIndex, onClose, onPrev, onNext]);
 
   if (activeIndex === null) return null;
 
