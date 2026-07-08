@@ -6,7 +6,6 @@ import SectionTitle from "../components/SectionTitle.jsx";
 import { portfolioItems, categories } from "../data/portfolio.js";
 
 const featuredCategories = categories.map((category) => portfolioItems.find((item) => item.category === category));
-const imageBase = "https://6a4e5b6a100cca13d5bf6c14--cuddling-memories-website.netlify.app";
 const reviews = [
   { name: "Lisa", text: "Demy stelt je meteen op je gemak en de foto's zijn prachtig. We zijn zo blij met het resultaat." },
   { name: "Marloes", text: "Een hele fijne ervaring en zulke mooie, warme foto's. Echt een aanrader!" },
@@ -18,7 +17,7 @@ export default function Home() {
     <>
       <SEO title="Home" description="Liefdevolle fotografie voor zwangerschap, newborn, gezin, portret, cakesmash en motherhood in Groningen, Friesland en Zoutkamp." />
       <section className="relative min-h-[760px] overflow-hidden pt-28 md:pt-32">
-        <img src={`${imageBase}/images/hero.jpg`} alt="Warme fotoshoot met kind" className="absolute inset-0 h-full w-full object-cover object-center" />
+        <img src="/images/test-hero.svg" alt="Testafbeelding warme fotoshoot" className="absolute inset-0 h-full w-full object-cover object-center" />
         <div className="photo-overlay absolute inset-0" />
         <div className="container-soft relative grid min-h-[630px] items-center gap-10 py-12 lg:grid-cols-[0.92fr_1.08fr]">
           <div className="max-w-2xl animate-floatIn text-center lg:text-left">
@@ -49,7 +48,7 @@ export default function Home() {
             </div>
           </div>
           <div className="grid overflow-hidden rounded-lg bg-linen shadow-soft warm-border">
-            <img src={`${imageBase}/images/cta-still.jpg`} alt="Zachte fotografie styling" className="h-full min-h-48 w-full object-cover" />
+            <img src="/images/test-cta.svg" alt="Testafbeelding zachte fotografie styling" className="h-full min-h-48 w-full object-cover" />
             <div className="flex flex-col justify-center p-7 text-center md:p-9"><h2 className="display-title text-3xl font-semibold leading-tight text-coffee">Wil je ook zulke warme herinneringen laten vastleggen?</h2><Button to="/contact" className="mx-auto mt-6 gap-2">Boek jouw shoot <ArrowRight size={16} /></Button></div>
           </div>
         </div>
