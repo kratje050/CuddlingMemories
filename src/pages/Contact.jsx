@@ -6,19 +6,9 @@ import Button from "../components/Button.jsx";
 import FAQItem from "../components/FAQItem.jsx";
 import SEO from "../components/SEO.jsx";
 import SectionTitle from "../components/SectionTitle.jsx";
-import { faqs } from "../data/faq.js";
-
-const shootOptions = [
-  "Portretshoot",
-  "Cakesmash",
-  "Zwangerschapsshoot",
-  "Gezinsshoot",
-  "Newbornshoot",
-  "Motherhood",
-  "Buiten shoot",
-  "Model staan met 50% korting",
-  "Anders",
-];
+import { getPublishedPackages, getVisibleFaqs } from "../lib/api.js";
+import { usePageMeta } from "../lib/usePageMeta.js";
+import { shootTypeOptions as shootOptions } from "../lib/constants.js";
 
 export default function Contact() {
   const [params] = useSearchParams();
@@ -28,13 +18,41 @@ export default function Contact() {
     () => (shootOptions.includes(requestedShoot) ? requestedShoot : "Zwangerschapsshoot"),
     [requestedShoot]
   );
+  const { title, description } = usePageMeta(
+    "contact",
+    "Contact en boeken",
+    "Boek een fotoshoot bij Cuddling Memories via het formulier voor zwangerschap, newborn, cakesmash, gezin, portret, motherhood en buiten fotografie."
+  );
   const [status, setStatus] = useState("idle");
+  const [packages, setPackages] = useState([]);
+  const [faqs, setFaqs] = useState([]);
   const formRenderedAt = useRef(Date.now());
 
   useEffect(() => {
     const select = document.getElementById("shoot");
     if (select) select.value = selectedShoot;
   }, [selectedShoot]);
+
+  useEffect(() => {
+    let active = true;
+    getPublishedPackages()
+      .then((data) => {
+        if (active) setPackages(data);
+      })
+      .catch(() => {
+        if (active) setPackages([]);
+      });
+    getVisibleFaqs()
+      .then((data) => {
+        if (active) setFaqs(data);
+      })
+      .catch(() => {
+        if (active) setFaqs([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -46,7 +64,7 @@ export default function Contact() {
     payload.renderedAt = formRenderedAt.current;
 
     try {
-      const response = await fetch("/api/send-booking", {
+      const response = await fetch("/api/create-booking", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -65,10 +83,7 @@ export default function Contact() {
 
   return (
     <>
-      <SEO
-        title="Contact en boeken"
-        description="Boek een fotoshoot bij Cuddling Memories via het formulier voor zwangerschap, newborn, cakesmash, gezin, portret, motherhood en buiten fotografie."
-      />
+      <SEO title={title} description={description} />
       <section className="pt-36">
         <div className="container-soft grid gap-10 pb-16 lg:grid-cols-[0.85fr_1.15fr]">
           <div>
@@ -148,6 +163,21 @@ export default function Contact() {
                   className="rounded-lg border border-cocoa/20 bg-cream px-4 py-3 text-sm outline-none transition focus:border-cocoa"
                 />
               </label>
+              <label className="grid gap-2 text-sm font-semibold text-coffee md:col-span-2">
+                Gekozen pakket <span className="font-normal text-coffee/50">(optioneel)</span>
+                <select
+                  name="packageId"
+                  defaultValue=""
+                  className="rounded-lg border border-cocoa/20 bg-cream px-4 py-3 text-sm outline-none transition focus:border-cocoa"
+                >
+                  <option value="">Nog geen voorkeur</option>
+                  {packages.map((pkg) => (
+                    <option key={pkg.id} value={pkg.id}>
+                      {pkg.title}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <label className="grid gap-2 text-sm font-semibold text-coffee">
                 Locatie of omgeving
                 <input
@@ -195,7 +225,7 @@ export default function Contact() {
           <SectionTitle eyebrow="FAQ" title="Veelgestelde vragen" />
           <div className="mx-auto mt-9 grid max-w-4xl gap-3">
             {faqs.map((item, index) => (
-              <FAQItem key={item.question} item={item} defaultOpen={index === 0} />
+              <FAQItem key={item.id} item={item} defaultOpen={index === 0} />
             ))}
           </div>
         </div>

@@ -2,6 +2,7 @@ import { Heart, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import Button from "./Button.jsx";
+import { useSiteSettings } from "../context/SiteSettingsContext.jsx";
 
 const navItems = [
   { to: "/", label: "Home" },
@@ -14,11 +15,13 @@ const navItems = [
 ];
 
 function Logo() {
+  const settings = useSiteSettings();
+
   return (
-    <Link to="/" className="group flex items-center gap-3" aria-label="Cuddling Memories home">
+    <Link to="/" className="group flex items-center gap-3" aria-label={`${settings.logo_text} home`}>
       <span>
-        <span className="script-line block text-3xl leading-none text-coffee md:text-4xl">Cuddling Memories</span>
-        <span className="fine-label block text-[0.62rem] text-cocoa">Fotografie</span>
+        <span className="script-line block text-3xl leading-none text-coffee md:text-4xl">{settings.logo_text}</span>
+        <span className="fine-label block text-[0.62rem] text-cocoa">{settings.subtitle}</span>
       </span>
       <Heart className="text-cocoa transition group-hover:scale-110" size={20} strokeWidth={1.5} />
     </Link>

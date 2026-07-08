@@ -1,5 +1,6 @@
 import { Facebook, Heart, Instagram } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useSiteSettings } from "../context/SiteSettingsContext.jsx";
 
 const links = [
   ["Home", "/"],
@@ -13,17 +14,16 @@ const links = [
 
 export default function Footer() {
   const year = new Date().getFullYear();
+  const settings = useSiteSettings();
 
   return (
     <footer className="bg-linen/80">
       <div className="container-soft grid gap-10 py-10 md:grid-cols-[1.3fr_1fr_0.8fr_1.1fr]">
         <div>
-          <div className="script-line text-3xl text-coffee">Cuddling Memories</div>
-          <p className="fine-label mt-1 text-[0.62rem] text-cocoa">Fotografie</p>
+          <div className="script-line text-3xl text-coffee">{settings.logo_text}</div>
+          <p className="fine-label mt-1 text-[0.62rem] text-cocoa">{settings.subtitle}</p>
         </div>
-        <p className="max-w-xs text-sm leading-7 text-coffee/75">
-          Liefdevolle, pure en tijdloze fotografie voor momenten die steeds waardevoller worden.
-        </p>
+        <p className="max-w-xs text-sm leading-7 text-coffee/75">{settings.footer_text}</p>
         <div>
           <h3 className="fine-label text-[0.7rem] font-semibold text-coffee">Pagina's</h3>
           <div className="mt-4 grid gap-2 text-sm text-coffee/75">
@@ -38,7 +38,7 @@ export default function Footer() {
           <h3 className="fine-label text-[0.7rem] font-semibold text-coffee">Volg mij</h3>
           <div className="mt-4 flex gap-3">
             <a
-              href="https://www.instagram.com/cuddlingmemories/"
+              href={settings.instagram_url}
               target="_blank"
               rel="noopener noreferrer"
               className="grid h-10 w-10 place-items-center rounded-full border border-cocoa/30 text-cocoa transition hover:bg-card"
@@ -47,7 +47,7 @@ export default function Footer() {
               <Instagram size={18} />
             </a>
             <a
-              href="https://www.facebook.com/profile.php?id=61590264604841"
+              href={settings.facebook_url}
               target="_blank"
               rel="noopener noreferrer"
               className="grid h-10 w-10 place-items-center rounded-full border border-cocoa/30 text-cocoa transition hover:bg-card"

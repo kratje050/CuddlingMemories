@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import { getStore } from "@netlify/blobs";
+import { createClient } from "@supabase/supabase-js";
 
 const shootOptions = [
   "Portretshoot",
@@ -46,6 +47,7 @@ const normalizePayload = (payload: Record<string, unknown>) => {
     omgeving: clean(payload.omgeving, 160),
     bericht: clean(payload.bericht, 2500),
     privacy: payload.privacy === true || payload.privacy === "on" || payload.privacy === "true",
+    packageId: clean(payload.packageId, 60) || null,
     botField: clean(payload["bot-field"], 200),
     renderedAt: Number(payload.renderedAt) || 0,
   };
@@ -130,6 +132,41 @@ async function sendBookingEmail(values: ReturnType<typeof normalizePayload>["val
   });
 }
 
+function getSupabaseAdmin() {
+  const url = readEnv("VITE_SUPABASE_URL");
+  const serviceKey = readEnv("SUPABASE_SERVICE_ROLE_KEY");
+
+  if (!url || !serviceKey) {
+    throw new Error(
+      "Supabase is nog niet ingesteld. Vul VITE_SUPABASE_URL en SUPABASE_SERVICE_ROLE_KEY in bij de Netlify omgevingsvariabelen."
+    );
+  }
+
+  return createClient(url, serviceKey, { auth: { persistSession: false } });
+}
+
+async function saveBooking(values: ReturnType<typeof normalizePayload>["values"]) {
+  const supabase = getSupabaseAdmin();
+
+  const { error } = await supabase.from("bookings").insert({
+    customer_name: values.naam,
+    customer_email: values.email,
+    shoot_type: values.shoot,
+    preferred_period: values.periode,
+    location: values.omgeving,
+    message: values.bericht,
+    privacy_accepted: values.privacy,
+    package_id: values.packageId,
+    model_discount: values.shoot === "Model staan met 50% korting",
+    status: "Nieuw",
+    source: "website",
+  });
+
+  if (error) {
+    throw new Error(`Boeking opslaan is mislukt: ${error.message}`);
+  }
+}
+
 async function isRateLimited(req: Request) {
   const ip = req.headers.get("x-nf-client-connection-ip") || "unknown";
   const store = getStore("booking-rate-limit");
@@ -162,18 +199,27 @@ export default async (req: Request) => {
       return json(200, { ok: true });
     }
 
-    await sendBookingEmail(values);
+    // De boeking in Supabase is de bron van waarheid; als dit faalt, faalt de
+    // hele aanvraag. De e-mailnotificatie is secundair: als die faalt, wordt
+    // dat gelogd maar blokkeert de (al opgeslagen) boeking niet.
+    await saveBooking(values);
+
+    try {
+      await sendBookingEmail(values);
+    } catch (mailError) {
+      console.error("Boeking opgeslagen, maar e-mail versturen is mislukt:", mailError);
+    }
 
     return json(200, { ok: true });
   } catch (error) {
     console.error(error);
     return json(500, {
       ok: false,
-      message: error instanceof Error ? error.message : "Verzenden is niet gelukt.",
+      message: error instanceof Error ? error.message : "Aanvraag versturen is niet gelukt.",
     });
   }
 };
 
 export const config = {
-  path: "/api/send-booking",
+  path: "/api/create-booking",
 };

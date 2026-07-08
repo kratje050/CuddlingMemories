@@ -1,29 +1,29 @@
 import { Calculator } from "lucide-react";
 import { useMemo, useState } from "react";
-import { packages } from "../data/packages.js";
 import Button from "./Button.jsx";
-
-const parsePrice = (price) => Number(price.replace("€", "").replace(",", ".").trim());
-
-const bookablePackages = packages.filter((item) => item.shoot !== "Anders");
-const extraImagePrice = parsePrice(packages.find((item) => item.name === "Extra beeld").price);
-const travelPricePerKm = parsePrice(packages.find((item) => item.name === "Reiskosten").price);
 
 const formatEuro = (value) => `€${value.toFixed(2).replace(".", ",")}`;
 
-export default function PriceCalculator() {
-  const [selected, setSelected] = useState(bookablePackages[0].name);
+export default function PriceCalculator({ packages }) {
+  const bookablePackages = useMemo(() => packages.filter((item) => item.price_unit === "shoot"), [packages]);
+  const extraImagePrice = packages.find((item) => item.price_unit === "item")?.price || 0;
+  const travelPricePerKm = packages.find((item) => item.price_unit === "km")?.price || 0;
+
+  const [selectedId, setSelectedId] = useState(bookablePackages[0]?.id || "");
   const [extraImages, setExtraImages] = useState(0);
   const [travelKm, setTravelKm] = useState(0);
 
-  const selectedPackage = bookablePackages.find((item) => item.name === selected);
+  const selectedPackage = bookablePackages.find((item) => item.id === selectedId) || bookablePackages[0];
 
   const total = useMemo(() => {
-    const base = parsePrice(selectedPackage.price);
-    const extras = Math.max(0, Number(extraImages) || 0) * extraImagePrice;
-    const travel = Math.max(0, Number(travelKm) || 0) * travelPricePerKm;
+    if (!selectedPackage) return 0;
+    const base = Number(selectedPackage.price);
+    const extras = Math.max(0, Number(extraImages) || 0) * Number(extraImagePrice);
+    const travel = Math.max(0, Number(travelKm) || 0) * Number(travelPricePerKm);
     return base + extras + travel;
-  }, [selectedPackage, extraImages, travelKm]);
+  }, [selectedPackage, extraImages, travelKm, extraImagePrice, travelPricePerKm]);
+
+  if (!selectedPackage) return null;
 
   return (
     <div className="mx-auto mt-12 max-w-2xl rounded-lg bg-card p-6 shadow-soft warm-border md:p-8">
@@ -35,13 +35,13 @@ export default function PriceCalculator() {
         <label className="grid gap-2 text-sm font-semibold text-coffee">
           Pakket
           <select
-            value={selected}
-            onChange={(event) => setSelected(event.target.value)}
+            value={selectedId}
+            onChange={(event) => setSelectedId(event.target.value)}
             className="rounded-lg border border-cocoa/20 bg-cream px-4 py-3 text-sm outline-none transition focus:border-cocoa"
           >
             {bookablePackages.map((item) => (
-              <option key={item.name} value={item.name}>
-                {item.name} ({item.price})
+              <option key={item.id} value={item.id}>
+                {item.title} ({formatEuro(Number(item.price))})
               </option>
             ))}
           </select>
@@ -72,10 +72,10 @@ export default function PriceCalculator() {
           <p className="fine-label text-[0.62rem] text-cocoa">Richtprijs</p>
           <p className="display-title text-3xl font-semibold text-coffee">{formatEuro(total)}</p>
           <p className="mt-1 text-xs text-coffee/65">
-            {selectedPackage.name} · {extraImages || 0} extra beeld(en) · {travelKm || 0} km reiskosten
+            {selectedPackage.title} · {extraImages || 0} extra beeld(en) · {travelKm || 0} km reiskosten
           </p>
         </div>
-        <Button to={`/contact?shoot=${encodeURIComponent(selectedPackage.shoot)}`}>Boek deze shoot</Button>
+        <Button to={`/contact?shoot=${encodeURIComponent(selectedPackage.shoot_type || "Anders")}`}>Boek deze shoot</Button>
       </div>
       <p className="mt-4 text-center text-xs text-coffee/60">
         Dit is een richtprijs op basis van de vanaf-tarieven. De definitieve prijs stemmen we samen af.

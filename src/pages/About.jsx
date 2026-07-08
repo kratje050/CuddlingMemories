@@ -1,15 +1,43 @@
 import { Heart, Sparkles } from "lucide-react";
+import { useEffect, useState } from "react";
 import Button from "../components/Button.jsx";
 import SEO from "../components/SEO.jsx";
 import SectionTitle from "../components/SectionTitle.jsx";
+import { getPage } from "../lib/api.js";
+import { usePageMeta } from "../lib/usePageMeta.js";
+
+const fallbackParagraphs = [
+  "Demy legt echte, liefdevolle en pure momenten vast. Ze fotografeert gezinnen, moeders, kinderen, newborns en bijzondere mijlpalen in een warme, zachte en tijdloze stijl.",
+  "Haar aandacht gaat uit naar kleine details, warme blikken en momenten die vaak voorbij lijken te vliegen. Juist die beelden worden later steeds waardevoller.",
+  "Voor de camera mag alles rustig en natuurlijk voelen. Er is ruimte om te wennen, te lachen, te knuffelen en gewoon jezelf te zijn, zonder dat het geforceerd wordt.",
+];
 
 export default function About() {
+  const { title, description } = usePageMeta(
+    "over-demy",
+    "Over Demy",
+    "Maak kennis met Demy van Cuddling Memories Fotografie: warme, zachte en tijdloze fotografie voor gezinnen, moeders, kinderen en newborns."
+  );
+  const [subtitle, setSubtitle] = useState("Foto's die later steeds meer gaan betekenen");
+  const [paragraphs, setParagraphs] = useState(fallbackParagraphs);
+
+  useEffect(() => {
+    let active = true;
+    getPage("over-demy")
+      .then((page) => {
+        if (!active || !page) return;
+        if (page.subtitle) setSubtitle(page.subtitle);
+        if (page.content) setParagraphs(page.content.split("\n\n").filter(Boolean));
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
   return (
     <>
-      <SEO
-        title="Over Demy"
-        description="Maak kennis met Demy van Cuddling Memories Fotografie: warme, zachte en tijdloze fotografie voor gezinnen, moeders, kinderen en newborns."
-      />
+      <SEO title={title} description={description} />
       <section className="pt-36">
         <div className="container-soft grid items-center gap-10 pb-16 lg:grid-cols-[0.95fr_1.05fr]">
           <div className="relative">
@@ -20,20 +48,11 @@ export default function About() {
             </div>
           </div>
           <div>
-            <SectionTitle centered={false} eyebrow="Over Demy" title="Foto's die later steeds meer gaan betekenen" />
+            <SectionTitle centered={false} eyebrow="Over Demy" title={subtitle} />
             <div className="mt-6 space-y-5 text-base leading-8 text-coffee/78">
-              <p>
-                Demy legt echte, liefdevolle en pure momenten vast. Ze fotografeert gezinnen, moeders, kinderen,
-                newborns en bijzondere mijlpalen in een warme, zachte en tijdloze stijl.
-              </p>
-              <p>
-                Haar aandacht gaat uit naar kleine details, warme blikken en momenten die vaak voorbij lijken te
-                vliegen. Juist die beelden worden later steeds waardevoller.
-              </p>
-              <p>
-                Voor de camera mag alles rustig en natuurlijk voelen. Er is ruimte om te wennen, te lachen, te knuffelen
-                en gewoon jezelf te zijn, zonder dat het geforceerd wordt.
-              </p>
+              {paragraphs.map((paragraph, index) => (
+                <p key={index}>{paragraph}</p>
+              ))}
             </div>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Button to="/contact">Boek een shoot</Button>

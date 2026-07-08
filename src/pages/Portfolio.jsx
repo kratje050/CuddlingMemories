@@ -1,20 +1,51 @@
-import { useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import Button from "../components/Button.jsx";
 import Lightbox from "../components/Lightbox.jsx";
 import SEO from "../components/SEO.jsx";
 import SectionTitle from "../components/SectionTitle.jsx";
-import { categories, portfolioItems } from "../data/portfolio.js";
+import { getAllPublishedPhotos, getPortfolioAlbums } from "../lib/api.js";
+import { portfolioCategories } from "../lib/constants.js";
 
 export default function Portfolio() {
   const [params] = useSearchParams();
   const initial = params.get("category") || "Alles";
-  const [active, setActive] = useState(categories.includes(initial) ? initial : "Alles");
+  const [active, setActive] = useState(portfolioCategories.includes(initial) ? initial : "Alles");
   const [activeIndex, setActiveIndex] = useState(null);
+  const [albums, setAlbums] = useState([]);
+  const [photos, setPhotos] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    Promise.all([getPortfolioAlbums(), getAllPublishedPhotos()])
+      .then(([albumRows, photoRows]) => {
+        if (!active) return;
+        setAlbums(albumRows);
+        setPhotos(
+          photoRows.map((row) => ({
+            id: row.id,
+            title: row.title,
+            category: row.category,
+            image: row.image_url,
+          }))
+        );
+        setLoading(false);
+      })
+      .catch(() => {
+        if (!active) return;
+        setFailed(true);
+        setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const filtered = useMemo(
-    () => (active === "Alles" ? portfolioItems : portfolioItems.filter((item) => item.category === active)),
-    [active]
+    () => (active === "Alles" ? photos : photos.filter((item) => item.category === active)),
+    [active, photos]
   );
 
   return (
@@ -30,8 +61,26 @@ export default function Portfolio() {
             title="Een rustige galerij vol warme momenten"
             text="Filter op soort shoot en ontdek de zachte stijl van Cuddling Memories."
           />
-          <div className="mt-8 flex flex-wrap justify-center gap-2">
-            {["Alles", ...categories].map((category) => (
+
+          {albums.length > 0 && (
+            <div className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-7">
+              {albums.map((album) => (
+                <Link key={album.id} to={`/portfolio/${album.slug}`} className="group block min-w-0">
+                  <div className="relative aspect-[5/4] overflow-hidden rounded-lg shadow-soft warm-border">
+                    <img
+                      src={album.cover_image_url}
+                      alt={album.title}
+                      className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                    />
+                  </div>
+                  <p className="fine-label mt-3 text-center text-[0.64rem] font-semibold text-coffee">{album.title}</p>
+                </Link>
+              ))}
+            </div>
+          )}
+
+          <div className="mt-10 flex flex-wrap justify-center gap-2">
+            {["Alles", ...portfolioCategories].map((category) => (
               <button
                 key={category}
                 type="button"
@@ -46,6 +95,18 @@ export default function Portfolio() {
               </button>
             ))}
           </div>
+
+          {loading && <p className="mt-10 text-center text-sm text-coffee/60">Foto's laden...</p>}
+          {failed && (
+            <p className="mt-10 text-center text-sm text-coffee/60">
+              De galerij kon niet geladen worden. Probeer het later opnieuw.
+            </p>
+          )}
+
+          {!loading && !failed && filtered.length === 0 && (
+            <p className="mt-10 text-center text-sm text-coffee/60">Nog geen foto's in deze categorie.</p>
+          )}
+
           <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filtered.map((item, index) => (
               <article

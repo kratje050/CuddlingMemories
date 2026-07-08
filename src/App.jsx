@@ -12,6 +12,9 @@ import Contact from "./pages/Contact.jsx";
 import Thanks from "./pages/Thanks.jsx";
 import Privacy from "./pages/Privacy.jsx";
 import NotFound from "./pages/NotFound.jsx";
+import AdminRoutes from "./admin/AdminRoutes.jsx";
+import { SiteSettingsProvider } from "./context/SiteSettingsContext.jsx";
+import AlbumDetail from "./pages/AlbumDetail.jsx";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -23,26 +26,38 @@ function ScrollToTop() {
   return null;
 }
 
+function PublicSite() {
+  return (
+    <SiteSettingsProvider>
+      <div className="min-h-screen bg-cream text-coffee">
+        <Navbar />
+        <ScrollToTop />
+        <main>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/portfolio" element={<Portfolio />} />
+            <Route path="/portfolio/:slug" element={<AlbumDetail />} />
+            <Route path="/pakketten" element={<Packages />} />
+            <Route path="/over-demy" element={<About />} />
+            <Route path="/werkwijze" element={<Process />} />
+            <Route path="/model-gezocht" element={<ModelCall />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/bedankt" element={<Thanks />} />
+            <Route path="/privacybeleid" element={<Privacy />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </main>
+        <Footer />
+      </div>
+    </SiteSettingsProvider>
+  );
+}
+
 export default function App() {
   return (
-    <div className="min-h-screen bg-cream text-coffee">
-      <Navbar />
-      <ScrollToTop />
-      <main>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/portfolio" element={<Portfolio />} />
-          <Route path="/pakketten" element={<Packages />} />
-          <Route path="/over-demy" element={<About />} />
-          <Route path="/werkwijze" element={<Process />} />
-          <Route path="/model-gezocht" element={<ModelCall />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/bedankt" element={<Thanks />} />
-          <Route path="/privacybeleid" element={<Privacy />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </main>
-      <Footer />
-    </div>
+    <Routes>
+      <Route path="/admin/*" element={<AdminRoutes />} />
+      <Route path="/*" element={<PublicSite />} />
+    </Routes>
   );
 }
