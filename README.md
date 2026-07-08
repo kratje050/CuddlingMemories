@@ -36,8 +36,9 @@ Dezelfde instellingen staan ook in `netlify.toml`.
 - Portfolio en categoriebeelden: `src/data/portfolio.js`
 - Pakketten en prijzen: `src/data/packages.js`
 - Veelgestelde vragen: `src/data/faq.js`
+- Testafbeeldingen: `public/images/test-*.svg`
 
-De tijdelijke afbeeldingen verwijzen nu naar de eerste Netlify-deploy. Vervang die later door echte foto's in `public/images/` en pas de image-paden in `src/data/portfolio.js` aan.
+Vervang de testafbeeldingen door echte foto's en pas de image-paden in `src/data/portfolio.js` aan.
 
 ## Netlify Forms
 
