@@ -39,7 +39,7 @@ export const packages = [
   {
     name: "Reiskosten",
     price: "€0,35",
-    details: "Per kilometer buiten de afgesproken omgeving",
+    details: "Per kilometer, standaard als heen- en terugreis berekend vanaf mijn huis in Zoutkamp",
     shoot: "Anders",
   },
 ];

@@ -1170,3 +1170,294 @@ $$;
 
 grant execute on function calculate_month_status(int, int) to authenticated, service_role;
 grant execute on function get_months_status(int, int, int) to authenticated, service_role;
+
+-- ---------------------------------------------------------------------------
+-- 20. Klantgalerijen / online selectie
+-- ---------------------------------------------------------------------------
+create table client_galleries (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  client_name text not null,
+  client_email text not null,
+  secure_token text not null unique,
+  status text not null default 'Concept' check (status in (
+    'Concept', 'Gepubliceerd', 'Wacht op keuze klant', 'Keuze ontvangen',
+    'Extra beelden aangevraagd', 'Afgerond', 'Verlopen', 'Verborgen'
+  )),
+  included_images int not null default 0,
+  is_published boolean not null default false,
+  expires_at date,
+  internal_note text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create trigger trg_client_galleries_updated_at
+  before update on client_galleries
+  for each row execute function set_updated_at();
+
+create table gallery_photos (
+  id uuid primary key default gen_random_uuid(),
+  gallery_id uuid not null references client_galleries(id) on delete cascade,
+  title text,
+  filename text,
+  image_url text not null,
+  alt_text text,
+  sort_order int not null default 0,
+  is_favorite boolean not null default false,
+  is_extra_requested boolean not null default false,
+  client_note text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create trigger trg_gallery_photos_updated_at
+  before update on gallery_photos
+  for each row execute function set_updated_at();
+
+create index idx_client_galleries_token on client_galleries (secure_token);
+create index idx_gallery_photos_gallery on gallery_photos (gallery_id);
+
+insert into storage.buckets (id, name, public)
+values ('client-galleries', 'client-galleries', true)
+on conflict (id) do nothing;
+
+create or replace function get_gallery_access(p_token text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_gallery client_galleries%rowtype;
+  v_photos jsonb;
+begin
+  select * into v_gallery
+  from client_galleries
+  where secure_token = p_token
+    and is_published = true
+    and status not in ('Concept', 'Verborgen', 'Verlopen')
+    and (expires_at is null or expires_at >= current_date);
+
+  if not found then
+    return jsonb_build_object('gallery', null, 'photos', '[]'::jsonb);
+  end if;
+
+  select coalesce(jsonb_agg(to_jsonb(p) order by p.sort_order, p.created_at), '[]'::jsonb)
+    into v_photos
+  from gallery_photos p
+  where p.gallery_id = v_gallery.id;
+
+  return jsonb_build_object('gallery', to_jsonb(v_gallery), 'photos', v_photos);
+end;
+$$;
+
+create or replace function save_gallery_selection(p_token text, p_selections jsonb, p_request_extra boolean default false)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_gallery client_galleries%rowtype;
+  v_item jsonb;
+  v_selected_count int := 0;
+begin
+  select * into v_gallery
+  from client_galleries
+  where secure_token = p_token
+    and is_published = true
+    and status not in ('Concept', 'Verborgen', 'Verlopen')
+    and (expires_at is null or expires_at >= current_date);
+
+  if not found then
+    raise exception 'GALLERY_NOT_FOUND';
+  end if;
+
+  update gallery_photos
+    set is_favorite = false, is_extra_requested = false
+  where gallery_id = v_gallery.id;
+
+  for v_item in select * from jsonb_array_elements(p_selections)
+  loop
+    update gallery_photos
+      set
+        is_favorite = coalesce((v_item->>'is_favorite')::boolean, false),
+        client_note = nullif(v_item->>'client_note', ''),
+        is_extra_requested = false
+      where id = nullif(v_item->>'photo_id', '')::uuid
+        and gallery_id = v_gallery.id;
+  end loop;
+
+  select count(*) into v_selected_count
+  from gallery_photos
+  where gallery_id = v_gallery.id and is_favorite = true;
+
+  if v_selected_count > coalesce(v_gallery.included_images, 0) or p_request_extra then
+    update gallery_photos
+      set is_extra_requested = true
+      where gallery_id = v_gallery.id
+        and is_favorite = true
+        and id in (
+          select id from gallery_photos
+          where gallery_id = v_gallery.id and is_favorite = true
+          order by sort_order, created_at
+          offset greatest(coalesce(v_gallery.included_images, 0), 0)
+        );
+    update client_galleries set status = 'Extra beelden aangevraagd' where id = v_gallery.id;
+  else
+    update client_galleries set status = 'Keuze ontvangen' where id = v_gallery.id;
+  end if;
+
+  return jsonb_build_object('ok', true, 'selected_count', v_selected_count);
+end;
+$$;
+
+grant execute on function get_gallery_access(text) to anon, authenticated;
+grant execute on function save_gallery_selection(text, jsonb, boolean) to anon, authenticated;
+
+-- ---------------------------------------------------------------------------
+-- 21. E-mailtemplates en logs
+-- ---------------------------------------------------------------------------
+create table email_templates (
+  id uuid primary key default gen_random_uuid(),
+  template_key text not null unique,
+  label text not null,
+  subject text not null,
+  body text not null,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create trigger trg_email_templates_updated_at
+  before update on email_templates
+  for each row execute function set_updated_at();
+
+create table email_logs (
+  id uuid primary key default gen_random_uuid(),
+  recipient_email text not null,
+  template_key text not null,
+  subject text,
+  status text not null default 'pending' check (status in ('pending', 'sent', 'failed', 'skipped')),
+  error_message text,
+  related_booking_id uuid references bookings(id) on delete set null,
+  related_gallery_id uuid references client_galleries(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
+create index idx_email_logs_created_at on email_logs (created_at desc);
+
+-- ---------------------------------------------------------------------------
+-- 22. Wachtlijst
+-- ---------------------------------------------------------------------------
+create table waitlist_entries (
+  id uuid primary key default gen_random_uuid(),
+  customer_name text not null,
+  customer_email text not null,
+  shoot_type text not null,
+  preferred_date date,
+  preferred_month text,
+  flexibility text,
+  message text,
+  status text not null default 'Nieuw' check (status in (
+    'Nieuw', 'Bekeken', 'Benaderd', 'Wacht op reactie',
+    'Omgezet naar boeking', 'Niet meer nodig', 'Gearchiveerd'
+  )),
+  internal_note text,
+  converted_booking_id uuid references bookings(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create trigger trg_waitlist_entries_updated_at
+  before update on waitlist_entries
+  for each row execute function set_updated_at();
+
+-- ---------------------------------------------------------------------------
+-- 23. Cadeaubonnen
+-- ---------------------------------------------------------------------------
+create table giftcards (
+  id uuid primary key default gen_random_uuid(),
+  purchaser_name text not null,
+  purchaser_email text not null,
+  recipient_name text,
+  giftcard_type text not null,
+  amount numeric(10,2),
+  package_id uuid references packages(id) on delete set null,
+  personal_message text,
+  delivery_method text,
+  code text unique,
+  status text not null default 'Nieuw' check (status in (
+    'Nieuw', 'Wacht op betaling', 'Betaald', 'Verzonden', 'Gebruikt', 'Verlopen', 'Geannuleerd'
+  )),
+  paid_at timestamptz,
+  sent_at timestamptz,
+  used_at timestamptz,
+  expires_at date,
+  internal_note text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create trigger trg_giftcards_updated_at
+  before update on giftcards
+  for each row execute function set_updated_at();
+
+-- ---------------------------------------------------------------------------
+-- 24. Mini-shoot dagen
+-- ---------------------------------------------------------------------------
+create table mini_sessions (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  slug text not null unique,
+  description text,
+  date date not null,
+  location text,
+  price numeric(10,2),
+  included_images int not null default 0,
+  duration_minutes int not null default 20,
+  is_published boolean not null default false,
+  status text not null default 'Concept' check (status in ('Concept', 'Gepubliceerd', 'Vol', 'Gesloten', 'Afgerond', 'Verborgen')),
+  cover_image_url text,
+  terms text,
+  internal_note text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create trigger trg_mini_sessions_updated_at
+  before update on mini_sessions
+  for each row execute function set_updated_at();
+
+create table mini_session_slots (
+  id uuid primary key default gen_random_uuid(),
+  mini_session_id uuid not null references mini_sessions(id) on delete cascade,
+  start_time time not null,
+  end_time time not null,
+  max_bookings int not null default 1,
+  current_bookings int not null default 0,
+  is_available boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create trigger trg_mini_session_slots_updated_at
+  before update on mini_session_slots
+  for each row execute function set_updated_at();
+
+create table mini_session_bookings (
+  id uuid primary key default gen_random_uuid(),
+  mini_session_id uuid not null references mini_sessions(id) on delete cascade,
+  slot_id uuid references mini_session_slots(id) on delete set null,
+  customer_name text not null,
+  customer_email text not null,
+  message text,
+  status text not null default 'Nieuw' check (status in ('Nieuw', 'Bevestigd', 'Wacht op betaling', 'Betaald', 'Geannuleerd', 'Afgerond')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create trigger trg_mini_session_bookings_updated_at
+  before update on mini_session_bookings
+  for each row execute function set_updated_at();

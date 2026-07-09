@@ -242,3 +242,62 @@ create policy "monthly_availability_settings_admin_all" on monthly_availability_
 alter table booking_display_settings enable row level security;
 create policy "booking_display_settings_admin_all" on booking_display_settings
   for all using (is_admin()) with check (is_admin());
+
+-- ---------------------------------------------------------------------------
+-- Uitbreiding: klantgalerijen, e-mails, wachtlijst, cadeaubonnen en mini-shoots.
+-- ---------------------------------------------------------------------------
+alter table client_galleries enable row level security;
+create policy "client_galleries_admin_all" on client_galleries
+  for all using (is_admin()) with check (is_admin());
+
+alter table gallery_photos enable row level security;
+create policy "gallery_photos_admin_all" on gallery_photos
+  for all using (is_admin()) with check (is_admin());
+
+create policy "client_gallery_bucket_public_read" on storage.objects
+  for select using (bucket_id = 'client-galleries');
+create policy "client_gallery_bucket_admin_write" on storage.objects
+  for insert with check (bucket_id = 'client-galleries' and is_admin());
+create policy "client_gallery_bucket_admin_update" on storage.objects
+  for update using (bucket_id = 'client-galleries' and is_admin()) with check (bucket_id = 'client-galleries' and is_admin());
+create policy "client_gallery_bucket_admin_delete" on storage.objects
+  for delete using (bucket_id = 'client-galleries' and is_admin());
+
+alter table email_templates enable row level security;
+create policy "email_templates_admin_all" on email_templates
+  for all using (is_admin()) with check (is_admin());
+
+alter table email_logs enable row level security;
+create policy "email_logs_admin_all" on email_logs
+  for all using (is_admin()) with check (is_admin());
+
+alter table waitlist_entries enable row level security;
+create policy "waitlist_entries_admin_all" on waitlist_entries
+  for all using (is_admin()) with check (is_admin());
+
+alter table giftcards enable row level security;
+create policy "giftcards_admin_all" on giftcards
+  for all using (is_admin()) with check (is_admin());
+
+alter table mini_sessions enable row level security;
+create policy "mini_sessions_public_read" on mini_sessions
+  for select using ((is_published = true and status = 'Gepubliceerd') or is_admin());
+create policy "mini_sessions_admin_all" on mini_sessions
+  for all using (is_admin()) with check (is_admin());
+
+alter table mini_session_slots enable row level security;
+create policy "mini_session_slots_public_read" on mini_session_slots
+  for select using (
+    is_admin() or exists (
+      select 1 from mini_sessions m
+      where m.id = mini_session_slots.mini_session_id
+        and m.is_published = true
+        and m.status = 'Gepubliceerd'
+    )
+  );
+create policy "mini_session_slots_admin_all" on mini_session_slots
+  for all using (is_admin()) with check (is_admin());
+
+alter table mini_session_bookings enable row level security;
+create policy "mini_session_bookings_admin_all" on mini_session_bookings
+  for all using (is_admin()) with check (is_admin());

@@ -2,6 +2,7 @@ node_modules/
 dist/
 .netlify/
 .netlify-config/
+.tmp-netlify-appdata/
 .netlify-upload-*/
 .npm-cache/
 .github-clone-*/

@@ -1,11 +1,29 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { ArrowRight, Camera, Grid3X3, Heart, Sparkles } from "lucide-react";
 import Button from "../components/Button.jsx";
 import Lightbox from "../components/Lightbox.jsx";
 import SEO from "../components/SEO.jsx";
-import SectionTitle from "../components/SectionTitle.jsx";
 import { getAllPublishedPhotos, getPortfolioAlbums } from "../lib/api.js";
 import { portfolioCategories } from "../lib/constants.js";
+
+const filterIcons = {
+  Alles: Grid3X3,
+  Zwangerschap: Heart,
+  Newborn: Sparkles,
+  Gezin: Heart,
+  Cakesmash: Camera,
+  Portret: Camera,
+  Motherhood: Heart,
+  "Buiten shoots": Sparkles,
+};
+
+const getMosaicClass = (index) => {
+  if (index % 11 === 0) return "sm:col-span-2 lg:col-span-3 lg:row-span-2";
+  if (index % 11 === 4) return "lg:col-span-3";
+  if (index % 11 === 7) return "sm:col-span-2 lg:col-span-4";
+  return "lg:col-span-2";
+};
 
 export default function Portfolio() {
   const [params] = useSearchParams();
@@ -47,6 +65,11 @@ export default function Portfolio() {
     () => (active === "Alles" ? photos : photos.filter((item) => item.category === active)),
     [active, photos]
   );
+  const albumPreview = albums.slice(0, 6);
+
+  useEffect(() => {
+    setActiveIndex(null);
+  }, [active]);
 
   return (
     <>
@@ -54,46 +77,89 @@ export default function Portfolio() {
         title="Portfolio"
         description="Bekijk het portfolio van Cuddling Memories met zwangerschap, newborn, cakesmash, gezin, portret, motherhood en buiten fotoshoots."
       />
-      <section className="pt-36">
-        <div className="container-soft">
-          <SectionTitle
-            eyebrow="Portfolio"
-            title="Een rustige galerij vol warme momenten"
-            text="Filter op soort shoot en ontdek de zachte stijl van Cuddling Memories."
-          />
+      <section className="pt-32">
+        <div className="container-soft pb-16">
+          <div className="max-w-4xl pb-2">
+              <p className="script-line text-4xl text-cocoa md:text-5xl">Portfolio</p>
+              <h1 className="display-title mt-2 max-w-2xl text-5xl font-semibold leading-[0.95] text-coffee md:text-7xl">
+                Beelden met warmte, zachtheid en echte verbinding
+              </h1>
+              <p className="mt-6 max-w-xl text-base leading-8 text-coffee/72">
+                Bekijk een selectie uit verschillende shoots. Gebruik de filters om snel naar een soort shoot te gaan,
+                of open een album voor een gerichtere serie.
+              </p>
+              <div className="mt-7 flex flex-wrap gap-3">
+                <Button to="/contact" className="gap-2">
+                  Boek een shoot <ArrowRight size={15} />
+                </Button>
+                <Button to="/pakketten" variant="secondary">
+                  Bekijk pakketten
+                </Button>
+              </div>
+          </div>
 
           {albums.length > 0 && (
-            <div className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-7">
-              {albums.map((album) => (
-                <Link key={album.id} to={`/portfolio/${album.slug}`} className="group block min-w-0">
-                  <div className="relative aspect-[5/4] overflow-hidden rounded-lg shadow-soft warm-border">
+            <div className="mt-14">
+              <div className="flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <p className="fine-label text-[0.68rem] font-semibold text-cocoa">Albums</p>
+                  <h2 className="display-title mt-1 text-3xl font-semibold text-coffee">Bekijk per shootsoort</h2>
+                </div>
+                {albums.length > albumPreview.length && <p className="text-sm text-coffee/60">{albums.length} albums beschikbaar</p>}
+              </div>
+              <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {albumPreview.map((album, index) => (
+                  <Link
+                    key={album.id}
+                    to={`/portfolio/${album.slug}`}
+                    className={`group relative block min-h-[17rem] overflow-hidden rounded-lg bg-card shadow-soft warm-border ${
+                      index === 0 ? "lg:col-span-2" : ""
+                    }`}
+                  >
                     <img
                       src={album.cover_image_url}
                       alt={album.title}
-                      className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                      className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105"
                     />
-                  </div>
-                  <p className="fine-label mt-3 text-center text-[0.64rem] font-semibold text-coffee">{album.title}</p>
-                </Link>
-              ))}
+                    <div className="absolute inset-0 bg-gradient-to-t from-coffee/70 via-coffee/18 to-transparent" />
+                    <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-coffee/50 via-coffee/18 to-transparent" />
+                    <div className="absolute inset-x-0 bottom-0 p-5 text-card drop-shadow-[0_2px_8px_rgba(60,38,25,0.38)]">
+                      <p className="fine-label text-[0.62rem] font-semibold text-card/90">{album.category || "Portfolio"}</p>
+                      <div className="mt-1 flex items-end justify-between gap-4">
+                        <h3 className="display-title text-3xl font-semibold leading-none">{album.title}</h3>
+                        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-card/45 bg-card/15 transition group-hover:bg-card group-hover:text-coffee">
+                          <ArrowRight size={17} />
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
             </div>
           )}
 
-          <div className="mt-10 flex flex-wrap justify-center gap-2">
-            {["Alles", ...portfolioCategories].map((category) => (
-              <button
-                key={category}
-                type="button"
-                onClick={() => setActive(category)}
-                className={`rounded-full border px-4 py-2 text-xs font-semibold transition ${
-                  active === category
-                    ? "border-cocoa bg-cocoa text-card"
-                    : "border-cocoa/25 bg-card/70 text-coffee hover:bg-card"
-                }`}
-              >
-                {category}
-              </button>
-            ))}
+          <div className="mt-14 rounded-lg bg-card/76 p-3 shadow-soft warm-border">
+            <div className="flex flex-wrap justify-center gap-2">
+              {["Alles", ...portfolioCategories].map((category) => {
+                const Icon = filterIcons[category] || Camera;
+                const selected = active === category;
+                return (
+                  <button
+                    key={category}
+                    type="button"
+                    onClick={() => setActive(category)}
+                    className={`inline-flex min-h-11 items-center gap-2 rounded-full border px-4 py-2 text-xs font-semibold transition ${
+                      selected
+                        ? "border-cocoa bg-cocoa text-card shadow-glow"
+                        : "border-cocoa/18 bg-cream/70 text-coffee hover:border-cocoa/45 hover:bg-cream"
+                    }`}
+                  >
+                    <Icon size={14} strokeWidth={1.8} />
+                    {category}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {loading && <p className="mt-10 text-center text-sm text-coffee/60">Foto's laden...</p>}
@@ -107,17 +173,29 @@ export default function Portfolio() {
             <p className="mt-10 text-center text-sm text-coffee/60">Nog geen foto's in deze categorie.</p>
           )}
 
-          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-8 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="fine-label text-[0.68rem] font-semibold text-cocoa">{active}</p>
+              <h2 className="display-title mt-1 text-3xl font-semibold text-coffee">
+                {filtered.length === 1 ? "1 foto" : `${filtered.length} foto's`}
+              </h2>
+            </div>
+            <p className="max-w-md text-sm leading-6 text-coffee/62">
+              Klik op een beeld om hem groter te bekijken en door de selectie te bladeren.
+            </p>
+          </div>
+
+          <div className="mt-6 grid auto-rows-[18rem] gap-4 sm:grid-cols-2 lg:grid-cols-6 lg:auto-rows-[15rem]">
             {filtered.map((item, index) => (
               <article
                 key={item.id}
-                className="group relative aspect-[4/5] cursor-pointer overflow-hidden rounded-lg bg-card shadow-soft warm-border"
+                className={`group relative cursor-pointer overflow-hidden rounded-lg bg-card shadow-soft warm-border ${getMosaicClass(index)}`}
                 style={{ animationDelay: `${index * 45}ms` }}
                 onClick={() => setActiveIndex(index)}
               >
                 <img src={item.image} alt={item.title} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
-                <div className="absolute inset-0 bg-gradient-to-t from-coffee/55 via-transparent to-transparent opacity-0 transition group-hover:opacity-100" />
-                <div className="absolute inset-x-0 bottom-0 translate-y-4 p-5 text-card opacity-0 transition duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+                <div className="absolute inset-0 bg-gradient-to-t from-coffee/60 via-transparent to-transparent opacity-0 transition group-hover:opacity-100" />
+                <div className="absolute inset-x-0 bottom-0 translate-y-3 p-5 text-card opacity-0 transition duration-300 group-hover:translate-y-0 group-hover:opacity-100">
                   <p className="fine-label text-[0.64rem] font-semibold">{item.category}</p>
                   <h3 className="display-title mt-1 text-2xl font-semibold">{item.title}</h3>
                 </div>

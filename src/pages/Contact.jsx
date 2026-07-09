@@ -1,12 +1,13 @@
 import { ArrowLeft, ArrowRight, Send, ShieldCheck } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { format } from "date-fns";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import Button from "../components/Button.jsx";
 import FAQItem from "../components/FAQItem.jsx";
 import SEO from "../components/SEO.jsx";
 import SectionTitle from "../components/SectionTitle.jsx";
 import MonthAvailabilityOverview from "../components/MonthAvailabilityOverview.jsx";
+import WaitlistForm from "../components/WaitlistForm.jsx";
 import StepIndicator from "../components/booking/StepIndicator.jsx";
 import ShootTypeStep from "../components/booking/ShootTypeStep.jsx";
 import PackageStep from "../components/booking/PackageStep.jsx";
@@ -18,13 +19,15 @@ import { getPublishedPackages, getVisibleFaqs } from "../lib/api.js";
 import { getBookableShootTypes } from "../lib/bookingAvailability.js";
 import { usePageMeta } from "../lib/usePageMeta.js";
 
-const emptyDetails = { naam: "", email: "", omgeving: "", bericht: "", privacy: false };
+const emptyDetails = { naam: "", email: "", locationType: "studio", omgeving: "", bericht: "", privacy: false };
 
 export default function Contact() {
   const [params] = useSearchParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const requestedShoot = params.get("shoot");
   const requestedMonthParam = params.get("maand");
+  const waitlistMonthParam = params.get("wachtlijst");
   const wizardRef = useRef(null);
 
   const initialMonth = useMemo(() => {
@@ -89,10 +92,10 @@ export default function Contact() {
     if (requestedMonthParam && wizardRef.current) {
       wizardRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
     }
-  }, [requestedMonthParam]);
+  }, [requestedMonthParam, location.hash]);
 
   const packagesForShoot = useMemo(
-    () => packages.filter((pkg) => pkg.shoot_type === shootType),
+    () => packages.filter((pkg) => pkg.shoot_type === shootType && pkg.price_unit === "shoot"),
     [packages, shootType]
   );
   const selectedPackage = useMemo(() => packages.find((pkg) => pkg.id === packageId) || null, [packages, packageId]);
@@ -125,7 +128,8 @@ export default function Contact() {
   };
 
   const handleDetailsNext = () => {
-    if (!details.naam || !details.email || !details.omgeving || !details.bericht || !details.privacy) {
+    const needsLocation = details.locationType === "location";
+    if (!details.naam || !details.email || (needsLocation && !details.omgeving) || !details.bericht || !details.privacy) {
       setDetailsError("Vul alle verplichte velden in en accepteer de privacyverklaring.");
       return;
     }
@@ -138,6 +142,9 @@ export default function Contact() {
     setSubmitError("");
 
     try {
+      const bookingLocation =
+        details.locationType === "location" ? `Op locatie: ${details.omgeving}` : "Bij mij thuis in Zoutkamp";
+
       const response = await fetch("/api/create-booking", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -148,7 +155,7 @@ export default function Contact() {
           bookingDate: format(date, "yyyy-MM-dd"),
           startTime: time.start,
           packageId: packageId || "",
-          omgeving: details.omgeving,
+          omgeving: bookingLocation,
           bericht: details.bericht,
           privacy: details.privacy,
           "bot-field": botField,
@@ -200,11 +207,30 @@ export default function Contact() {
             </p>
           </div>
 
+          {waitlistMonthParam && (
+            <div className="mt-10 scroll-mt-28">
+              <SectionTitle
+                centered={false}
+                eyebrow="Wachtlijst"
+                title="Aanmelden voor de wachtlijst"
+                text="Is je gewenste maand of dag vol? Laat je gegevens achter. Als er een passende plek vrijkomt, neem ik contact met je op."
+              />
+              <div className="mt-6">
+                <WaitlistForm preferredMonth={waitlistMonthParam} />
+              </div>
+            </div>
+          )}
+
           {loadingBase ? (
             <p className="mt-10 text-sm text-coffee/60">Even laden...</p>
           ) : (
-            <div ref={wizardRef} className="mt-10 scroll-mt-28 grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
+            <div id="boeken" ref={wizardRef} className="mt-10 scroll-mt-44 grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
               <div className="rounded-lg bg-card p-5 shadow-soft warm-border md:p-8">
+                {requestedMonthParam && step === 0 && (
+                  <p className="mb-6 rounded-lg bg-linen px-4 py-3 text-sm leading-6 text-coffee/75 warm-border">
+                    Kies eerst het soort shoot. Daarna opent de kalender direct in de gekozen maand.
+                  </p>
+                )}
                 <div className="mb-6 overflow-x-auto">
                   <StepIndicator current={step} />
                 </div>

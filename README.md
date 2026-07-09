@@ -192,4 +192,147 @@ Admin kan per maand handmatig sluiten, de status overschrijven, een maximum inst
 
 ### Welke environment variables nodig zijn
 
-Geen nieuwe: dezelfde `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` en `SUPABASE_SERVICE_ROLE_KEY` als bij de admin-CMS (zie stap 6 hierboven) volstaan.
+Voor de nieuwe automatische mails zijn er wel extra mailvariabelen nodig. De volledige set is:
+
+```txt
+VITE_SUPABASE_URL
+VITE_SUPABASE_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY
+EMAIL_PROVIDER
+EMAIL_API_KEY
+EMAIL_FROM_ADDRESS
+```
+
+Als je Gmail SMTP wilt blijven gebruiken in plaats van bijvoorbeeld Resend:
+
+```txt
+SMTP_HOST
+SMTP_PORT
+SMTP_USER
+SMTP_PASS
+EMAIL_FROM
+```
+
+## Klantgalerijen
+
+Admin routes:
+- `/admin/galleries`
+- `/admin/galleries/new`
+- `/admin/galleries/:id`
+- `/admin/galleries/:id/photos`
+
+Klant route:
+- `/galerij/:secureToken`
+
+Een admin maakt een galerij aan, vult klantnaam/e-mail, inbegrepen beelden, status, vervaldatum en publicatie aan, en uploadt foto's naar de Supabase Storage bucket `client-galleries`. De klant krijgt een veilige link met een lange token, kiest favorieten en kan per foto een notitie invullen. Als er meer favorieten worden gekozen dan inbegrepen, markeert de database de extra beelden en krijgt de galerij status `Extra beelden aangevraagd`.
+
+Belangrijke tabellen:
+- `client_galleries`
+- `gallery_photos`
+
+Belangrijke RPC's:
+- `get_gallery_access(token)`
+- `save_gallery_selection(token, selections, request_extra)`
+
+## Automatische mails
+
+Admin route:
+- `/admin/email-templates`
+
+De templates staan in `email_templates` en mailpogingen in `email_logs`. Variabelen zoals `{{customer_name}}`, `{{shoot_type}}`, `{{gallery_link}}`, `{{included_images}}`, `{{extra_images}}`, `{{giftcard_amount}}` en `{{mini_session_title}}` worden server-side ingevuld.
+
+Netlify Functions:
+- `/api/send-email`
+- `/api/create-gallery-access`
+
+De functie probeert dubbele mails te voorkomen door dezelfde template naar dezelfde ontvanger binnen 15 minuten over te slaan. Gebruik bij voorkeur Resend met `EMAIL_API_KEY`; Gmail SMTP blijft als fallback mogelijk.
+
+## Wachtlijst
+
+Publiek:
+- Volle of gesloten maanden tonen in het maandoverzicht een knop naar `/contact?wachtlijst=YYYY-MM`.
+- Het formulier vraagt naam, e-mail, gewenste shoot, gewenste datum/maand, flexibiliteit en bericht.
+- Er wordt geen telefoonnummer of adres gevraagd.
+
+Admin route:
+- `/admin/waitlist`
+
+Tabel:
+- `waitlist_entries`
+
+Netlify Function:
+- `/api/submit-waitlist`
+
+## Cadeaubonnen
+
+Publieke route:
+- `/cadeaubon`
+
+Admin route:
+- `/admin/giftcards`
+
+Bezoekers kunnen een cadeaubon aanvragen voor vrij bedrag, portretshoot, cakesmash, zwangerschapsshoot, gezinsshoot, newbornshoot of mini-shoot. De cadeaubon is pas geldig na bevestiging en betaling door Cuddling Memories.
+
+Tabel:
+- `giftcards`
+
+Netlify Function:
+- `/api/submit-giftcard-request`
+
+## Mini-shoot dagen
+
+Publieke routes:
+- `/mini-shoots`
+- `/mini-shoots/:slug`
+
+Admin routes:
+- `/admin/mini-shoots`
+- `/admin/mini-shoots/new`
+- `/admin/mini-shoots/:id`
+
+Admin kan een mini-shoot dag aanmaken, titel/datum/prijs/omschrijving aanpassen, inbegrepen beelden en duur instellen, tijdslots automatisch genereren, handmatig tijdslots toevoegen en aanvragen per mini-shoot bekijken.
+
+Tabellen:
+- `mini_sessions`
+- `mini_session_slots`
+- `mini_session_bookings`
+
+Netlify Function:
+- `/api/submit-mini-session-booking`
+
+## Nieuwe Supabase-tabellen
+
+Naast de bestaande tabellen zijn toegevoegd:
+
+- `client_galleries`
+- `gallery_photos`
+- `email_templates`
+- `email_logs`
+- `waitlist_entries`
+- `giftcards`
+- `mini_sessions`
+- `mini_session_slots`
+- `mini_session_bookings`
+
+Voer opnieuw in deze volgorde uit in Supabase:
+
+1. `supabase/schema.sql`
+2. `supabase/policies.sql`
+3. `supabase/seed.sql`
+
+Bij een bestaande live database kun je de nieuwe stukken onderaan de bestanden als migratie uitvoeren. Maak vooraf een Supabase backup.
+
+## Controlelijst nieuwe functies
+
+- `npm install`
+- `npm run dev`
+- `npm run build`
+- Open `/cadeaubon`
+- Open `/mini-shoots`
+- Maak in admin een mini-shoot en publiceer deze
+- Maak in admin een klantgalerij en upload foto's
+- Open de klantlink `/galerij/:secureToken`
+- Kies favorieten en sla op
+- Test `/contact?wachtlijst=YYYY-MM`
+- Controleer `email_logs` na een aanvraag
+- Controleer in Supabase Storage of `client-galleries` bestaat

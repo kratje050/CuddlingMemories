@@ -22,6 +22,7 @@ export default function AdminBookingNew() {
   const [time, setTime] = useState(null);
   const [status, setStatus] = useState("Nieuw");
   const [customer, setCustomer] = useState({ naam: "", email: "", omgeving: "", bericht: "", adminNotes: "" });
+  const [promotion, setPromotion] = useState({ type: "none", note: "" });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -33,7 +34,7 @@ export default function AdminBookingNew() {
       .then(({ data }) => setPackages(data || []));
   }, []);
 
-  const packagesForShoot = useMemo(() => packages.filter((p) => p.shoot_type === shootType), [packages, shootType]);
+  const packagesForShoot = useMemo(() => packages.filter((p) => p.shoot_type === shootType && p.price_unit === "shoot"), [packages, shootType]);
 
   const handleSubmit = async () => {
     if (!shootType || !date || !time || !customer.naam || !customer.email) {
@@ -42,6 +43,17 @@ export default function AdminBookingNew() {
     }
     setSaving(true);
     setError("");
+    const promotionLabel =
+      {
+        none: "",
+        model: "Modelkorting / 50% korting",
+        giveaway: "Giveaway / gratis shoot",
+        winactie: "Winactie / gratis shoot",
+        custom: "Aangepaste korting",
+      }[promotion.type] || "";
+    const adminNotes = [promotionLabel ? `Korting: ${promotionLabel}` : "", promotion.note ? `Toelichting korting: ${promotion.note}` : "", customer.adminNotes]
+      .filter(Boolean)
+      .join("\n\n");
 
     const { error: rpcError } = await supabase.rpc("book_slot", {
       p_payload: {
@@ -54,7 +66,7 @@ export default function AdminBookingNew() {
         location: customer.omgeving,
         message: customer.bericht,
         privacy_accepted: true,
-        admin_notes: customer.adminNotes,
+        admin_notes: adminNotes,
         status,
         source: "admin",
       },
@@ -168,6 +180,24 @@ export default function AdminBookingNew() {
                 <span className="text-xs font-normal text-coffee/55">Alleen zichtbaar in admin, niet voor de klant.</span>
                 <textarea rows={2} value={customer.adminNotes} onChange={(e) => setCustomer({ ...customer, adminNotes: e.target.value })} className={`${inputClass} resize-none`} />
               </label>
+              <label className="grid gap-1.5 text-sm font-semibold text-coffee">
+                Korting / winactie
+                <span className="text-xs font-normal text-coffee/55">Gebruik dit voor modelkorting, giveaway of winactie. Dit komt in de interne notitie.</span>
+                <select value={promotion.type} onChange={(e) => setPromotion({ ...promotion, type: e.target.value })} className={inputClass}>
+                  <option value="none">Geen korting</option>
+                  <option value="model">Modelkorting / 50% korting</option>
+                  <option value="giveaway">Giveaway / gratis</option>
+                  <option value="winactie">Winactie / gratis</option>
+                  <option value="custom">Aangepaste korting</option>
+                </select>
+              </label>
+              {promotion.type !== "none" && (
+                <label className="grid gap-1.5 text-sm font-semibold text-coffee">
+                  Toelichting korting
+                  <span className="text-xs font-normal text-coffee/55">Bijvoorbeeld kortingspercentage, actievoorwaarden of naam van de winactie.</span>
+                  <input value={promotion.note} onChange={(e) => setPromotion({ ...promotion, note: e.target.value })} className={inputClass} />
+                </label>
+              )}
               <label className="grid gap-1.5 text-sm font-semibold text-coffee">
                 Status
                 <span className="text-xs font-normal text-coffee/55">Startstatus van deze handmatig toegevoegde boeking.</span>

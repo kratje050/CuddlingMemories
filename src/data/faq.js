@@ -13,11 +13,11 @@ export const faqs = [
   },
   {
     question: "Waar vindt de shoot plaats?",
-    answer: "Dat kan buiten, bij passend licht, of op een plek die bij het soort shoot past. Dit stemmen we vooraf rustig af.",
+    answer: "Dat kan buiten, bij passend licht, of op een plek die bij het soort shoot past. Dit stemmen we vooraf samen af.",
   },
   {
     question: "Wat trek ik aan tijdens de shoot?",
-    answer: "Zachte tinten, rustige stoffen en kleding zonder drukke prints werken vaak heel mooi. Je krijgt vooraf tips voor de voorbereiding.",
+    answer: "Zachte tinten, fijne stoffen en kleding zonder drukke prints werken vaak heel mooi. Je krijgt vooraf tips voor de voorbereiding.",
   },
   {
     question: "Kan ik model staan met korting?",

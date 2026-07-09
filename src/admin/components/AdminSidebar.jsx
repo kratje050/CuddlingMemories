@@ -15,6 +15,11 @@ import {
   FileText,
   Search,
   Settings,
+  Mail,
+  Gift,
+  Users,
+  Images,
+  Sparkles,
 } from "lucide-react";
 
 const navItems = [
@@ -24,6 +29,11 @@ const navItems = [
   { to: "/admin/geblokkeerde-dagen", label: "Geblokkeerde dagen", icon: CalendarX },
   { to: "/admin/tijdslots", label: "Tijdslots", icon: CalendarPlus },
   { to: "/admin/maandplanning", label: "Maandplanning", icon: CalendarRange },
+  { to: "/admin/galleries", label: "Galerijen", icon: Images },
+  { to: "/admin/email-templates", label: "E-mails", icon: Mail },
+  { to: "/admin/waitlist", label: "Wachtlijst", icon: Users },
+  { to: "/admin/giftcards", label: "Cadeaubonnen", icon: Gift },
+  { to: "/admin/mini-shoots", label: "Mini-shoots", icon: Sparkles },
   { to: "/admin/albums", label: "Albums", icon: FolderHeart },
   { to: "/admin/portfolio", label: "Foto's", icon: Image },
   { to: "/admin/packages", label: "Pakketten", icon: Tag },

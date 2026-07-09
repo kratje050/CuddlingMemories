@@ -19,6 +19,14 @@ import AdminReviews from "./pages/AdminReviews.jsx";
 import AdminFaq from "./pages/AdminFaq.jsx";
 import AdminModelGezocht from "./pages/AdminModelGezocht.jsx";
 import AdminSeo from "./pages/AdminSeo.jsx";
+import AdminGalleries from "./pages/AdminGalleries.jsx";
+import AdminGalleryDetail from "./pages/AdminGalleryDetail.jsx";
+import AdminGalleryPhotos from "./pages/AdminGalleryPhotos.jsx";
+import AdminEmailTemplates from "./pages/AdminEmailTemplates.jsx";
+import AdminWaitlist from "./pages/AdminWaitlist.jsx";
+import AdminGiftcards from "./pages/AdminGiftcards.jsx";
+import AdminMiniSessions from "./pages/AdminMiniSessions.jsx";
+import AdminMiniSessionDetail from "./pages/AdminMiniSessionDetail.jsx";
 
 export default function AdminRoutes() {
   return (
@@ -86,6 +94,86 @@ export default function AdminRoutes() {
           element={
             <RequireAdmin>
               <AdminMonthPlanning />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="galleries"
+          element={
+            <RequireAdmin>
+              <AdminGalleries />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="galleries/new"
+          element={
+            <RequireAdmin>
+              <AdminGalleryDetail />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="galleries/:id"
+          element={
+            <RequireAdmin>
+              <AdminGalleryDetail />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="galleries/:id/photos"
+          element={
+            <RequireAdmin>
+              <AdminGalleryPhotos />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="email-templates"
+          element={
+            <RequireAdmin>
+              <AdminEmailTemplates />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="waitlist"
+          element={
+            <RequireAdmin>
+              <AdminWaitlist />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="giftcards"
+          element={
+            <RequireAdmin>
+              <AdminGiftcards />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="mini-shoots"
+          element={
+            <RequireAdmin>
+              <AdminMiniSessions />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="mini-shoots/new"
+          element={
+            <RequireAdmin>
+              <AdminMiniSessionDetail />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="mini-shoots/:id"
+          element={
+            <RequireAdmin>
+              <AdminMiniSessionDetail />
             </RequireAdmin>
           }
         />

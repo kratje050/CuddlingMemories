@@ -132,8 +132,6 @@ export default function AdminMonthPlanning() {
       </p>
 
       <div className="mt-6 grid gap-6">
-        <MonthPlanningTable months={months} loading={loading} onSelect={setSelectedMonth} />
-
         {selectedMonth && (
           <MonthPlanningCard
             month={selectedMonth}
@@ -144,6 +142,8 @@ export default function AdminMonthPlanning() {
             }}
           />
         )}
+
+        <MonthPlanningTable months={months} loading={loading} onSelect={setSelectedMonth} />
 
         <DisplaySettingsSection />
       </div>

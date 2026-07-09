@@ -9,21 +9,30 @@
 import { supabase } from "./supabaseClient.js";
 
 const STATUS_LABELS = {
-  no_bookings: "Nog geen boekingen",
-  available: "Ruim plek",
-  limited: "Beperkt plek",
-  almost_full: "Bijna vol",
+  no_bookings: "Genoeg plek",
+  available: "Genoeg plek",
+  limited: "Redelijk vol",
+  almost_full: "Redelijk vol",
   full: "Vol",
-  unavailable: "Gesloten",
+  unavailable: "Vol",
 };
 
 const STATUS_STYLES = {
-  no_bookings: { card: "bg-card warm-border", badge: "border border-cocoa/20 bg-cream text-coffee" },
-  available: { card: "bg-linen/50 warm-border", badge: "border border-cocoa/25 bg-linen text-coffee" },
-  limited: { card: "border border-clay/40 bg-blush/30", badge: "border border-clay/40 bg-blush/60 text-coffee" },
-  almost_full: { card: "border border-cocoa/40 bg-clay/25 text-coffee", badge: "border border-cocoa/40 bg-clay/50 text-coffee" },
-  full: { card: "border border-cocoa/50 bg-cocoa/20 text-coffee", badge: "border border-cocoa/70 bg-cocoa/70 text-card" },
-  unavailable: { card: "border border-coffee/15 bg-linen/30 text-coffee/50", badge: "border border-coffee/15 bg-linen/40 text-coffee/50" },
+  no_bookings: { card: "border border-emerald-200 bg-emerald-50/70", badge: "border border-emerald-300 bg-emerald-100 text-emerald-800" },
+  available: { card: "border border-emerald-200 bg-emerald-50/70", badge: "border border-emerald-300 bg-emerald-100 text-emerald-800" },
+  limited: { card: "border border-amber-200 bg-amber-50/75", badge: "border border-amber-300 bg-amber-100 text-amber-800" },
+  almost_full: { card: "border border-amber-200 bg-amber-50/75", badge: "border border-amber-300 bg-amber-100 text-amber-800" },
+  full: { card: "border border-red-200 bg-red-50/75", badge: "border border-red-300 bg-red-100 text-red-800" },
+  unavailable: { card: "border border-red-200 bg-red-50/75", badge: "border border-red-300 bg-red-100 text-red-800" },
+};
+
+const STATUS_GROUPS = {
+  no_bookings: "green",
+  available: "green",
+  limited: "orange",
+  almost_full: "orange",
+  full: "red",
+  unavailable: "red",
 };
 
 // Puur, geen netwerk — gebruikt door zowel publieke als admin-componenten.
@@ -33,6 +42,10 @@ export function getMonthStatusLabel(status) {
 
 export function getMonthStatusStyle(status) {
   return STATUS_STYLES[status] || STATUS_STYLES.unavailable;
+}
+
+export function getMonthStatusGroup(status) {
+  return STATUS_GROUPS[status] || "red";
 }
 
 // --- Publiek -----------------------------------------------------------

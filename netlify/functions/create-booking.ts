@@ -2,6 +2,7 @@ import nodemailer from "nodemailer";
 import { getStore } from "@netlify/blobs";
 import { createClient } from "@supabase/supabase-js";
 import { shootTypeOptions } from "../../src/lib/constants.js";
+import { sendTemplateMail } from "./email-utils.ts";
 
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const MIN_FILL_TIME_MS = 2500;
@@ -183,6 +184,14 @@ async function bookSlot(values: ReturnType<typeof normalizePayload>["values"]) {
   return data;
 }
 
+function getBookingId(booking: unknown) {
+  if (booking && typeof booking === "object" && "id" in booking) {
+    return String((booking as { id?: unknown }).id || "") || null;
+  }
+
+  return null;
+}
+
 async function isRateLimited(req: Request) {
   const ip = req.headers.get("x-nf-client-connection-ip") || "unknown";
   const store = getStore("booking-rate-limit");
@@ -219,12 +228,28 @@ export default async (req: Request) => {
     // de bron van waarheid; als dit faalt, faalt de hele aanvraag. De
     // e-mailnotificatie is secundair: als die faalt, wordt dat gelogd maar
     // blokkeert de (al opgeslagen) boeking niet.
-    await bookSlot(values);
+    const booking = await bookSlot(values);
 
     try {
       await sendBookingEmail(values);
     } catch (mailError) {
       console.error("Boeking opgeslagen, maar e-mail versturen is mislukt:", mailError);
+    }
+
+    try {
+      await sendTemplateMail({
+        recipientEmail: values.email,
+        templateKey: "booking_received",
+        relatedBookingId: getBookingId(booking),
+        variables: {
+          customer_name: values.naam,
+          shoot_type: values.shoot,
+          booking_date: values.bookingDate,
+          booking_time: values.startTime,
+        },
+      });
+    } catch (mailError) {
+      console.error("Boeking opgeslagen, maar klantbevestiging versturen is mislukt:", mailError);
     }
 
     return json(200, { ok: true });

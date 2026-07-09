@@ -34,15 +34,15 @@ insert into pages (slug, title, subtitle, content, meta_title, meta_description,
   'Cuddling Memories Fotografie',
   'Liefdevolle fotografie voor zwangerschap, newborn, gezin, portret, cakesmash en motherhood in Groningen, Friesland en Zoutkamp.',
   true),
-('over-demy', 'Over Demy', 'Foto''s die later steeds meer gaan betekenen',
-  E'Ik leg echte, liefdevolle en pure momenten vast. Ik fotografeer gezinnen, moeders, kinderen, newborns en bijzondere mijlpalen in een warme, zachte en tijdloze stijl.\n\nMijn aandacht gaat uit naar kleine details, warme blikken en momenten die vaak voorbij lijken te vliegen. Juist die beelden worden later steeds waardevoller.\n\nVoor de camera mag alles rustig en natuurlijk voelen. Er is ruimte om te wennen, te lachen, te knuffelen en gewoon jezelf te zijn, zonder dat het geforceerd wordt.',
-  'Over Demy',
-  'Maak kennis met Demy van Cuddling Memories Fotografie: warme, zachte en tijdloze fotografie voor gezinnen, moeders, kinderen en newborns.',
+('over-demy', 'Over mij', 'Foto''s die later steeds meer gaan betekenen',
+  E'Ik leg echte, liefdevolle en pure momenten vast. Ik fotografeer gezinnen, moeders, kinderen, newborns en bijzondere mijlpalen in een warme, zachte en tijdloze stijl.\n\nMijn aandacht gaat uit naar kleine details, warme blikken en momenten die vaak voorbij lijken te vliegen. Juist die beelden worden later steeds waardevoller.\n\nVoor de camera mag alles natuurlijk voelen. Er is ruimte om te wennen, te lachen, te knuffelen en gewoon jezelf te zijn, zonder dat het geforceerd wordt.',
+  'Over mij',
+  'Maak kennis met mijn warme, zachte en tijdloze fotografiestijl voor gezinnen, moeders, kinderen en newborns.',
   true),
-('werkwijze', 'Werkwijze', 'Van aanvraag tot jouw favoriete beelden',
-  'Een duidelijke route, met rust vooraf en ruimte tijdens de shoot.',
+('werkwijze', 'Werkwijze', 'Zo werkt boeken bij Cuddling Memories',
+  'Je kiest online je shoot, maand, datum en tijd. Daarna bevestig ik de aanvraag en volgt alles stap voor stap.',
   'Werkwijze',
-  'Lees hoe een fotoshoot bij Cuddling Memories verloopt, van aanvraag tot online galerij en favoriete beelden kiezen.',
+  'Lees hoe boeken bij Cuddling Memories werkt: shoot kiezen, datum en tijd aanvragen, bevestiging en online galerij.',
   true),
 ('model-gezocht', 'Model gezocht', 'Portfolio-oproep',
   'Voor het uitbreiden van mijn portfolio ben ik regelmatig op zoek naar modellen. Je mag dan met 50% korting bij mij komen shooten.',
@@ -68,16 +68,15 @@ insert into pages (slug, title, subtitle, content, meta_title, meta_description,
   true);
 
 -- ---------------------------------------------------------------------------
--- page_sections — werkwijze-stappen (badge "Binnenkort beschikbaar" blijft in
--- de code gekoppeld aan section_key = 'step-5', niet aan een losse kolom)
+-- page_sections — actuele werkwijze-stappen
 -- ---------------------------------------------------------------------------
 insert into page_sections (page_slug, section_key, title, content, sort_order, is_visible) values
-('werkwijze', 'step-1', 'Aanvraag via het formulier', 'Elke stap is bedoeld om de shoot overzichtelijk en ontspannen te laten verlopen.', 1, true),
-('werkwijze', 'step-2', 'Samen datum en soort shoot afstemmen', 'Elke stap is bedoeld om de shoot overzichtelijk en ontspannen te laten verlopen.', 2, true),
-('werkwijze', 'step-3', 'Tips voor kleding en voorbereiding', 'Elke stap is bedoeld om de shoot overzichtelijk en ontspannen te laten verlopen.', 3, true),
-('werkwijze', 'step-4', 'De fotoshoot', 'Elke stap is bedoeld om de shoot overzichtelijk en ontspannen te laten verlopen.', 4, true),
-('werkwijze', 'step-5', 'Online galerij ontvangen', 'Elke stap is bedoeld om de shoot overzichtelijk en ontspannen te laten verlopen.', 5, true),
-('werkwijze', 'step-6', 'Favoriete beelden kiezen', 'Elke stap is bedoeld om de shoot overzichtelijk en ontspannen te laten verlopen.', 6, true);
+('werkwijze', 'step-1', 'Kies je shoot', 'Op de contactpagina kies je eerst het soort shoot. Zo kan de kalender meteen de juiste duur en beschikbaarheid gebruiken.', 1, true),
+('werkwijze', 'step-2', 'Kies pakket, maand en datum', 'Daarna kies je eventueel een passend pakket. Kom je vanuit het maandoverzicht, dan opent de kalender direct in die maand.', 2, true),
+('werkwijze', 'step-3', 'Kies een vrij tijdslot', 'Je ziet alleen beschikbare tijden. Een aanvraag is nog geen definitieve boeking; ik bevestig het moment persoonlijk.', 3, true),
+('werkwijze', 'step-4', 'Vul je gegevens in', 'Je vult je naam, e-mailadres, omgeving en bericht in. Er wordt geen telefoonnummer of adres gevraagd.', 4, true),
+('werkwijze', 'step-5', 'De fotoshoot', 'Na bevestiging stemmen we de laatste details af. Tijdens de shoot is er ruimte en aandacht voor echte momenten.', 5, true),
+('werkwijze', 'step-6', 'Online galerij en favorieten', 'Na de shoot ontvang je een beveiligde online galerij. Daar kies je jouw favoriete beelden en kun je extra beelden aanvragen.', 6, true);
 
 -- page_sections — model-gezocht (cta / kortingspercentage / categorieën)
 insert into page_sections (page_slug, section_key, title, content, button_text, button_url, sort_order, is_visible) values
@@ -105,7 +104,7 @@ insert into page_sections (page_slug, section_key, title, content, sort_order, i
 -- ---------------------------------------------------------------------------
 insert into portfolio_albums (title, slug, description, category, cover_image_url, is_featured, is_published, sort_order) values
 ('Zwangerschap', 'zwangerschap', 'Zachte, tijdloze zwangerschapsfotografie.', 'Zwangerschap', '/images/instagram/instagram-07.jpg', true, true, 1),
-('Newborn', 'newborn', 'Kleine details en rustige newbornmomenten.', 'Newborn', '/images/instagram/instagram-09.jpg', true, true, 2),
+('Newborn', 'newborn', 'Kleine details en zachte newbornmomenten.', 'Newborn', '/images/instagram/instagram-09.jpg', true, true, 2),
 ('Gezin', 'gezin', 'Warme gezinsmomenten, thuis of buiten.', 'Gezin', '/images/instagram/instagram-01.jpg', true, true, 3),
 ('Cakesmash', 'cakesmash', 'Vrolijke eerste-verjaardag cakesmash-shoots.', 'Cakesmash', '/images/instagram/instagram-02.jpg', true, true, 4),
 ('Portret', 'portret', 'Tijdloze portretten met oog voor detail.', 'Portret', '/images/instagram/instagram-06.jpg', true, true, 5),
@@ -117,7 +116,7 @@ insert into portfolio_photos (album_id, title, alt_text, image_url, category, is
 ((select id from portfolio_albums where slug = 'zwangerschap'), 'Gouden uur', 'Zwangerschapsshoot tijdens het gouden uur', '/images/instagram/instagram-07.jpg', 'Zwangerschap', false, 2),
 ((select id from portfolio_albums where slug = 'newborn'), 'Kleine details', 'Close-up van newborn handjes en voetjes', '/images/instagram/instagram-09.jpg', 'Newborn', true, 1),
 ((select id from portfolio_albums where slug = 'gezin'), 'Samen thuis', 'Gezinsfoto in een warme thuisomgeving', '/images/instagram/instagram-01.jpg', 'Gezin', true, 1),
-((select id from portfolio_albums where slug = 'gezin'), 'Zacht gezin', 'Rustige gezinsshoot met zachte kleuren', '/images/instagram/instagram-08.jpg', 'Gezin', false, 2),
+((select id from portfolio_albums where slug = 'gezin'), 'Zacht gezin', 'Gezinsshoot met zachte kleuren', '/images/instagram/instagram-08.jpg', 'Gezin', false, 2),
 ((select id from portfolio_albums where slug = 'cakesmash'), 'Eerste taartje', 'Vrolijke cakesmash-fotoshoot', '/images/instagram/instagram-02.jpg', 'Cakesmash', true, 1),
 ((select id from portfolio_albums where slug = 'cakesmash'), 'Lieve mijlpaal', 'Cakesmash-shoot voor de eerste verjaardag', '/images/instagram/instagram-10.jpg', 'Cakesmash', false, 2),
 ((select id from portfolio_albums where slug = 'portret'), 'Warme blik', 'Tijdloos portret met warme uitstraling', '/images/instagram/instagram-06.jpg', 'Portret', true, 1),
@@ -136,15 +135,15 @@ insert into packages (title, slug, price, price_unit, shoot_type, description, i
 ('Gezinsshoot', 'gezinsshoot', 200.00, 'shoot', 'Gezinsshoot', 'Inclusief 7 digitale beelden', 7, false, 4),
 ('Newbornshoot', 'newbornshoot', 175.00, 'shoot', 'Newbornshoot', 'Inclusief 7 digitale beelden', 7, false, 5),
 ('Extra beeld', 'extra-beeld', 7.50, 'item', 'Anders', 'Per stuk bij te bestellen uit jouw online galerij', null, false, 6),
-('Reiskosten', 'reiskosten', 0.35, 'km', 'Anders', 'Per kilometer buiten de afgesproken omgeving', null, false, 7);
+('Reiskosten', 'reiskosten', 0.35, 'km', 'Anders', 'Per kilometer, standaard als heen- en terugreis berekend vanaf mijn huis in Zoutkamp', null, false, 7);
 
 -- ---------------------------------------------------------------------------
 -- testimonials
 -- ---------------------------------------------------------------------------
 insert into testimonials (name, text, rating, sort_order) values
-('Lisa', 'Demy stelt je meteen op je gemak en de foto''s zijn prachtig. We zijn zo blij met het resultaat.', 5, 1),
+('Lisa', 'Je voelt je meteen op je gemak en de foto''s zijn prachtig. We zijn zo blij met het resultaat.', 5, 1),
 ('Marloes', 'Een hele fijne ervaring en zulke mooie, warme foto''s. Echt een aanrader!', 5, 2),
-('Kim', 'Onze newbornshoot was geweldig. Demy heeft zoveel geduld en liefde voor wat ze doet.', 5, 3);
+('Kim', 'Onze newbornshoot was geweldig. Er was zoveel geduld en liefde voor wat ze doet.', 5, 3);
 
 -- ---------------------------------------------------------------------------
 -- faq
@@ -153,8 +152,8 @@ insert into faq (question, answer, sort_order) values
 ('Hoe boek ik een shoot?', 'Via het boekingsformulier laat je weten welke shoot je wilt. Daarna stemmen we samen een passende datum en de verdere details af.', 1),
 ('Wanneer ontvang ik mijn foto''s?', 'Na de shoot ontvang je een online galerij. De precieze levertijd hangt af van het seizoen en de gekozen shoot.', 2),
 ('Kan ik extra beelden bijkopen?', 'Ja, extra beelden kun je per stuk bijbestellen vanuit de online galerij.', 3),
-('Waar vindt de shoot plaats?', 'Dat kan buiten, bij passend licht, of op een plek die bij het soort shoot past. Dit stemmen we vooraf rustig af.', 4),
-('Wat trek ik aan tijdens de shoot?', 'Zachte tinten, rustige stoffen en kleding zonder drukke prints werken vaak heel mooi. Je krijgt vooraf tips voor de voorbereiding.', 5),
+('Waar vindt de shoot plaats?', 'Dat kan buiten, bij passend licht, of op een plek die bij het soort shoot past. Dit stemmen we vooraf samen af.', 4),
+('Wat trek ik aan tijdens de shoot?', 'Zachte tinten, fijne stoffen en kleding zonder drukke prints werken vaak heel mooi. Je krijgt vooraf tips voor de voorbereiding.', 5),
 ('Kan ik model staan met korting?', 'Ja, voor portfolio-uitbreiding zijn er regelmatig modelplekken met 50% korting.', 6),
 ('Hoe werkt de online galerij?', 'Je bekijkt de beelden online en kiest daar jouw favorieten. Daarna worden de gekozen foto''s zorgvuldig afgewerkt.', 7);
 
@@ -209,3 +208,38 @@ insert into booking_display_settings (
 -- admin_profiles: bewust leeg. Voeg je eerste admin toe via Supabase Auth +
 -- een insert hier (zie README, sectie "Admin-gebruiker toevoegen").
 -- ---------------------------------------------------------------------------
+
+-- ---------------------------------------------------------------------------
+-- E-mailtemplates voor automatische mails
+-- ---------------------------------------------------------------------------
+insert into email_templates (template_key, label, subject, body, is_active) values
+('booking_received', 'Nieuwe aanvraag ontvangen', 'We hebben je aanvraag ontvangen', E'Hoi {{customer_name}},\n\nWat leuk dat je een aanvraag hebt gedaan voor {{shoot_type}}. Ik heb je gegevens ontvangen en kijk met liefde met je mee naar een passend moment.\n\nJe hoeft nu niets extra''s te doen. Ik neem snel contact met je op om de datum, locatie en eventuele wensen samen af te stemmen.', true),
+('booking_confirmed', 'Boeking bevestigd', 'Je fotoshoot is bevestigd', E'Hoi {{customer_name}},\n\nJe {{shoot_type}} staat gepland op {{booking_date}} om {{booking_time}}. Fijn dat de afspraak vaststaat.\n\nAls er vooraf nog iets handig is om te weten, laat ik dat op tijd aan je weten. Ik kijk ernaar uit om jullie vast te leggen.', true),
+('shoot_reminder', 'Reminder voor de shoot', 'Reminder voor je fotoshoot', E'Hoi {{customer_name}},\n\nNog even en dan is je {{shoot_type}}. Denk alvast aan kleding waarin jullie je fijn voelen en neem vooral genoeg tijd om ontspannen te starten.\n\nHeb je nog vragen of wil je iets doorgeven? Stuur gerust een berichtje.', true),
+('preparation_tips', 'Voorbereidingstips per shoot type', 'Tips voor je {{shoot_type}}', E'Hoi {{customer_name}},\n\nVoor je {{shoot_type}} zijn zachte tinten, fijne stoffen en kleding zonder drukke prints vaak het mooist. Kies vooral iets waarin jullie jezelf herkennen.\n\nVoor kinderen helpt het om iets te drinken, een klein tussendoortje en eventueel een vertrouwd knuffeltje mee te nemen.', true),
+('gallery_ready', 'Galerij is klaar', 'Je galerij staat klaar', E'Hoi {{customer_name}},\n\nJe galerij staat klaar. Via deze link kun je de beelden bekijken en je favorieten kiezen:\n{{gallery_link}}\n\nJe pakket bevat {{included_images}} beelden. Extra beelden kun je later los bijbestellen als je meer favorieten hebt.', true),
+('gallery_selection_received', 'Galerijkeuze ontvangen klant', 'Je fotokeuze is ontvangen', E'Hoi {{customer_name}},\n\nDank je wel, je keuze uit de galerij is ontvangen.\n\nJe hebt {{selected_count}} beeld(en) gekozen. Je pakket bevat {{included_images}} beeld(en).{{extra_line}}\n\nIk ga met je selectie aan de slag. Als er extra beelden zijn gekozen, stem ik de betaling eerst nog met je af.', true),
+('admin_gallery_selection_received', 'Galerijkeuze ontvangen admin', 'Nieuwe fotokeuze ontvangen: {{gallery_title}}', E'Er is een nieuwe fotokeuze ingestuurd.\n\nKlant: {{customer_name}}\nGalerij: {{gallery_title}}\nGekozen beelden: {{selected_count}}\nExtra beelden: {{extra_count}}\n\nGekozen foto''s:\n{{selected_photos}}\n\nOpen admin om de keuze te verwerken: {{admin_link}}', true),
+('extra_images_selected', 'Extra beelden gekozen', 'Extra beelden gekozen', E'{{customer_name}} heeft {{extra_images}} extra beelden gekozen in de galerij:\n{{gallery_link}}', true),
+('waitlist_confirmed', 'Wachtlijst bevestiging', 'Je staat op de wachtlijst', E'Hoi {{customer_name}},\n\nJe staat op de wachtlijst voor {{shoot_type}}. Als er een passende plek vrijkomt, neem ik contact met je op.\n\nDank je wel voor je geduld.', true),
+('giftcard_received', 'Cadeaubon aanvraag ontvangen', 'Je cadeaubon aanvraag is ontvangen', E'Hoi {{customer_name}},\n\nDank je wel voor je cadeaubon aanvraag van {{giftcard_amount}}. Ik neem contact met je op om de gegevens, betaling en verzending netjes af te stemmen.\n\nNa bevestiging en betaling is de cadeaubon geldig.', true),
+('mini_session_confirmed', 'Mini-shoot aanvraag ontvangen', 'Je mini-shoot aanvraag is ontvangen', E'Hoi {{customer_name}},\n\nJe aanvraag voor {{mini_session_title}} is ontvangen. Ik neem contact met je op voor de definitieve bevestiging en eventuele praktische informatie.\n\nLeuk dat je erbij wilt zijn.', true);
+
+-- Voorbeeld mini-shoot dag, verborgen tot deze wordt gepubliceerd.
+insert into mini_sessions (
+  title, slug, description, date, location, price, included_images, duration_minutes,
+  is_published, status, cover_image_url, terms
+) values (
+  'Lente mini-shoots',
+  'lente-mini-shoots',
+  'Korte warme mini-shoots met zachte styling en een duidelijke planning.',
+  current_date + interval '45 days',
+  'Omgeving Zoutkamp',
+  75.00,
+  5,
+  20,
+  false,
+  'Concept',
+  '/images/home-hero-cakesmash.png',
+  'Een mini-shoot is definitief na bevestiging en betaling.'
+);

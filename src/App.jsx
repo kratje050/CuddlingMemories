@@ -11,6 +11,10 @@ import ModelCall from "./pages/ModelCall.jsx";
 import Contact from "./pages/Contact.jsx";
 import Thanks from "./pages/Thanks.jsx";
 import Privacy from "./pages/Privacy.jsx";
+import GiftCard from "./pages/GiftCard.jsx";
+import MiniSessions from "./pages/MiniSessions.jsx";
+import MiniSessionDetail from "./pages/MiniSessionDetail.jsx";
+import GalleryAccess from "./pages/GalleryAccess.jsx";
 import NotFound from "./pages/NotFound.jsx";
 import AdminRoutes from "./admin/AdminRoutes.jsx";
 import { SiteSettingsProvider } from "./context/SiteSettingsContext.jsx";
@@ -42,6 +46,10 @@ function PublicSite() {
             <Route path="/werkwijze" element={<Process />} />
             <Route path="/model-gezocht" element={<ModelCall />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/cadeaubon" element={<GiftCard />} />
+            <Route path="/mini-shoots" element={<MiniSessions />} />
+            <Route path="/mini-shoots/:slug" element={<MiniSessionDetail />} />
+            <Route path="/galerij/:secureToken" element={<GalleryAccess />} />
             <Route path="/bedankt" element={<Thanks />} />
             <Route path="/privacybeleid" element={<Privacy />} />
             <Route path="*" element={<NotFound />} />

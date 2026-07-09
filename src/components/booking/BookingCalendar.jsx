@@ -34,6 +34,12 @@ export default function BookingCalendar({ shootType, value, onSelect, initialMon
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
+    if (initialMonth) {
+      setMonth(startOfMonth(initialMonth));
+    }
+  }, [initialMonth]);
+
+  useEffect(() => {
     let active = true;
     setLoading(true);
     setFailed(false);

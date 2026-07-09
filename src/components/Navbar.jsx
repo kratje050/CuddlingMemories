@@ -8,8 +8,10 @@ const navItems = [
   { to: "/", label: "Home" },
   { to: "/portfolio", label: "Portfolio" },
   { to: "/pakketten", label: "Pakketten" },
-  { to: "/over-demy", label: "Over Demy" },
+  { to: "/over-demy", label: "Over mij" },
   { to: "/werkwijze", label: "Werkwijze" },
+  { to: "/mini-shoots", label: "Mini-shoots" },
+  { to: "/cadeaubon", label: "Cadeaubon" },
   { to: "/model-gezocht", label: "Model gezocht" },
   { to: "/contact", label: "Contact" },
 ];
@@ -33,21 +35,23 @@ export default function Navbar() {
 
   return (
     <header className="fixed inset-x-0 top-0 z-50 px-3 pt-3 md:px-5">
-      <nav className="mx-auto flex max-w-[1500px] items-center justify-between rounded-lg bg-card/82 px-4 py-3 shadow-soft backdrop-blur-xl warm-border md:px-7">
+      <nav className="mx-auto flex max-w-[1500px] items-center justify-between gap-3 rounded-lg bg-card/94 px-4 py-3 shadow-soft backdrop-blur-xl warm-border md:px-5 2xl:px-7">
         <Logo />
-        <div className="hidden items-center gap-7 lg:flex">
+        <div className="hidden flex-1 items-center justify-center gap-3 xl:gap-5 2xl:gap-7 lg:flex">
           {navItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
-              className="nav-link fine-label text-[0.7rem] font-semibold text-coffee/85 transition hover:text-cocoa"
+              className="nav-link fine-label whitespace-nowrap text-[0.66rem] font-semibold text-coffee/85 transition hover:text-cocoa xl:text-[0.7rem]"
             >
               {item.label}
             </NavLink>
           ))}
         </div>
-        <div className="hidden lg:block">
-          <Button to="/contact">Boek een shoot</Button>
+        <div className="hidden shrink-0 lg:block">
+          <Button to="/contact" className="px-5 2xl:px-7">
+            Boek een shoot
+          </Button>
         </div>
         <button
           type="button"

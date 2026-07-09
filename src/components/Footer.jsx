@@ -6,8 +6,10 @@ const links = [
   ["Home", "/"],
   ["Portfolio", "/portfolio"],
   ["Pakketten", "/pakketten"],
-  ["Over Demy", "/over-demy"],
+  ["Over mij", "/over-demy"],
   ["Werkwijze", "/werkwijze"],
+  ["Mini-shoots", "/mini-shoots"],
+  ["Cadeaubon", "/cadeaubon"],
   ["Model gezocht", "/model-gezocht"],
   ["Contact", "/contact"],
 ];

@@ -14,7 +14,7 @@ export default function AdminLayout({ children }) {
       {sidebarOpen && (
         <div className="fixed inset-0 z-40 bg-coffee/40 lg:hidden" onClick={() => setSidebarOpen(false)}>
           <aside
-            className="h-full w-72 max-w-[80%] bg-card px-4 py-6 shadow-soft"
+            className="h-full w-72 max-w-[80%] overflow-y-auto bg-card px-4 py-6 shadow-soft"
             onClick={(event) => event.stopPropagation()}
           >
             <AdminSidebar onNavigate={() => setSidebarOpen(false)} />

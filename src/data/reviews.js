@@ -1,7 +1,7 @@
 export const reviews = [
   {
     name: "Lisa",
-    text: "Demy stelt je meteen op je gemak en de foto's zijn prachtig. We zijn zo blij met het resultaat.",
+    text: "Je voelt je meteen op je gemak en de foto's zijn prachtig. We zijn zo blij met het resultaat.",
   },
   {
     name: "Marloes",
@@ -9,6 +9,6 @@ export const reviews = [
   },
   {
     name: "Kim",
-    text: "Onze newbornshoot was geweldig. Demy heeft zoveel geduld en liefde voor wat ze doet.",
+    text: "Onze newbornshoot was geweldig. Er was zoveel geduld en liefde voor wat ze doet.",
   },
 ];

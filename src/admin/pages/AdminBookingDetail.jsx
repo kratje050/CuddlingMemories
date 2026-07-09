@@ -63,8 +63,13 @@ export default function AdminBookingDetail() {
   }
 
   const handleStatusChange = async (event) => {
+    const nextStatus = event.target.value;
     setSaving(true);
-    await updateBookingStatus(booking.id, event.target.value, user?.email);
+    await updateBookingStatus(booking.id, nextStatus, user?.email);
+    if (nextStatus === "Datum ingepland" && booking.status !== "Datum ingepland") {
+      await supabase.from("bookings").update({ confirmed_at: new Date().toISOString() }).eq("id", booking.id);
+      await sendBookingConfirmedMail(booking);
+    }
     await load();
     setSaving(false);
   };
@@ -97,6 +102,7 @@ export default function AdminBookingDetail() {
     setSaving(true);
     await updateBookingStatus(booking.id, "Datum ingepland", user?.email);
     await supabase.from("bookings").update({ confirmed_at: new Date().toISOString() }).eq("id", booking.id);
+    await sendBookingConfirmedMail(booking);
     await load();
     setSaving(false);
   };
@@ -134,7 +140,7 @@ export default function AdminBookingDetail() {
         </div>
         <div className="flex flex-wrap gap-2">
           <p className="basis-full text-xs leading-5 text-coffee/55">
-            Deze acties passen de status of interne markering van de boeking aan. Mail klant opent alleen je mailprogramma.
+            Deze acties passen de status of interne markering van de boeking aan. Bevestigen stuurt ook een bevestigingsmail naar de klant.
           </p>
           <AdminButton variant="secondary" onClick={handleConfirm} disabled={saving}>
             <CalendarCheck size={14} /> Bevestigen
@@ -280,6 +286,34 @@ export default function AdminBookingDetail() {
       />
     </AdminLayout>
   );
+}
+
+async function sendBookingConfirmedMail(booking) {
+  try {
+    const response = await fetch("/api/send-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        recipient_email: booking.customer_email,
+        template_key: "booking_confirmed",
+        related_booking_id: booking.id,
+        variables: {
+          customer_name: booking.customer_name,
+          shoot_type: booking.shoot_type,
+          booking_date: booking.booking_date ? formatDate(booking.booking_date) : "de afgesproken datum",
+          booking_time: booking.start_time ? booking.start_time.slice(0, 5) : "de afgesproken tijd",
+          package_name: booking.packages?.title || "",
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      const result = await response.json().catch(() => ({}));
+      console.error("Bevestigingsmail versturen is mislukt:", result.message || response.statusText);
+    }
+  } catch (error) {
+    console.error("Bevestigingsmail versturen is mislukt:", error);
+  }
 }
 
 function Field({ label, value }) {

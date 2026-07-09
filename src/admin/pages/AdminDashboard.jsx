@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CalendarCheck, CalendarClock, CalendarX, Clock, Image, Inbox, Tag, TrendingUp, XCircle } from "lucide-react";
+import { CalendarCheck, CalendarClock, CalendarX, Clock, Gift, Image, Images, Inbox, Mail, Sparkles, Tag, TrendingUp, Users, XCircle } from "lucide-react";
 import { eachDayOfInterval, endOfMonth, format, getDay, startOfMonth } from "date-fns";
 import { nl } from "date-fns/locale";
 import { supabase } from "../../lib/supabaseClient.js";
@@ -114,6 +114,21 @@ export default function AdminDashboard() {
     occupancy: [],
     busiestMonth: "-",
   });
+  const [featureStats, setFeatureStats] = useState({
+    activeGalleries: 0,
+    galleriesWaiting: 0,
+    galleriesExtra: 0,
+    recentEmails: [],
+    failedEmails: 0,
+    newWaitlist: 0,
+    waitlistByMonth: [],
+    newGiftcards: 0,
+    giftcardsAwaitingPayment: 0,
+    expiringGiftcards: 0,
+    activeMiniSessions: 0,
+    availableMiniSlots: 0,
+    fullMiniSessions: 0,
+  });
 
   useEffect(() => {
     let active = true;
@@ -145,6 +160,18 @@ export default function AdminDashboard() {
         nextShootRes,
         availabilityRulesRes,
         monthsStatusRes,
+        activeGalleriesRes,
+        galleriesWaitingRes,
+        galleriesExtraRes,
+        recentEmailsRes,
+        failedEmailsRes,
+        waitlistRes,
+        giftcardsNewRes,
+        giftcardsPaymentRes,
+        giftcardsExpiringRes,
+        activeMiniSessionsRes,
+        miniSlotsRes,
+        fullMiniSessionsRes,
       ] = await Promise.all([
         supabase.from("bookings").select("id", { count: "exact", head: true }).eq("status", "Nieuw"),
         supabase.from("bookings").select("id", { count: "exact", head: true }).gte("created_at", startOfMonth.toISOString()),
@@ -182,6 +209,18 @@ export default function AdminDashboard() {
           .limit(1),
         supabase.from("availability_rules").select("day_of_week, is_available, max_bookings_per_day"),
         getMonthsStatusAdmin(startOfMonth.getFullYear(), startOfMonth.getMonth() + 1, 12).catch(() => []),
+        supabase.from("client_galleries").select("id", { count: "exact", head: true }).eq("is_published", true),
+        supabase.from("client_galleries").select("id", { count: "exact", head: true }).eq("status", "Wacht op keuze klant"),
+        supabase.from("client_galleries").select("id", { count: "exact", head: true }).eq("status", "Extra beelden aangevraagd"),
+        supabase.from("email_logs").select("recipient_email, template_key, subject, status, created_at").order("created_at", { ascending: false }).limit(5),
+        supabase.from("email_logs").select("id", { count: "exact", head: true }).eq("status", "failed"),
+        supabase.from("waitlist_entries").select("status, preferred_month, created_at"),
+        supabase.from("giftcards").select("id", { count: "exact", head: true }).eq("status", "Nieuw"),
+        supabase.from("giftcards").select("id", { count: "exact", head: true }).eq("status", "Wacht op betaling"),
+        supabase.from("giftcards").select("id", { count: "exact", head: true }).lte("expires_at", new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString().slice(0, 10)).not("status", "in", "(Gebruikt,Geannuleerd)"),
+        supabase.from("mini_sessions").select("id", { count: "exact", head: true }).eq("is_published", true),
+        supabase.from("mini_session_slots").select("is_available, current_bookings, max_bookings"),
+        supabase.from("mini_sessions").select("id", { count: "exact", head: true }).eq("status", "Vol"),
       ]);
 
       if (!active) return;
@@ -226,6 +265,25 @@ export default function AdminDashboard() {
       setRecentBookings(latestBookingsRes.data || []);
       setRecentChanges(changesRes.data || []);
       setCharts(buildCharts(chartRowsRes.data || [], availabilityRulesRes.data || []));
+      const waitlistByMonthMap = {};
+      (waitlistRes.data || []).forEach((row) => {
+        if (row.preferred_month) waitlistByMonthMap[row.preferred_month] = (waitlistByMonthMap[row.preferred_month] || 0) + 1;
+      });
+      setFeatureStats({
+        activeGalleries: activeGalleriesRes.count || 0,
+        galleriesWaiting: galleriesWaitingRes.count || 0,
+        galleriesExtra: galleriesExtraRes.count || 0,
+        recentEmails: recentEmailsRes.data || [],
+        failedEmails: failedEmailsRes.count || 0,
+        newWaitlist: (waitlistRes.data || []).filter((row) => row.status === "Nieuw").length,
+        waitlistByMonth: Object.entries(waitlistByMonthMap).map(([label, value]) => ({ label, value })).slice(0, 6),
+        newGiftcards: giftcardsNewRes.count || 0,
+        giftcardsAwaitingPayment: giftcardsPaymentRes.count || 0,
+        expiringGiftcards: giftcardsExpiringRes.count || 0,
+        activeMiniSessions: activeMiniSessionsRes.count || 0,
+        availableMiniSlots: (miniSlotsRes.data || []).filter((slot) => slot.is_available && Number(slot.current_bookings || 0) < Number(slot.max_bookings || 1)).length,
+        fullMiniSessions: fullMiniSessionsRes.count || 0,
+      });
       setLoading(false);
     }
 
@@ -256,6 +314,11 @@ export default function AdminDashboard() {
         <StatCard label="Geblokkeerde dagen deze maand" value={loading ? "-" : stats.blockedDaysThisMonth} icon={CalendarX} />
         <StatCard label="Portfolio-albums" value={loading ? "-" : stats.albumCount} icon={Image} />
         <StatCard label="Gepubliceerde pakketten" value={loading ? "-" : stats.packageCount} icon={Tag} />
+        <StatCard label="Actieve galerijen" value={loading ? "-" : featureStats.activeGalleries} icon={Images} />
+        <StatCard label="Nieuwe wachtlijst" value={loading ? "-" : featureStats.newWaitlist} icon={Users} />
+        <StatCard label="Cadeaubonnen nieuw" value={loading ? "-" : featureStats.newGiftcards} icon={Gift} />
+        <StatCard label="Actieve mini-shoots" value={loading ? "-" : featureStats.activeMiniSessions} icon={Sparkles} />
+        <StatCard label="Mailfouten" value={loading ? "-" : featureStats.failedEmails} icon={Mail} />
       </div>
 
       {!loading && (
@@ -373,6 +436,39 @@ export default function AdminDashboard() {
 
       {!loading && (
         <div className="mt-8 grid gap-6 lg:grid-cols-2">
+          <div className="rounded-lg bg-card p-6 shadow-soft warm-border">
+            <h2 className="display-title text-xl font-semibold text-coffee">Galerijen</h2>
+            <div className="mt-4 grid grid-cols-3 gap-4 text-center">
+              <div><p className="display-title text-3xl font-semibold">{featureStats.activeGalleries}</p><p className="text-xs text-coffee/60">Actief</p></div>
+              <div><p className="display-title text-3xl font-semibold">{featureStats.galleriesWaiting}</p><p className="text-xs text-coffee/60">Wacht op keuze</p></div>
+              <div><p className="display-title text-3xl font-semibold">{featureStats.galleriesExtra}</p><p className="text-xs text-coffee/60">Extra aangevraagd</p></div>
+            </div>
+          </div>
+          <div className="rounded-lg bg-card p-6 shadow-soft warm-border">
+            <h2 className="display-title text-xl font-semibold text-coffee">Cadeaubonnen en mini-shoots</h2>
+            <div className="mt-4 grid grid-cols-3 gap-4 text-center">
+              <div><p className="display-title text-3xl font-semibold">{featureStats.giftcardsAwaitingPayment}</p><p className="text-xs text-coffee/60">Wacht betaling</p></div>
+              <div><p className="display-title text-3xl font-semibold">{featureStats.expiringGiftcards}</p><p className="text-xs text-coffee/60">Verlopen binnenkort</p></div>
+              <div><p className="display-title text-3xl font-semibold">{featureStats.availableMiniSlots}</p><p className="text-xs text-coffee/60">Mini plekken vrij</p></div>
+            </div>
+          </div>
+          <div className="rounded-lg bg-card p-6 shadow-soft warm-border">
+            <h2 className="display-title text-xl font-semibold text-coffee">Wachtenden per maand</h2>
+            <div className="mt-4">
+              <BarList items={featureStats.waitlistByMonth} />
+            </div>
+          </div>
+          <div className="rounded-lg bg-card p-6 shadow-soft warm-border">
+            <h2 className="display-title text-xl font-semibold text-coffee">Laatste verzonden mails</h2>
+            <div className="mt-4 grid gap-3">
+              {featureStats.recentEmails.length ? featureStats.recentEmails.map((mail) => (
+                <div key={`${mail.recipient_email}-${mail.created_at}`} className="rounded-lg border border-cocoa/15 p-3 text-sm">
+                  <p className="font-semibold text-coffee">{mail.subject || mail.template_key}</p>
+                  <p className="text-xs text-coffee/60">{mail.recipient_email} · {mail.status}</p>
+                </div>
+              )) : <p className="text-sm text-coffee/60">Nog geen mail logs.</p>}
+            </div>
+          </div>
           <div className="rounded-lg bg-card p-6 shadow-soft warm-border">
             <h2 className="display-title text-xl font-semibold text-coffee">Boekingen per maand</h2>
             <div className="mt-4">
