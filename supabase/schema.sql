@@ -699,10 +699,27 @@ declare
   v_status text;
   v_source text;
   v_new_row bookings%rowtype;
+  v_giftcard_code text := upper(nullif(trim(p_payload->>'giftcard_code'), ''));
+  v_giftcard giftcards%rowtype;
 begin
   select * into v_shoot from shoot_type_settings where shoot_type = v_shoot_type;
   if not found or (not v_shoot.is_bookable and not v_is_admin) then
     raise exception 'NOT_BOOKABLE';
+  end if;
+
+  -- Cadeaubon (optioneel): rij vergrendelen zodat twee gelijktijdige
+  -- boekingen dezelfde code nooit allebei kunnen verzilveren.
+  if v_giftcard_code is not null then
+    select * into v_giftcard from giftcards where code = v_giftcard_code for update;
+    if not found then
+      raise exception 'GIFTCARD_INVALID';
+    end if;
+    if v_giftcard.status not in ('Betaald', 'Verzonden') then
+      raise exception 'GIFTCARD_NOT_REDEEMABLE';
+    end if;
+    if v_giftcard.expires_at is not null and v_giftcard.expires_at < current_date then
+      raise exception 'GIFTCARD_EXPIRED';
+    end if;
   end if;
 
   select * into v_settings from booking_settings limit 1;
@@ -814,6 +831,12 @@ begin
     update manual_slots set current_bookings = current_bookings + 1 where id = v_manual_slot_id;
   end if;
 
+  if v_giftcard_code is not null then
+    update giftcards
+      set status = 'Gebruikt', used_at = now(), redeemed_booking_id = v_new_row.id
+      where id = v_giftcard.id;
+  end if;
+
   insert into booking_status_history (booking_id, old_status, new_status, changed_by)
   values (v_new_row.id, null, v_new_row.status, v_source);
 
@@ -823,6 +846,48 @@ $$;
 
 grant execute on function book_slot(jsonb) to anon, authenticated;
 grant execute on function get_available_slots(text, text, int, int, date) to service_role;
+
+-- Publieke, alleen-lezen check of een cadeaubon-code geldig en inwisselbaar
+-- is (zonder 'm te verzilveren) — gebruikt door de boekingswizard voor
+-- live feedback vóórdat de klant daadwerkelijk boekt. giftcards zelf is
+-- admin-only (RLS), vandaar security definer, en er wordt bewust alleen het
+-- strikt noodzakelijke teruggegeven (geen koperinformatie).
+create or replace function check_giftcard_code(p_code text)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+declare
+  v_giftcard giftcards%rowtype;
+  v_code text := upper(nullif(trim(p_code), ''));
+begin
+  if v_code is null then
+    return jsonb_build_object('valid', false, 'reason', 'GIFTCARD_INVALID');
+  end if;
+
+  select * into v_giftcard from giftcards where code = v_code;
+
+  if not found then
+    return jsonb_build_object('valid', false, 'reason', 'GIFTCARD_INVALID');
+  end if;
+  if v_giftcard.status not in ('Betaald', 'Verzonden') then
+    return jsonb_build_object('valid', false, 'reason', 'GIFTCARD_NOT_REDEEMABLE');
+  end if;
+  if v_giftcard.expires_at is not null and v_giftcard.expires_at < current_date then
+    return jsonb_build_object('valid', false, 'reason', 'GIFTCARD_EXPIRED');
+  end if;
+
+  return jsonb_build_object(
+    'valid', true,
+    'giftcard_type', v_giftcard.giftcard_type,
+    'amount', v_giftcard.amount
+  );
+end;
+$$;
+
+grant execute on function check_giftcard_code(text) to anon, authenticated;
 
 -- Herplannen (admin-kalender, slepen): hergebruikt dezelfde overlap-toets,
 -- alleen bereikbaar voor admins.
@@ -1396,6 +1461,7 @@ create table giftcards (
   used_at timestamptz,
   expires_at date,
   internal_note text,
+  redeemed_booking_id uuid references bookings(id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

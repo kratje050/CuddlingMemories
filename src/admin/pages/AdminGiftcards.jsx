@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import AdminLayout from "../components/AdminLayout.jsx";
 import AdminCrudList from "../components/AdminCrudList.jsx";
 import { createGiftcardCode, deliveryMethods, giftcardStatuses, giftcardTypes } from "../../lib/giftcards.js";
@@ -26,6 +27,22 @@ const columns = [
   { key: "amount", label: "Bedrag", render: (row) => (row.amount ? `EUR ${Number(row.amount).toFixed(2)}` : "-") },
   { key: "status", label: "Status" },
   { key: "expires_at", label: "Vervalt", render: (row) => (row.expires_at ? formatDate(row.expires_at) : "-") },
+  {
+    key: "redeemed_booking_id",
+    label: "Verzilverd",
+    render: (row) =>
+      row.redeemed_booking_id ? (
+        <Link
+          to={`/admin/bookings/${row.redeemed_booking_id}`}
+          onClick={(event) => event.stopPropagation()}
+          className="font-semibold text-cocoa underline"
+        >
+          Bekijk boeking
+        </Link>
+      ) : (
+        "Nee"
+      ),
+  },
 ];
 
 export default function AdminGiftcards() {

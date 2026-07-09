@@ -41,6 +41,7 @@ const normalizePayload = (payload: Record<string, unknown>) => {
     bericht: clean(payload.bericht, 2500),
     privacy: payload.privacy === true || payload.privacy === "on" || payload.privacy === "true",
     packageId: clean(payload.packageId, 60) || null,
+    giftcardCode: clean(payload.giftcardCode, 40).toUpperCase() || null,
     botField: clean(payload["bot-field"], 200),
     renderedAt: Number(payload.renderedAt) || 0,
   };
@@ -157,6 +158,9 @@ const BOOKING_ERROR_MESSAGES: Record<string, string> = {
   MIN_NOTICE: "Je kunt minimaal 2 dagen vooruit boeken.",
   MAX_AHEAD: "Deze datum ligt te ver in de toekomst. Kies een moment dichterbij.",
   NOT_BOOKABLE: "Voor deze shoot zijn geen beschikbare momenten gevonden.",
+  GIFTCARD_INVALID: "Deze cadeaubon-code is niet bekend. Controleer de spelling.",
+  GIFTCARD_NOT_REDEEMABLE: "Deze cadeaubon is nog niet betaald of al gebruikt/geannuleerd.",
+  GIFTCARD_EXPIRED: "Deze cadeaubon is verlopen.",
 };
 
 async function bookSlot(values: ReturnType<typeof normalizePayload>["values"]) {
@@ -173,6 +177,7 @@ async function bookSlot(values: ReturnType<typeof normalizePayload>["values"]) {
       location: values.omgeving,
       message: values.bericht,
       privacy_accepted: values.privacy,
+      giftcard_code: values.giftcardCode,
     },
   });
 

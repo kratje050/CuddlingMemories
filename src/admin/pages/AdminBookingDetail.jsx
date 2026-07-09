@@ -28,6 +28,7 @@ export default function AdminBookingDetail() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [saving, setSaving] = useState(false);
   const [adminNotes, setAdminNotes] = useState("");
+  const [giftcard, setGiftcard] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -36,6 +37,7 @@ export default function AdminBookingDetail() {
     setNotes(result.notes);
     setHistory(result.history);
     setAdminNotes(result.booking?.admin_notes || "");
+    setGiftcard(result.giftcard);
     setLoading(false);
   }, [id]);
 
@@ -185,6 +187,14 @@ export default function AdminBookingDetail() {
               <Field label="Geannuleerd op" value={booking.cancelled_at ? formatDateTime(booking.cancelled_at) : "-"} />
               <Field label="Laatste wijziging" value={formatDateTime(booking.updated_at)} />
             </dl>
+            {giftcard && (
+              <p className="mt-4 rounded-lg bg-linen/70 px-4 py-3 text-sm text-coffee">
+                <span className="fine-label text-[0.6rem] text-cocoa">Cadeaubon verzilverd</span>
+                <br />
+                Code <strong>{giftcard.code}</strong> ({giftcard.giftcard_type}
+                {giftcard.amount ? `, €${Number(giftcard.amount).toFixed(2)}` : ""})
+              </p>
+            )}
             <div className="mt-4">
               <p className="fine-label text-[0.62rem] text-cocoa">Bericht</p>
               <p className="mt-2 whitespace-pre-line text-sm leading-7 text-coffee/85">{booking.message}</p>

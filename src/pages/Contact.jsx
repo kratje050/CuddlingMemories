@@ -19,7 +19,7 @@ import { getPublishedPackages, getVisibleFaqs } from "../lib/api.js";
 import { getBookableShootTypes } from "../lib/bookingAvailability.js";
 import { usePageMeta } from "../lib/usePageMeta.js";
 
-const emptyDetails = { naam: "", email: "", locationType: "studio", omgeving: "", bericht: "", privacy: false };
+const emptyDetails = { naam: "", email: "", locationType: "studio", omgeving: "", bericht: "", privacy: false, giftcardCode: "" };
 
 export default function Contact() {
   const [params] = useSearchParams();
@@ -158,6 +158,7 @@ export default function Contact() {
           omgeving: bookingLocation,
           bericht: details.bericht,
           privacy: details.privacy,
+          giftcardCode: details.giftcardCode || "",
           "bot-field": botField,
           renderedAt: formRenderedAt.current,
         }),

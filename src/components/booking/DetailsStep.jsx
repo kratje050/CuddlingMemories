@@ -1,13 +1,29 @@
 import { Link } from "react-router-dom";
-import { Home, MapPin } from "lucide-react";
+import { Home, MapPin, Gift } from "lucide-react";
+import { useState } from "react";
+import { supabase } from "../../lib/supabaseClient.js";
+import { checkGiftcardCode } from "../../lib/giftcards.js";
 
 const inputClass =
   "rounded-lg border border-cocoa/20 bg-cream px-4 py-3 text-sm outline-none transition focus:border-cocoa";
 
 export default function DetailsStep({ values, onChange }) {
+  const [giftcardStatus, setGiftcardStatus] = useState(null); // null | "checking" | {valid, message?, amount?, giftcardType?}
+
   const update = (field) => (event) => {
     const value = field === "privacy" ? event.target.checked : event.target.value;
     onChange({ ...values, [field]: value });
+  };
+
+  const handleGiftcardBlur = async () => {
+    const code = (values.giftcardCode || "").trim();
+    if (!code) {
+      setGiftcardStatus(null);
+      return;
+    }
+    setGiftcardStatus("checking");
+    const result = await checkGiftcardCode(code, supabase);
+    setGiftcardStatus(result);
   };
 
   const chooseLocationType = (locationType) => {
@@ -83,6 +99,30 @@ export default function DetailsStep({ values, onChange }) {
         Bericht
         <textarea required rows="5" value={values.bericht} onChange={update("bericht")} className={`${inputClass} resize-none`} />
       </label>
+      <div className="rounded-lg bg-linen/50 p-4">
+        <label className="grid gap-2 text-sm font-semibold text-coffee">
+          <span className="inline-flex items-center gap-2">
+            <Gift size={16} className="text-cocoa" /> Heb je een cadeaubon? (optioneel)
+          </span>
+          <input
+            type="text"
+            placeholder="Bijv. CM-A1B2C3"
+            value={values.giftcardCode || ""}
+            onChange={update("giftcardCode")}
+            onBlur={handleGiftcardBlur}
+            className={`${inputClass} uppercase`}
+          />
+        </label>
+        {giftcardStatus === "checking" && <p className="mt-2 text-xs text-coffee/60">Code controleren...</p>}
+        {giftcardStatus && giftcardStatus !== "checking" && giftcardStatus.valid && (
+          <p className="mt-2 text-xs font-semibold text-cocoa">
+            Cadeaubon geldig{giftcardStatus.amount ? ` — €${Number(giftcardStatus.amount).toFixed(2)}` : ""} ({giftcardStatus.giftcardType}). Wordt bij het versturen van je aanvraag verzilverd.
+          </p>
+        )}
+        {giftcardStatus && giftcardStatus !== "checking" && !giftcardStatus.valid && (
+          <p className="mt-2 text-xs font-semibold text-red-700">{giftcardStatus.message}</p>
+        )}
+      </div>
       <label className="flex gap-3 rounded-lg bg-linen/70 p-4 text-sm leading-6 text-coffee/78">
         <input type="checkbox" required checked={values.privacy} onChange={update("privacy")} className="mt-1 h-4 w-4 accent-cocoa" />
         <span>

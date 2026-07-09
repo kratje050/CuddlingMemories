@@ -80,7 +80,7 @@ export async function deleteBooking(bookingId) {
 }
 
 export async function getBookingDetail(bookingId) {
-  const [{ data: booking, error: bookingError }, { data: notes }, { data: history }] = await Promise.all([
+  const [{ data: booking, error: bookingError }, { data: notes }, { data: history }, { data: giftcard }] = await Promise.all([
     supabase.from("bookings").select("*, packages(id, title)").eq("id", bookingId).maybeSingle(),
     supabase.from("booking_notes").select("*").eq("booking_id", bookingId).order("created_at", { ascending: false }),
     supabase
@@ -88,9 +88,10 @@ export async function getBookingDetail(bookingId) {
       .select("*")
       .eq("booking_id", bookingId)
       .order("created_at", { ascending: false }),
+    supabase.from("giftcards").select("id, code, giftcard_type, amount").eq("redeemed_booking_id", bookingId).maybeSingle(),
   ]);
 
   if (bookingError) throw bookingError;
 
-  return { booking, notes: notes || [], history: history || [] };
+  return { booking, notes: notes || [], history: history || [], giftcard: giftcard || null };
 }
