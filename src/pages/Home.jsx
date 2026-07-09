@@ -63,7 +63,7 @@ export default function Home() {
           className="home-hero-image absolute inset-0 h-full w-full object-cover"
         />
         <div className="photo-overlay absolute inset-0" />
-        <div className="container-soft relative flex min-h-[590px] items-center py-12 md:min-h-[630px]">
+        <div className="container-soft relative flex min-h-[590px] items-start pt-4 pb-12 md:min-h-[630px] md:items-center md:py-12">
           <div className="max-w-2xl animate-floatIn text-center lg:text-left">
             <p className="script-line text-5xl text-cocoa md:text-6xl">{settings.hero_subtitle}</p>
             <h1
