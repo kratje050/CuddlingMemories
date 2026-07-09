@@ -16,6 +16,7 @@ export default {
         display: ['"Cormorant Garamond"', "Georgia", "serif"],
         script: ['"Oooh Baby"', "cursive"],
         sans: ['"Montserrat"', "Arial", "sans-serif"],
+        heroTitle: ['"Cutive Mono"', "monospace"],
       },
       boxShadow: {
         soft: "0 18px 55px rgba(78, 59, 47, 0.12)",
