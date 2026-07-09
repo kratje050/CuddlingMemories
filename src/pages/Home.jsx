@@ -67,7 +67,7 @@ export default function Home() {
           <div className="max-w-2xl animate-floatIn text-center lg:text-left">
             <p className="script-line text-5xl text-cocoa md:text-6xl">{settings.hero_subtitle}</p>
             <h1
-              className="font-heroTitle mx-auto mt-3 whitespace-nowrap text-coffee lg:mx-0"
+              className="font-heroTitle mt-3 whitespace-nowrap text-coffee"
               style={{ fontWeight: heroTitleWeight, fontSize: "clamp(0.85rem, 3.1vw, 1.5rem)" }}
             >
               {settings.hero_title}
