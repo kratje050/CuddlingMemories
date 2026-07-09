@@ -7,17 +7,17 @@ const statusContent = {
   green: {
     text: "Er zijn nog genoeg plekken beschikbaar.",
     button: "Kies shoot voor deze maand",
-    className: "border-emerald-500 bg-emerald-600 text-white hover:bg-emerald-700",
+    className: "border-cocoa bg-cocoa text-card shadow-glow hover:-translate-y-0.5 hover:bg-coffee",
   },
   orange: {
     text: "Deze maand raakt redelijk vol. Boek op tijd als je deze maand wilt.",
     button: "Kies shoot voor deze maand",
-    className: "border-amber-500 bg-amber-500 text-white hover:bg-amber-600",
+    className: "border-clay bg-clay text-coffee hover:-translate-y-0.5 hover:bg-cocoa hover:text-card",
   },
   red: {
     text: "Deze maand is vol of niet beschikbaar.",
     button: "Aanmelden voor wachtlijst",
-    className: "border-red-600 bg-red-600 text-white hover:bg-red-700",
+    className: "border-coffee bg-coffee text-card hover:-translate-y-0.5 hover:bg-cocoa",
   },
 };
 

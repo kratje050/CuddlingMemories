@@ -9,21 +9,21 @@
 import { supabase } from "./supabaseClient.js";
 
 const STATUS_LABELS = {
-  no_bookings: "Genoeg plek",
-  available: "Genoeg plek",
-  limited: "Redelijk vol",
-  almost_full: "Redelijk vol",
+  no_bookings: "Beschikbaar",
+  available: "Beschikbaar",
+  limited: "Bijna vol",
+  almost_full: "Bijna vol",
   full: "Vol",
   unavailable: "Vol",
 };
 
 const STATUS_STYLES = {
-  no_bookings: { card: "border border-emerald-200 bg-emerald-50/70", badge: "border border-emerald-300 bg-emerald-100 text-emerald-800" },
-  available: { card: "border border-emerald-200 bg-emerald-50/70", badge: "border border-emerald-300 bg-emerald-100 text-emerald-800" },
-  limited: { card: "border border-amber-200 bg-amber-50/75", badge: "border border-amber-300 bg-amber-100 text-amber-800" },
-  almost_full: { card: "border border-amber-200 bg-amber-50/75", badge: "border border-amber-300 bg-amber-100 text-amber-800" },
-  full: { card: "border border-red-200 bg-red-50/75", badge: "border border-red-300 bg-red-100 text-red-800" },
-  unavailable: { card: "border border-red-200 bg-red-50/75", badge: "border border-red-300 bg-red-100 text-red-800" },
+  no_bookings: { card: "border border-cocoa/20 bg-card", badge: "border border-cocoa/25 bg-linen text-coffee" },
+  available: { card: "border border-cocoa/20 bg-card", badge: "border border-cocoa/25 bg-linen text-coffee" },
+  limited: { card: "border border-clay/45 bg-blush/25", badge: "border border-clay/50 bg-blush/45 text-coffee" },
+  almost_full: { card: "border border-clay/45 bg-blush/25", badge: "border border-clay/50 bg-blush/45 text-coffee" },
+  full: { card: "border border-cocoa/45 bg-cocoa/15", badge: "border border-cocoa/50 bg-cocoa/25 text-coffee" },
+  unavailable: { card: "border border-cocoa/45 bg-cocoa/15", badge: "border border-cocoa/50 bg-cocoa/25 text-coffee" },
 };
 
 const STATUS_GROUPS = {
