@@ -195,6 +195,17 @@ insert into booking_settings (min_days_notice, max_months_ahead, default_buffer_
 (2, 6, 15, 60, false, 'request_only');
 
 -- ---------------------------------------------------------------------------
+-- booking_display_settings (1 rij)
+-- ---------------------------------------------------------------------------
+insert into booking_display_settings (
+  months_ahead_to_show, show_booking_counts_publicly, show_exact_available_slots_publicly,
+  reserve_pending_bookings, almost_full_threshold_slots, almost_full_threshold_percentage, limited_threshold_percentage
+) values (12, false, false, true, 3, 20, 50);
+
+-- monthly_availability_settings: bewust leeg. Er komt alleen een rij zodra
+-- een admin een maand handmatig sluit/overschrijft via /admin/maandplanning.
+
+-- ---------------------------------------------------------------------------
 -- admin_profiles: bewust leeg. Voeg je eerste admin toe via Supabase Auth +
 -- een insert hier (zie README, sectie "Admin-gebruiker toevoegen").
 -- ---------------------------------------------------------------------------

@@ -174,12 +174,21 @@ Alle regels leven in Postgres-functies in `supabase/schema.sql` (één bron van 
 
 ### Welke Supabase-tabellen aangemaakt worden
 
-Bovenop de tabellen uit de admin-CMS-sectie hierboven: `availability_rules`, `shoot_type_settings`, `blocked_periods`, `manual_slots`, `booking_settings`, plus extra kolommen op `bookings` (`booking_date`, `start_time`, `end_time`, `duration_minutes`, buffers, `confirmed_at`, `cancelled_at`, `admin_notes`, e.a.). Alles staat al in `supabase/schema.sql`/`policies.sql`/`seed.sql` — zie ook `supabase/booking-system-migration.sql` als losse migratie voor een site die de admin-CMS al draaide vóór het boekingssysteem.
+Bovenop de tabellen uit de admin-CMS-sectie hierboven: `availability_rules`, `shoot_type_settings`, `blocked_periods`, `manual_slots`, `booking_settings`, `monthly_availability_settings`, `booking_display_settings`, plus extra kolommen op `bookings` (`booking_date`, `start_time`, `end_time`, `duration_minutes`, buffers, `confirmed_at`, `cancelled_at`, `admin_notes`, e.a.). Alles staat al in `supabase/schema.sql`/`policies.sql`/`seed.sql` — zie ook `supabase/booking-system-migration.sql` en `supabase/month-availability-migration.sql` als losse migraties voor een site die eerdere onderdelen al draaide.
+
+### Beschikbaarheid per maand
+
+Naast de dag-kalender toont `/contact` (en kort de homepage) een overzicht van de komende maanden met een status: nog geen boekingen, ruim/beperkt beschikbaar, bijna vol, vol, of niet beschikbaar. Ook dit leeft volledig in Postgres:
+- `calculate_month_status(year, month)` — berekent de status van één maand (capaciteit op dagniveau uit `availability_rules`, bezetting uit `bookings`, geblokkeerde dagen, en eventuele handmatige override).
+- `get_months_status(startYear, startMonth, count)` — verzamelt dit voor meerdere maanden, gebruikt door zowel `netlify/functions/get-month-availability.ts` (publiek, filtert gevoelige aantallen eruit tenzij expliciet aangezet) als de admin-pagina `/admin/maandplanning` (rechtstreekse RPC, volledige details).
+
+Admin kan per maand handmatig sluiten, de status overschrijven, een maximum instellen, eigen waarschuwingsdrempels zetten en een publieke melding/interne notitie toevoegen (tabel `monthly_availability_settings`, alleen aangemaakt zodra je 'm daadwerkelijk gebruikt). De globale drempels (bijna-vol/beperkt-percentages, of nieuwe aanvragen meteen meetellen als bezet) staan onderaan `/admin/maandplanning` (tabel `booking_display_settings`). Dit maandoverzicht wijzigt niets aan de dubbele-boekingen-preventie hierboven — dat blijft een aparte, strengere regel op tijdslot-niveau.
 
 ### Welke Netlify Functions gebruikt worden
 
 - `netlify/functions/create-booking.ts` — bestaand endpoint (`/api/create-booking`), nu uitgebreid: roept `book_slot()` aan i.p.v. een directe insert, plus dezelfde honeypot/timing-antispam en IP-rate-limiting als voorheen.
 - `netlify/functions/get-available-slots.ts` — nieuw endpoint (`/api/get-available-slots`), geeft alleen berekende beschikbaarheid terug (nooit ruwe boekingsdata) — nodig omdat de onderliggende tabellen admin-only zijn in Supabase.
+- `netlify/functions/get-month-availability.ts` — endpoint (`/api/get-month-availability`) voor het maandoverzicht, zelfde least-privilege-aanpak: geeft nooit interne notities of (tenzij aangezet) exacte aantallen door.
 
 ### Welke environment variables nodig zijn
 

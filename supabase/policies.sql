@@ -227,3 +227,18 @@ create policy "manual_slots_admin_all" on manual_slots
 alter table booking_settings enable row level security;
 create policy "booking_settings_admin_all" on booking_settings
   for all using (is_admin()) with check (is_admin());
+
+-- ---------------------------------------------------------------------------
+-- Maandbeschikbaarheid: monthly_availability_settings, booking_display_settings
+-- — zelfde patroon, volledig admin-only. Publiek krijgt alleen de berekende
+-- output van calculate_month_status()/get_months_status() (service-role,
+-- via netlify/functions/get-month-availability.ts, die zelf bepaalt welk
+-- deel van de response publiek zichtbaar is).
+-- ---------------------------------------------------------------------------
+alter table monthly_availability_settings enable row level security;
+create policy "monthly_availability_settings_admin_all" on monthly_availability_settings
+  for all using (is_admin()) with check (is_admin());
+
+alter table booking_display_settings enable row level security;
+create policy "booking_display_settings_admin_all" on booking_display_settings
+  for all using (is_admin()) with check (is_admin());

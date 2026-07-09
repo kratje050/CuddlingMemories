@@ -27,8 +27,8 @@ const statusStyles = {
   closed: "border-transparent text-coffee/25 cursor-not-allowed",
 };
 
-export default function BookingCalendar({ shootType, value, onSelect }) {
-  const [month, setMonth] = useState(startOfMonth(new Date()));
+export default function BookingCalendar({ shootType, value, onSelect, initialMonth }) {
+  const [month, setMonth] = useState(() => startOfMonth(initialMonth || new Date()));
   const [days, setDays] = useState({});
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);

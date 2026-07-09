@@ -6,6 +6,7 @@ import Button from "../components/Button.jsx";
 import FAQItem from "../components/FAQItem.jsx";
 import SEO from "../components/SEO.jsx";
 import SectionTitle from "../components/SectionTitle.jsx";
+import MonthAvailabilityOverview from "../components/MonthAvailabilityOverview.jsx";
 import StepIndicator from "../components/booking/StepIndicator.jsx";
 import ShootTypeStep from "../components/booking/ShootTypeStep.jsx";
 import PackageStep from "../components/booking/PackageStep.jsx";
@@ -23,6 +24,14 @@ export default function Contact() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const requestedShoot = params.get("shoot");
+  const requestedMonthParam = params.get("maand");
+  const wizardRef = useRef(null);
+
+  const initialMonth = useMemo(() => {
+    if (!requestedMonthParam || !/^\d{4}-\d{2}$/.test(requestedMonthParam)) return null;
+    const [year, month] = requestedMonthParam.split("-").map(Number);
+    return new Date(year, month - 1, 1);
+  }, [requestedMonthParam]);
 
   const { title, description } = usePageMeta(
     "contact",
@@ -73,6 +82,13 @@ export default function Contact() {
     return () => {
       active = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (requestedMonthParam && wizardRef.current) {
+      wizardRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -185,10 +201,12 @@ export default function Contact() {
             </p>
           </div>
 
+          <MonthAvailabilityOverview className="mt-14" />
+
           {loadingBase ? (
             <p className="mt-10 text-sm text-coffee/60">Even laden...</p>
           ) : (
-            <div className="mt-10 grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
+            <div ref={wizardRef} className="mt-10 scroll-mt-28 grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
               <div className="rounded-lg bg-card p-5 shadow-soft warm-border md:p-8">
                 <div className="mb-6 overflow-x-auto">
                   <StepIndicator current={step} />
@@ -213,7 +231,9 @@ export default function Contact() {
                   </div>
                 )}
 
-                {step === 2 && <BookingCalendar shootType={shootType} value={date} onSelect={handleDateSelect} />}
+                {step === 2 && (
+                  <BookingCalendar shootType={shootType} value={date} onSelect={handleDateSelect} initialMonth={initialMonth} />
+                )}
 
                 {step === 3 && (
                   <TimeSlotStep date={date} shootType={shootType} value={time} onSelect={handleTimeSelect} />

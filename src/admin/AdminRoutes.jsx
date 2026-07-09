@@ -9,6 +9,7 @@ import AdminBookingNew from "./pages/AdminBookingNew.jsx";
 import AdminAvailability from "./pages/AdminAvailability.jsx";
 import AdminBlockedPeriods from "./pages/AdminBlockedPeriods.jsx";
 import AdminManualSlots from "./pages/AdminManualSlots.jsx";
+import AdminMonthPlanning from "./pages/AdminMonthPlanning.jsx";
 import AdminSettings from "./pages/AdminSettings.jsx";
 import AdminPages from "./pages/AdminPages.jsx";
 import AdminAlbums from "./pages/AdminAlbums.jsx";
@@ -77,6 +78,14 @@ export default function AdminRoutes() {
           element={
             <RequireAdmin>
               <AdminManualSlots />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="maandplanning"
+          element={
+            <RequireAdmin>
+              <AdminMonthPlanning />
             </RequireAdmin>
           }
         />

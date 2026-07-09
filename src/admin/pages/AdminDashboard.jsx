@@ -1,12 +1,17 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { CalendarCheck, CalendarClock, CalendarX, Clock, Image, Inbox, Tag, TrendingUp, XCircle } from "lucide-react";
 import { eachDayOfInterval, endOfMonth, format, getDay, startOfMonth } from "date-fns";
+import { nl } from "date-fns/locale";
 import { supabase } from "../../lib/supabaseClient.js";
 import AdminLayout from "../components/AdminLayout.jsx";
+import AdminButton from "../components/AdminButton.jsx";
 import StatCard from "../components/StatCard.jsx";
 import DataTable from "../components/DataTable.jsx";
 import BarList from "../components/BarList.jsx";
+import AvailabilityStatusBadge from "../../components/AvailabilityStatusBadge.jsx";
 import { formatDate } from "../../lib/formatDate.js";
+import { getMonthsStatusAdmin } from "../../lib/monthAvailability.js";
 
 const OPEN_STATUSES = ["Nieuw", "Gelezen", "Contact opgenomen", "Wacht op reactie"];
 
@@ -76,6 +81,7 @@ function buildCharts(rows, availabilityRules) {
 }
 
 export default function AdminDashboard() {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     newCount: 0,
@@ -91,6 +97,14 @@ export default function AdminDashboard() {
   });
   const [recentBookings, setRecentBookings] = useState([]);
   const [recentChanges, setRecentChanges] = useState([]);
+  const [monthPlanning, setMonthPlanning] = useState({
+    currentMonth: null,
+    nextMonth: null,
+    almostFullCount: 0,
+    fullCount: 0,
+    closedCount: 0,
+    nextAvailableMonth: null,
+  });
   const [charts, setCharts] = useState({
     perMonth: [],
     perShootType: [],
@@ -130,6 +144,7 @@ export default function AdminDashboard() {
         blockedRes,
         nextShootRes,
         availabilityRulesRes,
+        monthsStatusRes,
       ] = await Promise.all([
         supabase.from("bookings").select("id", { count: "exact", head: true }).eq("status", "Nieuw"),
         supabase.from("bookings").select("id", { count: "exact", head: true }).gte("created_at", startOfMonth.toISOString()),
@@ -166,6 +181,7 @@ export default function AdminDashboard() {
           .order("booking_date", { ascending: true })
           .limit(1),
         supabase.from("availability_rules").select("day_of_week, is_available, max_bookings_per_day"),
+        getMonthsStatusAdmin(startOfMonth.getFullYear(), startOfMonth.getMonth() + 1, 12).catch(() => []),
       ]);
 
       if (!active) return;
@@ -183,6 +199,16 @@ export default function AdminDashboard() {
           start: new Date(Math.max(new Date(period.start_datetime), startOfMonth)),
           end: new Date(Math.min(new Date(period.end_datetime), endOfMonthDate)),
         }).forEach((day) => blockedDaysThisMonth.add(format(day, "yyyy-MM-dd")));
+      });
+
+      const monthsStatus = monthsStatusRes || [];
+      setMonthPlanning({
+        currentMonth: monthsStatus[0] || null,
+        nextMonth: monthsStatus[1] || null,
+        almostFullCount: monthsStatus.filter((m) => m.status === "almost_full").length,
+        fullCount: monthsStatus.filter((m) => m.status === "full").length,
+        closedCount: monthsStatus.filter((m) => m.isClosed).length,
+        nextAvailableMonth: monthsStatus.find((m) => m.status !== "unavailable" && m.status !== "full") || null,
       });
 
       setStats({
@@ -231,6 +257,75 @@ export default function AdminDashboard() {
         <StatCard label="Portfolio-albums" value={loading ? "-" : stats.albumCount} icon={Image} />
         <StatCard label="Gepubliceerde pakketten" value={loading ? "-" : stats.packageCount} icon={Tag} />
       </div>
+
+      {!loading && (
+        <div className="mt-8 rounded-lg bg-card p-6 shadow-soft warm-border">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="display-title text-xl font-semibold text-coffee">Maandplanning</h2>
+            <AdminButton type="button" variant="secondary" onClick={() => navigate("/admin/maandplanning")}>
+              Beschikbaarheid bekijken
+            </AdminButton>
+          </div>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="rounded-lg border border-cocoa/15 p-4">
+              <p className="fine-label text-[0.62rem] text-cocoa">Deze maand</p>
+              {monthPlanning.currentMonth ? (
+                <>
+                  <p className="mt-1 text-sm font-semibold capitalize text-coffee">
+                    {format(new Date(monthPlanning.currentMonth.year, monthPlanning.currentMonth.month - 1, 1), "MMMM yyyy", { locale: nl })}
+                  </p>
+                  <div className="mt-2">
+                    <AvailabilityStatusBadge status={monthPlanning.currentMonth.status} />
+                  </div>
+                </>
+              ) : (
+                <p className="mt-1 text-sm text-coffee/60">-</p>
+              )}
+            </div>
+            <div className="rounded-lg border border-cocoa/15 p-4">
+              <p className="fine-label text-[0.62rem] text-cocoa">Volgende maand</p>
+              {monthPlanning.nextMonth ? (
+                <>
+                  <p className="mt-1 text-sm font-semibold capitalize text-coffee">
+                    {format(new Date(monthPlanning.nextMonth.year, monthPlanning.nextMonth.month - 1, 1), "MMMM yyyy", { locale: nl })}
+                  </p>
+                  <div className="mt-2">
+                    <AvailabilityStatusBadge status={monthPlanning.nextMonth.status} />
+                  </div>
+                </>
+              ) : (
+                <p className="mt-1 text-sm text-coffee/60">-</p>
+              )}
+            </div>
+            <div className="rounded-lg border border-cocoa/15 p-4">
+              <p className="fine-label text-[0.62rem] text-cocoa">Eerstvolgende beschikbare maand</p>
+              <p className="mt-1 text-sm font-semibold capitalize text-coffee">
+                {monthPlanning.nextAvailableMonth
+                  ? format(
+                      new Date(monthPlanning.nextAvailableMonth.year, monthPlanning.nextAvailableMonth.month - 1, 1),
+                      "MMMM yyyy",
+                      { locale: nl }
+                    )
+                  : "Geen"}
+              </p>
+            </div>
+          </div>
+          <div className="mt-4 grid grid-cols-3 gap-4 text-center">
+            <div>
+              <p className="display-title text-2xl font-semibold text-coffee">{monthPlanning.almostFullCount}</p>
+              <p className="text-xs text-coffee/60">Bijna volle maanden</p>
+            </div>
+            <div>
+              <p className="display-title text-2xl font-semibold text-coffee">{monthPlanning.fullCount}</p>
+              <p className="text-xs text-coffee/60">Volle maanden</p>
+            </div>
+            <div>
+              <p className="display-title text-2xl font-semibold text-coffee">{monthPlanning.closedCount}</p>
+              <p className="text-xs text-coffee/60">Handmatig gesloten</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
         <div>

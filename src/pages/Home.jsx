@@ -2,9 +2,11 @@ import { ArrowRight, Heart, Instagram, Quote, Star } from "lucide-react";
 import { useEffect, useState } from "react";
 import Button from "../components/Button.jsx";
 import CategoryCard from "../components/CategoryCard.jsx";
+import MonthAvailabilityCard from "../components/MonthAvailabilityCard.jsx";
 import SEO from "../components/SEO.jsx";
 import SectionTitle from "../components/SectionTitle.jsx";
 import { getFeaturedPhotos, getPortfolioAlbums, getVisibleTestimonials } from "../lib/api.js";
+import { getMonthsAvailability } from "../lib/monthAvailability.js";
 import { usePageMeta } from "../lib/usePageMeta.js";
 import { useSiteSettings } from "../context/SiteSettingsContext.jsx";
 
@@ -18,6 +20,7 @@ export default function Home() {
   const [albums, setAlbums] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [instagramPreview, setInstagramPreview] = useState([]);
+  const [upcomingMonths, setUpcomingMonths] = useState([]);
 
   useEffect(() => {
     let active = true;
@@ -30,6 +33,14 @@ export default function Home() {
       })
       .catch(() => {
         // Blijft bij lege secties als Supabase niet bereikbaar is.
+      });
+    const now = new Date();
+    getMonthsAvailability(now.getFullYear(), now.getMonth() + 1, 3)
+      .then((data) => {
+        if (active) setUpcomingMonths(data);
+      })
+      .catch(() => {
+        // Blijft bij een lege previewsectie als Supabase niet bereikbaar is.
       });
     return () => {
       active = false;
@@ -64,6 +75,24 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {upcomingMonths.length > 0 && (
+        <section className="py-16">
+          <div className="container-soft">
+            <SectionTitle eyebrow="Boeken" title="Wil je binnenkort een shoot boeken?" />
+            <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-3">
+              {upcomingMonths.map((month) => (
+                <MonthAvailabilityCard key={`${month.year}-${month.month}`} month={month} />
+              ))}
+            </div>
+            <div className="mt-8 text-center">
+              <Button to="/contact" variant="secondary">
+                Bekijk alle beschikbare maanden
+              </Button>
+            </div>
+          </div>
+        </section>
+      )}
 
       {albums.length > 0 && (
         <section className="py-16">
