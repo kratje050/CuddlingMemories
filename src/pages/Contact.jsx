@@ -89,8 +89,7 @@ export default function Contact() {
     if (requestedMonthParam && wizardRef.current) {
       wizardRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [requestedMonthParam]);
 
   const packagesForShoot = useMemo(
     () => packages.filter((pkg) => pkg.shoot_type === shootType),
