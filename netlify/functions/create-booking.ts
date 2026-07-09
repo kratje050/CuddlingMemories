@@ -71,19 +71,29 @@ const formatDateTime = (dateStr: string, timeStr: string) => {
   return `${day}-${month}-${year}, ${timeStr}`;
 };
 
-const renderText = (values: ReturnType<typeof normalizePayload>["values"]) => `Nieuwe boekingsaanvraag via Cuddling Memories Fotografie
+type GiftcardInfo = { amount: number | null; type: string | null; code: string | null } | null;
+
+const formatEuro = (amount: number | null) => (amount == null ? "" : `€${Number(amount).toFixed(2)}`);
+
+const renderText = (
+  values: ReturnType<typeof normalizePayload>["values"],
+  giftcard: GiftcardInfo
+) => `Nieuwe boekingsaanvraag via Cuddling Memories Fotografie
 
 Naam: ${values.naam}
 E-mailadres: ${values.email}
 Gewenste shoot: ${values.shoot}
 Datum en tijd: ${formatDateTime(values.bookingDate, values.startTime)}
 Locatie of omgeving: ${values.omgeving}
-
+${giftcard ? `\nCadeaubon toegepast: ${giftcard.code} (${giftcard.type}) — ${formatEuro(giftcard.amount)} gaat van het totaalbedrag af.\n` : ""}
 Bericht:
 ${values.bericht}
 `;
 
-const renderHtml = (values: ReturnType<typeof normalizePayload>["values"]) => `<!doctype html>
+const renderHtml = (
+  values: ReturnType<typeof normalizePayload>["values"],
+  giftcard: GiftcardInfo
+) => `<!doctype html>
 <html lang="nl">
   <body style="margin:0;background:#f7efe7;color:#3b2418;font-family:Arial,sans-serif;">
     <div style="max-width:640px;margin:0 auto;padding:28px;">
@@ -95,6 +105,11 @@ const renderHtml = (values: ReturnType<typeof normalizePayload>["values"]) => `<
         <p><strong>Gewenste shoot:</strong> ${escapeHtml(values.shoot)}</p>
         <p><strong>Datum en tijd:</strong> ${escapeHtml(formatDateTime(values.bookingDate, values.startTime))}</p>
         <p><strong>Locatie of omgeving:</strong> ${escapeHtml(values.omgeving)}</p>
+        ${
+          giftcard
+            ? `<p style="background:#f3e6d8;border-radius:8px;padding:10px 14px;"><strong>Cadeaubon toegepast:</strong> ${escapeHtml(giftcard.code || "")} (${escapeHtml(giftcard.type || "")}) — <strong>${escapeHtml(formatEuro(giftcard.amount))}</strong> gaat van het totaalbedrag af.</p>`
+            : ""
+        }
         <div style="margin-top:20px;padding-top:18px;border-top:1px solid #e6d1bd;">
           <strong>Bericht:</strong>
           <p style="line-height:1.7;">${escapeHtml(values.bericht)}</p>
@@ -104,7 +119,7 @@ const renderHtml = (values: ReturnType<typeof normalizePayload>["values"]) => `<
   </body>
 </html>`;
 
-async function sendBookingEmail(values: ReturnType<typeof normalizePayload>["values"]) {
+async function sendBookingEmail(values: ReturnType<typeof normalizePayload>["values"], giftcard: GiftcardInfo) {
   const host = readEnv("SMTP_HOST") || "smtp.gmail.com";
   const port = Number(readEnv("SMTP_PORT") || 465);
   const user = readEnv("SMTP_USER");
@@ -130,8 +145,8 @@ async function sendBookingEmail(values: ReturnType<typeof normalizePayload>["val
     to,
     replyTo: values.email,
     subject: `Nieuwe boekingsaanvraag - ${values.shoot}`,
-    text: renderText(values),
-    html: renderHtml(values),
+    text: renderText(values, giftcard),
+    html: renderHtml(values, giftcard),
   });
 }
 
@@ -234,9 +249,20 @@ export default async (req: Request) => {
     // e-mailnotificatie is secundair: als die faalt, wordt dat gelogd maar
     // blokkeert de (al opgeslagen) boeking niet.
     const booking = await bookSlot(values);
+    const giftcard: GiftcardInfo =
+      booking && typeof booking === "object" && "giftcard_amount" in (booking as Record<string, unknown>)
+        ? {
+            amount: (booking as Record<string, unknown>).giftcard_amount as number | null,
+            type: (booking as Record<string, unknown>).giftcard_type as string | null,
+            code: (booking as Record<string, unknown>).giftcard_code as string | null,
+          }
+        : null;
+    const giftcardLine = giftcard
+      ? `\n\nJe cadeaubon ${giftcard.code} is toegepast op deze boeking: ${formatEuro(giftcard.amount)} gaat van het totaalbedrag af.`
+      : "";
 
     try {
-      await sendBookingEmail(values);
+      await sendBookingEmail(values, giftcard);
     } catch (mailError) {
       console.error("Boeking opgeslagen, maar e-mail versturen is mislukt:", mailError);
     }
@@ -251,6 +277,7 @@ export default async (req: Request) => {
           shoot_type: values.shoot,
           booking_date: values.bookingDate,
           booking_time: values.startTime,
+          giftcard_line: giftcardLine,
         },
       });
     } catch (mailError) {

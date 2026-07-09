@@ -840,6 +840,17 @@ begin
   insert into booking_status_history (booking_id, old_status, new_status, changed_by)
   values (v_new_row.id, null, v_new_row.status, v_source);
 
+  -- giftcard_amount/giftcard_type worden meegegeven zodat de aanroepende
+  -- Netlify Function (create-booking.ts) dit direct in de bevestigingsmail
+  -- aan klant én admin kan vermelden, zonder een tweede round-trip.
+  if v_giftcard_code is not null then
+    return to_jsonb(v_new_row) || jsonb_build_object(
+      'giftcard_amount', v_giftcard.amount,
+      'giftcard_type', v_giftcard.giftcard_type,
+      'giftcard_code', v_giftcard.code
+    );
+  end if;
+
   return to_jsonb(v_new_row);
 end;
 $$;

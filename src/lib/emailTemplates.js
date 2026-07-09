@@ -4,7 +4,7 @@ export const emailTemplateDefaults = [
     label: "Nieuwe aanvraag ontvangen",
     subject: "We hebben je aanvraag ontvangen",
     body:
-      "Hoi {{customer_name}},\n\nWat leuk dat je een aanvraag hebt gedaan voor {{shoot_type}}. Ik heb je gegevens ontvangen en kijk met liefde met je mee naar een passend moment.\n\nJe hoeft nu niets extra's te doen. Ik neem snel contact met je op om de datum, locatie en eventuele wensen samen af te stemmen.",
+      "Hoi {{customer_name}},\n\nWat leuk dat je een aanvraag hebt gedaan voor {{shoot_type}}. Ik heb je gegevens ontvangen en kijk met liefde met je mee naar een passend moment.\n\nJe hoeft nu niets extra's te doen. Ik neem snel contact met je op om de datum, locatie en eventuele wensen samen af te stemmen.{{giftcard_line}}",
   },
   {
     template_key: "booking_confirmed",

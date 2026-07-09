@@ -66,7 +66,10 @@ export default function Home() {
         <div className="container-soft relative flex min-h-[590px] items-center py-12 md:min-h-[630px]">
           <div className="max-w-2xl animate-floatIn text-center lg:text-left">
             <p className="script-line text-5xl text-cocoa md:text-6xl">{settings.hero_subtitle}</p>
-            <h1 className="display-title mt-3 text-4xl leading-[1.05] tracking-wide text-coffee md:text-5xl" style={{ fontWeight: heroTitleWeight }}>
+            <h1
+              className="display-title mx-auto mt-3 max-w-md leading-[1.08] text-coffee lg:mx-0"
+              style={{ fontWeight: heroTitleWeight, fontSize: "clamp(1.75rem, 4vw, 2.75rem)" }}
+            >
               {settings.hero_title}
             </h1>
             <p className="mx-auto mt-6 max-w-xl text-base leading-8 text-coffee/82 lg:mx-0">
