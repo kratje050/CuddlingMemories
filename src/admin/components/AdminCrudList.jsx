@@ -79,7 +79,10 @@ export default function AdminCrudList({
       if (field.type === "number") {
         payload[field.name] = payload[field.name] === "" ? null : Number(payload[field.name]);
       }
-      if (field.type === "select" && payload[field.name] === "") {
+      if (
+        (field.type === "select" || field.type === "date" || field.type === "datetime-local" || field.type === "time") &&
+        payload[field.name] === ""
+      ) {
         payload[field.name] = null;
       }
     });
