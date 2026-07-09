@@ -51,7 +51,7 @@ export default function Home() {
 
   const homeSection = (key, fallback) => homeSections.find((item) => item.section_key === key && item.is_visible !== false)?.content || fallback;
   const homeSectionTitle = (key, fallback) => homeSections.find((item) => item.section_key === key && item.is_visible !== false)?.title || fallback;
-  const heroTitleWeight = Math.min(700, Math.max(500, Number(homeSection("hero_title_weight", "600")) || 600));
+  const heroTitleWeight = Math.min(700, Math.max(300, Number(homeSection("hero_title_weight", "400")) || 400));
 
   return (
     <>
@@ -65,8 +65,8 @@ export default function Home() {
         <div className="photo-overlay absolute inset-0" />
         <div className="container-soft relative flex min-h-[590px] items-center py-12 md:min-h-[630px]">
           <div className="max-w-2xl animate-floatIn text-center lg:text-left">
-            <p className="script-line text-4xl text-cocoa md:text-5xl">{settings.hero_subtitle}</p>
-            <h1 className="display-title mt-3 text-5xl leading-[0.96] text-coffee md:text-7xl" style={{ fontWeight: heroTitleWeight }}>
+            <p className="script-line text-5xl text-cocoa md:text-6xl">{settings.hero_subtitle}</p>
+            <h1 className="display-title mt-3 text-4xl leading-[1.05] tracking-wide text-coffee md:text-5xl" style={{ fontWeight: heroTitleWeight }}>
               {settings.hero_title}
             </h1>
             <p className="mx-auto mt-6 max-w-xl text-base leading-8 text-coffee/82 lg:mx-0">
