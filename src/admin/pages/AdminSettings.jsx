@@ -7,38 +7,43 @@ const fieldGroups = [
   {
     heading: "Algemeen",
     fields: [
-      { name: "site_name", label: "Naam website", type: "text" },
-      { name: "logo_text", label: "Logo-tekst", type: "text" },
-      { name: "subtitle", label: "Subtitel", type: "text" },
-      { name: "primary_email", label: "Contact-e-mailadres", type: "text" },
+      { name: "site_name", label: "Naam website", type: "text", help: "Naam die gebruikt wordt in browser-/SEO-titels en algemene site-instellingen." },
+      { name: "logo_text", label: "Logo-tekst", type: "text", help: "Tekst in het logo linksboven in de navigatie en footer." },
+      { name: "subtitle", label: "Subtitel", type: "text", help: "Kleine tekst onder het logo, bijvoorbeeld Fotografie." },
+      { name: "primary_email", label: "Contact-e-mailadres", type: "text", help: "Algemeen contactadres voor de website. Dit is niet hetzelfde als het SMTP-wachtwoord." },
     ],
   },
   {
     heading: "Social media",
     fields: [
-      { name: "instagram_url", label: "Instagram-link", type: "text" },
-      { name: "facebook_url", label: "Facebook-link", type: "text" },
+      { name: "instagram_url", label: "Instagram-link", type: "text", help: "Link waar de Instagram-knop in de footer naartoe gaat." },
+      { name: "facebook_url", label: "Facebook-link", type: "text", help: "Link waar de Facebook-knop in de footer naartoe gaat." },
     ],
   },
   {
     heading: "Home-hero",
     fields: [
-      { name: "hero_title", label: "Hero-titel", type: "text" },
-      { name: "hero_subtitle", label: "Hero-subtitel", type: "text" },
+      { name: "hero_title", label: "Hero-titel", type: "text", help: "Grote hoofdtekst op de homepage." },
+      { name: "hero_subtitle", label: "Hero-subtitel", type: "text", help: "Korte tekst onder de hoofdtitel op de homepage." },
     ],
   },
   {
     heading: "Footer",
-    fields: [{ name: "footer_text", label: "Footer-tekst", type: "textarea" }],
+    fields: [{ name: "footer_text", label: "Footer-tekst", type: "textarea", help: "Korte omschrijving onder het logo onderaan de website." }],
   },
   {
     heading: "Standaard SEO",
     fields: [
-      { name: "default_seo_title", label: "Standaard SEO-titel", type: "text" },
-      { name: "default_seo_description", label: "Standaard SEO-omschrijving", type: "textarea" },
+      { name: "default_seo_title", label: "Standaard SEO-titel", type: "text", help: "Fallback titel voor zoekmachines als een pagina geen eigen SEO-titel heeft." },
+      { name: "default_seo_description", label: "Standaard SEO-omschrijving", type: "textarea", help: "Fallback omschrijving voor zoekmachines en gedeelde links." },
     ],
   },
 ];
+
+function FieldHelp({ children }) {
+  if (!children) return null;
+  return <p className="-mt-1 text-xs font-normal leading-5 text-coffee/55">{children}</p>;
+}
 
 export default function AdminSettings() {
   const [id, setId] = useState(null);
@@ -97,6 +102,7 @@ export default function AdminSettings() {
               {group.fields.map((field) => (
                 <label key={field.name} className="grid gap-2 text-sm font-semibold text-coffee sm:col-span-2">
                   {field.label}
+                  <FieldHelp>{field.help}</FieldHelp>
                   {field.type === "textarea" ? (
                     <textarea
                       rows={3}

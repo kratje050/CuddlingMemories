@@ -3,6 +3,10 @@ import { supabase } from "../../lib/supabaseClient.js";
 import AdminLayout from "../components/AdminLayout.jsx";
 import AdminButton from "../components/AdminButton.jsx";
 
+function FieldHelp({ children }) {
+  return <p className="-mt-1 text-xs font-normal leading-5 text-coffee/55">{children}</p>;
+}
+
 export default function AdminModelGezocht() {
   const [page, setPage] = useState(null);
   const [discountSection, setDiscountSection] = useState(null);
@@ -97,9 +101,11 @@ export default function AdminModelGezocht() {
               className="h-4 w-4 accent-cocoa"
             />
             Actief (bij uit tonen we een nette "niet actief"-melding op de pagina)
+            <span className="text-xs font-normal text-coffee/55">Bepaalt of bezoekers zich kunnen aanmelden als model.</span>
           </label>
           <label className="mt-4 grid gap-2 text-sm font-semibold text-coffee">
             Pitch-tekst
+            <FieldHelp>Uitleg bovenaan de pagina: wie je zoekt en waarom iemand zich kan aanmelden.</FieldHelp>
             <textarea
               rows={4}
               value={page.content || ""}
@@ -113,6 +119,7 @@ export default function AdminModelGezocht() {
           <div className="rounded-lg bg-card p-5 shadow-soft warm-border">
             <label className="grid gap-2 text-sm font-semibold text-coffee">
               Kortingspercentage
+              <FieldHelp>Het kortingspercentage dat op de model-gezocht pagina wordt genoemd.</FieldHelp>
               <input
                 type="number"
                 value={discountSection.content || ""}
@@ -127,6 +134,7 @@ export default function AdminModelGezocht() {
           <div className="rounded-lg bg-card p-5 shadow-soft warm-border">
             <label className="grid gap-2 text-sm font-semibold text-coffee">
               Categorieën (gescheiden door komma's)
+              <FieldHelp>De shoots waarvoor modellen gezocht worden. Schrijf ze met komma's ertussen, bijvoorbeeld Zwangerschap, Newborn.</FieldHelp>
               <textarea
                 rows={2}
                 value={categoriesText}
@@ -141,6 +149,7 @@ export default function AdminModelGezocht() {
           <div className="rounded-lg bg-card p-5 shadow-soft warm-border">
             <label className="grid gap-2 text-sm font-semibold text-coffee">
               CTA-knoptekst
+              <FieldHelp>Tekst op de aanmeldknop, bijvoorbeeld Ik wil model staan.</FieldHelp>
               <input
                 type="text"
                 value={ctaSection.button_text || ""}
@@ -150,6 +159,7 @@ export default function AdminModelGezocht() {
             </label>
             <label className="mt-3 grid gap-2 text-sm font-semibold text-coffee">
               CTA-link
+              <FieldHelp>Waar de knop naartoe gaat. Meestal /contact?shoot=Model%20staan%20met%2050%25%20korting.</FieldHelp>
               <input
                 type="text"
                 value={ctaSection.button_url || ""}

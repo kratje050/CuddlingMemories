@@ -75,12 +75,24 @@ img {
   color: #8a6b55;
 }
 
+.home-hero-image {
+  object-position: 55% center;
+}
+
 .photo-overlay {
-  background: linear-gradient(90deg, rgba(247, 241, 234, 0.94) 0%, rgba(247, 241, 234, 0.72) 36%, rgba(247, 241, 234, 0.08) 100%);
+  background:
+    linear-gradient(90deg, rgba(247, 241, 234, 0.96) 0%, rgba(247, 241, 234, 0.82) 34%, rgba(247, 241, 234, 0.14) 68%, rgba(247, 241, 234, 0.02) 100%),
+    linear-gradient(180deg, rgba(88, 58, 39, 0.03) 0%, rgba(88, 58, 39, 0.12) 100%);
 }
 
 @media (max-width: 768px) {
+  .home-hero-image {
+    object-position: 70% center;
+  }
+
   .photo-overlay {
-    background: linear-gradient(180deg, rgba(247, 241, 234, 0.92) 0%, rgba(247, 241, 234, 0.7) 46%, rgba(247, 241, 234, 0.2) 100%);
+    background:
+      linear-gradient(180deg, rgba(247, 241, 234, 0.34) 0%, rgba(247, 241, 234, 0.24) 34%, rgba(247, 241, 234, 0.08) 68%, rgba(247, 241, 234, 0.02) 100%),
+      linear-gradient(90deg, rgba(247, 241, 234, 0.14) 0%, rgba(247, 241, 234, 0.02) 100%);
   }
 }

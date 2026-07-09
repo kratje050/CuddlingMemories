@@ -39,14 +39,14 @@ export default function Home() {
   return (
     <>
       <SEO title={title} description={description} />
-      <section className="relative min-h-[760px] overflow-hidden pt-28 md:pt-32">
+      <section className="relative min-h-[720px] overflow-hidden pt-28 md:min-h-[760px] md:pt-32">
         <img
-          src="/images/instagram/instagram-04.jpg"
-          alt="Warme fotoshoot door Cuddling Memories Fotografie"
-          className="absolute inset-0 h-full w-full object-cover object-center"
+          src="/images/home-hero-cakesmash.png"
+          alt="Cakesmash fotoshoot door Cuddling Memories Fotografie"
+          className="home-hero-image absolute inset-0 h-full w-full object-cover"
         />
         <div className="photo-overlay absolute inset-0" />
-        <div className="container-soft relative grid min-h-[630px] items-center gap-10 py-12 lg:grid-cols-[0.92fr_1.08fr]">
+        <div className="container-soft relative flex min-h-[590px] items-center py-12 md:min-h-[630px]">
           <div className="max-w-2xl animate-floatIn text-center lg:text-left">
             <p className="script-line text-4xl text-cocoa md:text-5xl">{settings.hero_subtitle}</p>
             <h1 className="display-title mt-3 text-5xl font-semibold leading-[0.96] text-coffee md:text-7xl">
@@ -60,33 +60,6 @@ export default function Home() {
               <Button to="/portfolio" variant="secondary">
                 Bekijk portfolio
               </Button>
-            </div>
-          </div>
-          <div className="hidden justify-end lg:flex">
-            <div className="relative w-[315px] rounded-[2rem] border-[8px] border-card bg-card p-4 shadow-soft">
-              <div className="overflow-hidden rounded-[1.45rem] bg-cream">
-                <div className="flex items-center justify-between px-5 py-4">
-                  <div>
-                    <p className="script-line text-xl text-coffee">{settings.logo_text}</p>
-                    <p className="fine-label text-[0.48rem] text-cocoa">{settings.subtitle}</p>
-                  </div>
-                  <Heart size={16} className="text-cocoa" />
-                </div>
-                <img
-                  src="/images/instagram/instagram-06.jpg"
-                  alt="Portretfoto door Cuddling Memories Fotografie"
-                  className="aspect-[4/5] w-full object-cover"
-                />
-                <div className="px-5 py-6 text-center">
-                  <p className="script-line text-2xl text-cocoa">{settings.hero_subtitle}</p>
-                  <p className="display-title mt-1 text-2xl font-semibold uppercase leading-tight text-coffee">
-                    {settings.hero_title}
-                  </p>
-                  <Button to="/contact" className="mt-5 w-full px-3 text-[0.65rem]">
-                    Boek een shoot
-                  </Button>
-                </div>
-              </div>
             </div>
           </div>
         </div>

@@ -13,6 +13,11 @@ function emptyValues(fields) {
   return values;
 }
 
+function FieldHelp({ children }) {
+  if (!children) return null;
+  return <p className="-mt-1 text-xs font-normal leading-5 text-coffee/55">{children}</p>;
+}
+
 export default function AdminCrudList({
   title,
   table,
@@ -123,10 +128,12 @@ export default function AdminCrudList({
               className={`grid gap-2 text-sm font-semibold text-coffee ${field.wide ? "sm:col-span-2" : ""}`}
             >
               {field.label}
+              <FieldHelp>{field.help}</FieldHelp>
               {field.type === "textarea" && (
                 <textarea
                   rows={field.rows || 4}
                   required={field.required}
+                  placeholder={field.placeholder}
                   value={values[field.name]}
                   onChange={(event) => handleChange(field.name, event.target.value)}
                   className="resize-none rounded-lg border border-cocoa/20 bg-cream px-3 py-2 text-sm outline-none focus:border-cocoa"
@@ -160,6 +167,7 @@ export default function AdminCrudList({
                   type={field.type || "text"}
                   step={field.step}
                   required={field.required}
+                  placeholder={field.placeholder}
                   value={values[field.name]}
                   onChange={(event) => handleChange(field.name, event.target.value)}
                   className="rounded-lg border border-cocoa/20 bg-cream px-3 py-2 text-sm outline-none focus:border-cocoa"

@@ -18,6 +18,10 @@ function Feedback({ feedback }) {
   );
 }
 
+function FieldHelp({ children }) {
+  return <p className="-mt-1 text-xs font-normal leading-5 text-coffee/55">{children}</p>;
+}
+
 function WeekScheduleSection() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -67,6 +71,10 @@ function WeekScheduleSection() {
   return (
     <div className="rounded-lg bg-card p-5 shadow-soft warm-border">
       <h2 className="fine-label text-[0.65rem] text-cocoa">Weekrooster</h2>
+      <p className="mt-2 text-sm leading-6 text-coffee/65">
+        Dit is de basisbeschikbaarheid per weekdag. Open bepaalt of klanten die dag kunnen kiezen. Start/einde bepalen
+        de boekbare uren. Pauze haalt tijd uit de kalender. Max/dag begrenst hoeveel boekingen op die dag mogen staan.
+      </p>
       <div className="mt-4 overflow-x-auto">
         <table className="w-full min-w-[720px] border-collapse text-sm">
           <thead>
@@ -180,6 +188,10 @@ function ShootTypeSection() {
   return (
     <div className="rounded-lg bg-card p-5 shadow-soft warm-border">
       <h2 className="fine-label text-[0.65rem] text-cocoa">Beschikbaarheid per shoot-type</h2>
+      <p className="mt-2 text-sm leading-6 text-coffee/65">
+        Hiermee bepaal je per shoot of die geboekt kan worden, hoe lang de shoot duurt, hoeveel ruimte ervoor/erna vrij
+        blijft en op welke weekdagen deze shoot zichtbaar is.
+      </p>
       <div className="mt-4 grid gap-4">
         {rows.map((row) => (
           <div key={row.id} className="rounded-lg border border-cocoa/15 p-4">
@@ -188,28 +200,34 @@ function ShootTypeSection() {
               <label className="flex items-center gap-2 text-xs font-semibold text-coffee">
                 <input type="checkbox" checked={row.is_bookable} onChange={(e) => update(row.shoot_type, "is_bookable", e.target.checked)} className="h-4 w-4 accent-cocoa" />
                 Zichtbaar op boekingspagina
+                <span className="text-xs font-normal text-coffee/55">Zet uit als deze shoot tijdelijk niet gekozen mag worden.</span>
               </label>
             </div>
             <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
               <label className="grid gap-1 text-xs font-semibold text-coffee/70">
                 Duur (min)
+                <FieldHelp>Hoe lang deze shoot standaard duurt.</FieldHelp>
                 <input type="number" min="5" value={row.duration_minutes} onChange={(e) => update(row.shoot_type, "duration_minutes", e.target.value)} className={inputClass} />
               </label>
               <label className="grid gap-1 text-xs font-semibold text-coffee/70">
                 Buffer vóór (min)
+                <FieldHelp>Vrije tijd voor de shoot.</FieldHelp>
                 <input type="number" min="0" value={row.buffer_before_minutes} onChange={(e) => update(row.shoot_type, "buffer_before_minutes", e.target.value)} className={inputClass} />
               </label>
               <label className="grid gap-1 text-xs font-semibold text-coffee/70">
                 Buffer na (min)
+                <FieldHelp>Vrije tijd na de shoot.</FieldHelp>
                 <input type="number" min="0" value={row.buffer_after_minutes} onChange={(e) => update(row.shoot_type, "buffer_after_minutes", e.target.value)} className={inputClass} />
               </label>
               <label className="grid gap-1 text-xs font-semibold text-coffee/70">
                 Max per dag
+                <FieldHelp>Maximaal aantal van deze shoot per datum.</FieldHelp>
                 <input type="number" min="0" value={row.max_per_day} onChange={(e) => update(row.shoot_type, "max_per_day", e.target.value)} className={inputClass} />
               </label>
             </div>
             <div className="mt-3">
               <p className="text-xs font-semibold text-coffee/70">Toegestane dagen</p>
+              <p className="mt-1 text-xs leading-5 text-coffee/55">Alleen geselecteerde weekdagen kunnen voor deze shoot geboekt worden.</p>
               <div className="mt-1.5 flex flex-wrap gap-1.5">
                 {dayShort.map((label, index) => (
                   <button
@@ -285,29 +303,39 @@ function GeneralSettingsSection() {
   return (
     <div className="rounded-lg bg-card p-5 shadow-soft warm-border">
       <h2 className="fine-label text-[0.65rem] text-cocoa">Algemene boekingsregels</h2>
+      <p className="mt-2 text-sm leading-6 text-coffee/65">
+        Deze regels gelden voor de hele boekingskalender. Ze bepalen hoe ver vooruit bezoekers mogen plannen en hoe de
+        aanvraag na versturen behandeld wordt.
+      </p>
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <label className="grid gap-2 text-sm font-semibold text-coffee">
           Minimaal aantal dagen vooruit boeken
+          <FieldHelp>Hoeveel dagen tussen vandaag en de eerst mogelijke boekdatum moeten zitten.</FieldHelp>
           <input type="number" min="0" value={values.min_days_notice ?? ""} onChange={(e) => update("min_days_notice", e.target.value)} className={inputClass} />
         </label>
         <label className="grid gap-2 text-sm font-semibold text-coffee">
           Maximaal aantal maanden vooruit boeken
+          <FieldHelp>Hoe ver vooruit de kalender beschikbaarheid toont.</FieldHelp>
           <input type="number" min="1" value={values.max_months_ahead ?? ""} onChange={(e) => update("max_months_ahead", e.target.value)} className={inputClass} />
         </label>
         <label className="grid gap-2 text-sm font-semibold text-coffee">
           Standaard buffer (min)
+          <FieldHelp>Fallback-buffer als een shoot-type geen eigen buffer gebruikt.</FieldHelp>
           <input type="number" min="0" value={values.default_buffer_minutes ?? ""} onChange={(e) => update("default_buffer_minutes", e.target.value)} className={inputClass} />
         </label>
         <label className="grid gap-2 text-sm font-semibold text-coffee">
           Standaard shootduur (min)
+          <FieldHelp>Fallback-duur als een shoot-type geen eigen duur gebruikt.</FieldHelp>
           <input type="number" min="5" value={values.default_duration_minutes ?? ""} onChange={(e) => update("default_duration_minutes", e.target.value)} className={inputClass} />
         </label>
         <label className="flex items-center gap-2 text-sm font-semibold text-coffee">
           <input type="checkbox" checked={Boolean(values.allow_same_day_booking)} onChange={(e) => update("allow_same_day_booking", e.target.checked)} className="h-4 w-4 accent-cocoa" />
           Boeken op dezelfde dag toestaan
+          <span className="text-xs font-normal text-coffee/55">Zet aan als bezoekers vandaag nog een tijdslot mogen aanvragen.</span>
         </label>
         <label className="grid gap-2 text-sm font-semibold text-coffee">
           Boekingsmodus
+          <FieldHelp>Alleen aanvraag is het veiligst: jij bevestigt elke boeking handmatig voordat deze definitief is.</FieldHelp>
           <select value={values.booking_mode || "request_only"} onChange={(e) => update("booking_mode", e.target.value)} className={inputClass}>
             <option value="request_only">Alleen aanvraag (admin bevestigt)</option>
             <option value="admin_confirmation_required">Aanvraag met verplichte bevestiging</option>

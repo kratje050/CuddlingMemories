@@ -16,6 +16,10 @@ const emptyForm = {
   sortOrder: 0,
 };
 
+function FieldHelp({ children }) {
+  return <p className="-mt-1 text-xs font-normal leading-5 text-coffee/55">{children}</p>;
+}
+
 export default function AdminPortfolio() {
   const [albums, setAlbums] = useState([]);
   const [photos, setPhotos] = useState([]);
@@ -159,6 +163,7 @@ export default function AdminPortfolio() {
         <form onSubmit={handleSubmit} className="mt-5 grid gap-4 rounded-lg bg-card p-5 shadow-soft warm-border sm:grid-cols-2">
           <label className="grid gap-2 text-sm font-semibold text-coffee">
             Album
+            <FieldHelp>Bepaalt in welk portfolio-album deze foto terechtkomt.</FieldHelp>
             <select
               required
               value={form.albumId}
@@ -175,6 +180,7 @@ export default function AdminPortfolio() {
           </label>
           <label className="grid gap-2 text-sm font-semibold text-coffee">
             Categorie
+            <FieldHelp>Helpt bij filteren en groeperen. Kies dezelfde categorie als het album als je twijfelt.</FieldHelp>
             <select
               value={form.category}
               onChange={(event) => setForm((prev) => ({ ...prev, category: event.target.value }))}
@@ -190,6 +196,7 @@ export default function AdminPortfolio() {
           </label>
           <label className="grid gap-2 text-sm font-semibold text-coffee">
             Titel
+            <FieldHelp>Optionele titel voor intern overzicht of bij de foto in de lightbox.</FieldHelp>
             <input
               type="text"
               value={form.title}
@@ -199,6 +206,7 @@ export default function AdminPortfolio() {
           </label>
           <label className="grid gap-2 text-sm font-semibold text-coffee">
             Alt-tekst (verplicht voor SEO)
+            <FieldHelp>Beschrijf kort wat er op de foto staat. Dit helpt Google en bezoekers met screenreaders.</FieldHelp>
             <input
               type="text"
               required
@@ -209,6 +217,7 @@ export default function AdminPortfolio() {
           </label>
           <label className="grid gap-2 text-sm font-semibold text-coffee">
             Sortering
+            <FieldHelp>Lager getal komt eerder in het album of in overzichten.</FieldHelp>
             <input
               type="number"
               value={form.sortOrder}
@@ -224,9 +233,11 @@ export default function AdminPortfolio() {
               className="h-4 w-4 accent-cocoa"
             />
             Uitgelicht
+            <span className="text-xs font-normal text-coffee/55">Uitgelichte foto's kunnen op de homepage of bovenaan portfolio-overzichten verschijnen.</span>
           </label>
           <label className="grid gap-2 text-sm font-semibold text-coffee sm:col-span-2">
             {editingId ? "Nieuwe foto uploaden (optioneel, vervangt huidige)" : "Foto"}
+            <FieldHelp>Kies een JPG, PNG of WebP. Bij bewerken vervang je hiermee de huidige foto.</FieldHelp>
             <input
               type="file"
               accept="image/*"

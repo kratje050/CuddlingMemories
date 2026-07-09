@@ -14,6 +14,7 @@ import {
   updateBookingStatus,
 } from "../hooks/useBookings.js";
 import { bookingStatuses } from "../utils/bookingStatuses.js";
+import { formatDate, formatDateTime } from "../../lib/formatDate.js";
 
 export default function AdminBookingDetail() {
   const { id } = useParams();
@@ -128,10 +129,13 @@ export default function AdminBookingDetail() {
         <div>
           <h1 className="display-title text-3xl font-semibold text-coffee">{booking.customer_name}</h1>
           <p className="mt-1 text-sm text-coffee/70">
-            Aangevraagd op {new Date(booking.created_at).toLocaleString("nl-NL")}
+            Aangevraagd op {formatDateTime(booking.created_at)}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <p className="basis-full text-xs leading-5 text-coffee/55">
+            Deze acties passen de status of interne markering van de boeking aan. Mail klant opent alleen je mailprogramma.
+          </p>
           <AdminButton variant="secondary" onClick={handleConfirm} disabled={saving}>
             <CalendarCheck size={14} /> Bevestigen
           </AdminButton>
@@ -163,7 +167,7 @@ export default function AdminBookingDetail() {
               <Field label="Gewenste shoot" value={booking.shoot_type} />
               <Field
                 label="Datum shoot"
-                value={booking.booking_date ? `${booking.booking_date} · ${booking.start_time?.slice(0, 5)}-${booking.end_time?.slice(0, 5)}` : "Nog niet ingepland"}
+                value={booking.booking_date ? `${formatDate(booking.booking_date)} · ${booking.start_time?.slice(0, 5)}-${booking.end_time?.slice(0, 5)}` : "Nog niet ingepland"}
               />
               <Field label="Duur / buffer" value={booking.duration_minutes ? `${booking.duration_minutes} min (buffer ${booking.buffer_before_minutes}/${booking.buffer_after_minutes} min)` : "-"} />
               <Field label="Locatie" value={booking.location || "-"} />
@@ -171,9 +175,9 @@ export default function AdminBookingDetail() {
               <Field label="Modelkorting" value={booking.model_discount ? "Ja" : "Nee"} />
               <Field label="Bron" value={booking.source} />
               <Field label="Privacy geaccepteerd" value={booking.privacy_accepted ? "Ja" : "Nee"} />
-              <Field label="Bevestigd op" value={booking.confirmed_at ? new Date(booking.confirmed_at).toLocaleString("nl-NL") : "-"} />
-              <Field label="Geannuleerd op" value={booking.cancelled_at ? new Date(booking.cancelled_at).toLocaleString("nl-NL") : "-"} />
-              <Field label="Laatste wijziging" value={new Date(booking.updated_at).toLocaleString("nl-NL")} />
+              <Field label="Bevestigd op" value={booking.confirmed_at ? formatDateTime(booking.confirmed_at) : "-"} />
+              <Field label="Geannuleerd op" value={booking.cancelled_at ? formatDateTime(booking.cancelled_at) : "-"} />
+              <Field label="Laatste wijziging" value={formatDateTime(booking.updated_at)} />
             </dl>
             <div className="mt-4">
               <p className="fine-label text-[0.62rem] text-cocoa">Bericht</p>
@@ -183,7 +187,7 @@ export default function AdminBookingDetail() {
 
           <div className="rounded-lg bg-card p-6 shadow-soft warm-border">
             <h2 className="display-title text-xl font-semibold text-coffee">Interne notitie</h2>
-            <p className="mt-1 text-xs text-coffee/60">Eén vastgepinde notitie, los van de tijdlijn hieronder.</p>
+            <p className="mt-1 text-xs text-coffee/60">Een vastgepinde notitie voor jezelf. Deze tekst is niet zichtbaar voor de klant.</p>
             <textarea
               value={adminNotes}
               onChange={(event) => setAdminNotes(event.target.value)}
@@ -197,6 +201,7 @@ export default function AdminBookingDetail() {
 
           <div className="rounded-lg bg-card p-6 shadow-soft warm-border">
             <h2 className="display-title text-xl font-semibold text-coffee">Notities</h2>
+            <p className="mt-1 text-xs text-coffee/60">Losse interne tijdlijnnotities. Handig voor belafspraken, bijzonderheden of opvolging.</p>
             <form onSubmit={handleAddNote} className="mt-3 grid gap-2">
               <textarea
                 value={noteText}
@@ -215,7 +220,7 @@ export default function AdminBookingDetail() {
                 <div key={note.id} className="rounded-lg bg-linen/60 p-3 text-sm">
                   <p className="text-coffee/85">{note.note}</p>
                   <p className="mt-1 text-xs text-coffee/50">
-                    {note.created_by || "Onbekend"} · {new Date(note.created_at).toLocaleString("nl-NL")}
+                    {note.created_by || "Onbekend"} · {formatDateTime(note.created_at)}
                   </p>
                 </div>
               ))}
@@ -226,6 +231,9 @@ export default function AdminBookingDetail() {
         <div className="grid gap-6">
           <div className="rounded-lg bg-card p-6 shadow-soft warm-border">
             <h2 className="display-title text-xl font-semibold text-coffee">Status</h2>
+            <p className="mt-1 text-xs leading-5 text-coffee/60">
+              De status helpt jou bij opvolging. Bevestigen en annuleren vullen ook de bevestigings- of annuleringsdatum.
+            </p>
             <select
               value={booking.status}
               onChange={handleStatusChange}
@@ -251,7 +259,7 @@ export default function AdminBookingDetail() {
                     <span className="font-semibold">{entry.new_status}</span>
                   </p>
                   <p className="text-xs text-coffee/50">
-                    {entry.changed_by || "Onbekend"} · {new Date(entry.created_at).toLocaleString("nl-NL")}
+                    {entry.changed_by || "Onbekend"} · {formatDateTime(entry.created_at)}
                   </p>
                 </div>
               ))}

@@ -93,6 +93,7 @@ export default function AdminBookingNew() {
         <div className="grid gap-6">
           <div className="rounded-lg bg-card p-5 shadow-soft warm-border">
             <h2 className="fine-label text-[0.65rem] text-cocoa">1. Shoot-type</h2>
+            <p className="mt-2 text-xs leading-5 text-coffee/55">Kies welk soort shoot je handmatig in de kalender zet. Dit bepaalt duur, buffers en toegestane dagen.</p>
             <div className="mt-3">
               <ShootTypeStep
                 options={shootTypeOptions}
@@ -110,6 +111,7 @@ export default function AdminBookingNew() {
           {shootType && packagesForShoot.length > 0 && (
             <div className="rounded-lg bg-card p-5 shadow-soft warm-border">
               <h2 className="fine-label text-[0.65rem] text-cocoa">2. Pakket (optioneel)</h2>
+              <p className="mt-2 text-xs leading-5 text-coffee/55">Koppel eventueel het pakket dat de klant heeft gekozen. Dit is vooral handig voor administratie.</p>
               <div className="mt-3">
                 <PackageStep packages={packagesForShoot} value={packageId} onSelect={setPackageId} />
               </div>
@@ -119,6 +121,7 @@ export default function AdminBookingNew() {
           {shootType && (
             <div className="rounded-lg bg-card p-5 shadow-soft warm-border">
               <h2 className="fine-label text-[0.65rem] text-cocoa">3. Datum</h2>
+              <p className="mt-2 text-xs leading-5 text-coffee/55">De kalender toont alleen data die volgens het rooster, blokkades en shoot-instellingen mogelijk zijn.</p>
               <div className="mt-3">
                 <BookingCalendar shootType={shootType} value={date} onSelect={(d) => { setDate(d); setTime(null); }} />
               </div>
@@ -128,6 +131,7 @@ export default function AdminBookingNew() {
           {shootType && date && (
             <div className="rounded-lg bg-card p-5 shadow-soft warm-border">
               <h2 className="fine-label text-[0.65rem] text-cocoa">4. Tijd</h2>
+              <p className="mt-2 text-xs leading-5 text-coffee/55">Kies een vrij tijdslot. Bij opslaan wordt nogmaals gecontroleerd of er geen overlap is.</p>
               <div className="mt-3">
                 <TimeSlotStep date={date} shootType={shootType} value={time} onSelect={setTime} />
               </div>
@@ -141,26 +145,32 @@ export default function AdminBookingNew() {
             <div className="mt-3 grid gap-3">
               <label className="grid gap-1.5 text-sm font-semibold text-coffee">
                 Naam
+                <span className="text-xs font-normal text-coffee/55">Naam van de klant zoals die in de boekingenlijst verschijnt.</span>
                 <input type="text" value={customer.naam} onChange={(e) => setCustomer({ ...customer, naam: e.target.value })} className={inputClass} />
               </label>
               <label className="grid gap-1.5 text-sm font-semibold text-coffee">
                 E-mail
+                <span className="text-xs font-normal text-coffee/55">Nodig om later contact op te nemen of een bevestiging te sturen.</span>
                 <input type="email" value={customer.email} onChange={(e) => setCustomer({ ...customer, email: e.target.value })} className={inputClass} />
               </label>
               <label className="grid gap-1.5 text-sm font-semibold text-coffee">
                 Locatie/omgeving
+                <span className="text-xs font-normal text-coffee/55">Plaats of omgeving waar de shoot moet plaatsvinden.</span>
                 <input type="text" value={customer.omgeving} onChange={(e) => setCustomer({ ...customer, omgeving: e.target.value })} className={inputClass} />
               </label>
               <label className="grid gap-1.5 text-sm font-semibold text-coffee">
                 Bericht
+                <span className="text-xs font-normal text-coffee/55">Klantwens of context voor deze aanvraag.</span>
                 <textarea rows={3} value={customer.bericht} onChange={(e) => setCustomer({ ...customer, bericht: e.target.value })} className={`${inputClass} resize-none`} />
               </label>
               <label className="grid gap-1.5 text-sm font-semibold text-coffee">
                 Interne notitie
+                <span className="text-xs font-normal text-coffee/55">Alleen zichtbaar in admin, niet voor de klant.</span>
                 <textarea rows={2} value={customer.adminNotes} onChange={(e) => setCustomer({ ...customer, adminNotes: e.target.value })} className={`${inputClass} resize-none`} />
               </label>
               <label className="grid gap-1.5 text-sm font-semibold text-coffee">
                 Status
+                <span className="text-xs font-normal text-coffee/55">Startstatus van deze handmatig toegevoegde boeking.</span>
                 <select value={status} onChange={(e) => setStatus(e.target.value)} className={inputClass}>
                   {bookingStatuses.map((s) => (
                     <option key={s} value={s}>{s}</option>

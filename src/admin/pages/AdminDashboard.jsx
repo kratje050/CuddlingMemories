@@ -6,6 +6,7 @@ import AdminLayout from "../components/AdminLayout.jsx";
 import StatCard from "../components/StatCard.jsx";
 import DataTable from "../components/DataTable.jsx";
 import BarList from "../components/BarList.jsx";
+import { formatDate } from "../../lib/formatDate.js";
 
 const OPEN_STATUSES = ["Nieuw", "Gelezen", "Contact opgenomen", "Wacht op reactie"];
 
@@ -223,7 +224,7 @@ export default function AdminDashboard() {
         <StatCard label="Populairste shoot" value={loading ? "-" : stats.popularShoot} icon={TrendingUp} />
         <StatCard
           label="Eerstvolgende shoot"
-          value={loading ? "-" : stats.nextShoot ? `${stats.nextShoot.booking_date} ${stats.nextShoot.start_time?.slice(0, 5) || ""}` : "Geen"}
+          value={loading ? "-" : stats.nextShoot ? `${formatDate(stats.nextShoot.booking_date)} ${stats.nextShoot.start_time?.slice(0, 5) || ""}` : "Geen"}
           icon={CalendarClock}
         />
         <StatCard label="Geblokkeerde dagen deze maand" value={loading ? "-" : stats.blockedDaysThisMonth} icon={CalendarX} />
@@ -247,7 +248,7 @@ export default function AdminDashboard() {
                 {
                   key: "created_at",
                   label: "Datum",
-                  render: (row) => new Date(row.created_at).toLocaleDateString("nl-NL"),
+                  render: (row) => formatDate(row.created_at),
                 },
               ]}
             />
@@ -267,7 +268,7 @@ export default function AdminDashboard() {
                 {
                   key: "updated_at",
                   label: "Laatst gewijzigd",
-                  render: (row) => new Date(row.updated_at).toLocaleDateString("nl-NL"),
+                  render: (row) => formatDate(row.updated_at),
                 },
               ]}
             />

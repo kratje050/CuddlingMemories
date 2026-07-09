@@ -12,6 +12,10 @@ const pageSlugs = [
 
 const slugsWithSections = ["werkwijze", "privacybeleid"];
 
+function FieldHelp({ children }) {
+  return <p className="-mt-1 text-xs font-normal leading-5 text-coffee/55">{children}</p>;
+}
+
 export default function AdminPages() {
   const [activeSlug, setActiveSlug] = useState("home");
   const [page, setPage] = useState(null);
@@ -113,6 +117,7 @@ export default function AdminPages() {
           <form onSubmit={handleSavePage} className="mt-6 grid gap-4 rounded-lg bg-card p-5 shadow-soft warm-border">
             <label className="grid gap-2 text-sm font-semibold text-coffee">
               Titel
+              <FieldHelp>Hoofdtitel van deze pagina. Deze tekst zien bezoekers op de pagina zelf.</FieldHelp>
               <input
                 type="text"
                 value={page.title || ""}
@@ -122,6 +127,7 @@ export default function AdminPages() {
             </label>
             <label className="grid gap-2 text-sm font-semibold text-coffee">
               Subtitel
+              <FieldHelp>Korte ondersteunende tekst onder de titel. Laat leeg als de pagina geen subtitel nodig heeft.</FieldHelp>
               <input
                 type="text"
                 value={page.subtitle || ""}
@@ -131,6 +137,7 @@ export default function AdminPages() {
             </label>
             <label className="grid gap-2 text-sm font-semibold text-coffee">
               Inhoud
+              <FieldHelp>Belangrijkste tekstblok van deze pagina. Regels en witruimte blijven zoveel mogelijk behouden.</FieldHelp>
               <textarea
                 rows={6}
                 value={page.content || ""}
@@ -140,6 +147,7 @@ export default function AdminPages() {
             </label>
             <label className="grid gap-2 text-sm font-semibold text-coffee">
               SEO-titel
+              <FieldHelp>Titel die vooral in Google, browser-tabs en gedeelde links wordt gebruikt.</FieldHelp>
               <input
                 type="text"
                 value={page.meta_title || ""}
@@ -149,6 +157,7 @@ export default function AdminPages() {
             </label>
             <label className="grid gap-2 text-sm font-semibold text-coffee">
               SEO-omschrijving
+              <FieldHelp>Korte omschrijving voor zoekmachines. Deze tekst staat meestal niet zichtbaar op de pagina zelf.</FieldHelp>
               <textarea
                 rows={2}
                 value={page.meta_description || ""}
@@ -164,6 +173,7 @@ export default function AdminPages() {
                 className="h-4 w-4 accent-cocoa"
               />
               Gepubliceerd
+              <span className="text-xs font-normal text-coffee/55">Zet uit om deze pagina tijdelijk te verbergen of als concept te bewaren.</span>
             </label>
 
             {feedback && (
@@ -190,6 +200,7 @@ export default function AdminPages() {
                 <div key={section.id} className="rounded-lg bg-card p-5 shadow-soft warm-border">
                   <label className="grid gap-2 text-sm font-semibold text-coffee">
                     Titel
+                    <FieldHelp>Titel van dit losse onderdeel, bijvoorbeeld een werkwijze-stap.</FieldHelp>
                     <input
                       type="text"
                       value={section.title || ""}
@@ -199,6 +210,7 @@ export default function AdminPages() {
                   </label>
                   <label className="mt-3 grid gap-2 text-sm font-semibold text-coffee">
                     Beschrijving
+                    <FieldHelp>Tekst die bij dit onderdeel op de pagina wordt getoond.</FieldHelp>
                     <textarea
                       rows={2}
                       value={section.content || ""}

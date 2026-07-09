@@ -3,6 +3,10 @@ import { supabase } from "../../lib/supabaseClient.js";
 import AdminLayout from "../components/AdminLayout.jsx";
 import AdminButton from "../components/AdminButton.jsx";
 
+function FieldHelp({ children }) {
+  return <p className="-mt-1 text-xs font-normal leading-5 text-coffee/55">{children}</p>;
+}
+
 export default function AdminSeo() {
   const [pages, setPages] = useState([]);
   const [settingsId, setSettingsId] = useState(null);
@@ -69,8 +73,13 @@ export default function AdminSeo() {
 
       <form onSubmit={handleSaveDefaults} className="mt-6 grid gap-4 rounded-lg bg-card p-5 shadow-soft warm-border">
         <h2 className="fine-label text-[0.65rem] text-cocoa">Standaard SEO (fallback)</h2>
+        <p className="text-sm leading-6 text-coffee/65">
+          Deze teksten worden gebruikt als een pagina geen eigen SEO-tekst heeft. SEO-teksten verschijnen vooral in
+          Google, browser-tabs en gedeelde links.
+        </p>
         <label className="grid gap-2 text-sm font-semibold text-coffee">
           Standaard SEO-titel
+          <FieldHelp>Korte titel voor zoekmachines. Houd deze duidelijk en niet te lang.</FieldHelp>
           <input
             type="text"
             value={defaults.default_seo_title}
@@ -80,6 +89,7 @@ export default function AdminSeo() {
         </label>
         <label className="grid gap-2 text-sm font-semibold text-coffee">
           Standaard SEO-omschrijving
+          <FieldHelp>Korte samenvatting die mensen kan overtuigen om op het zoekresultaat te klikken.</FieldHelp>
           <textarea
             rows={2}
             value={defaults.default_seo_description}
@@ -99,6 +109,7 @@ export default function AdminSeo() {
             <p className="fine-label text-[0.6rem] text-cocoa">{page.slug}</p>
             <label className="mt-3 grid gap-2 text-sm font-semibold text-coffee">
               SEO-titel
+              <FieldHelp>Overschrijft de standaard SEO-titel alleen voor deze pagina.</FieldHelp>
               <input
                 type="text"
                 value={page.meta_title || ""}
@@ -108,6 +119,7 @@ export default function AdminSeo() {
             </label>
             <label className="mt-3 grid gap-2 text-sm font-semibold text-coffee">
               SEO-omschrijving
+              <FieldHelp>Overschrijft de standaard SEO-omschrijving alleen voor deze pagina.</FieldHelp>
               <textarea
                 rows={2}
                 value={page.meta_description || ""}

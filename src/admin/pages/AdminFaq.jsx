@@ -2,11 +2,11 @@ import AdminLayout from "../components/AdminLayout.jsx";
 import AdminCrudList from "../components/AdminCrudList.jsx";
 
 const fields = [
-  { name: "question", label: "Vraag", type: "text", required: true, wide: true },
-  { name: "answer", label: "Antwoord", type: "textarea", required: true, wide: true },
-  { name: "category", label: "Categorie", type: "text" },
-  { name: "sort_order", label: "Sortering", type: "number" },
-  { name: "is_visible", label: "Zichtbaar", type: "checkbox" },
+  { name: "question", label: "Vraag", type: "text", required: true, wide: true, help: "De vraag zoals bezoekers die in de FAQ zien." },
+  { name: "answer", label: "Antwoord", type: "textarea", required: true, wide: true, help: "Het antwoord dat openklapt onder de vraag. Houd dit duidelijk en praktisch." },
+  { name: "category", label: "Categorie", type: "text", help: "Interne of zichtbare groepering, bijvoorbeeld Boeken, Betaling of Fotoshoot." },
+  { name: "sort_order", label: "Sortering", type: "number", help: "Lager getal komt eerder in de lijst met veelgestelde vragen." },
+  { name: "is_visible", label: "Zichtbaar", type: "checkbox", help: "Alleen zichtbare vragen verschijnen op de website." },
 ];
 
 const columns = [

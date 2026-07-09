@@ -11,6 +11,7 @@ import { useAdminAuth } from "../hooks/useAdminAuth.js";
 import { useBookings, updateBookingStatus, deleteBooking } from "../hooks/useBookings.js";
 import { bookingStatuses, shootTypeOptions } from "../utils/bookingStatuses.js";
 import { downloadCsv } from "../utils/csvExport.js";
+import { formatDate, formatDateTime } from "../../lib/formatDate.js";
 
 export default function AdminBookings() {
   const navigate = useNavigate();
@@ -59,13 +60,13 @@ export default function AdminBookings() {
       {
         key: "booking_date",
         label: "Datum shoot",
-        render: (row) => (row.booking_date ? `${row.booking_date} ${row.start_time?.slice(0, 5) || ""}` : "-"),
+        render: (row) => (row.booking_date ? `${formatDate(row.booking_date)} ${row.start_time?.slice(0, 5) || ""}` : "-"),
       },
       { key: "status", label: "Status" },
       {
         key: "created_at",
         label: "Aangevraagd",
-        render: (row) => new Date(row.created_at).toLocaleDateString("nl-NL"),
+        render: (row) => formatDate(row.created_at),
       },
       {
         key: "actions",
@@ -111,7 +112,7 @@ export default function AdminBookings() {
         { label: "Status", value: (row) => row.status },
         { label: "Model korting", value: (row) => (row.model_discount ? "Ja" : "Nee") },
         { label: "Belangrijk", value: (row) => (row.is_important ? "Ja" : "Nee") },
-        { label: "Aangevraagd op", value: (row) => new Date(row.created_at).toLocaleString("nl-NL") },
+        { label: "Aangevraagd op", value: (row) => formatDateTime(row.created_at) },
         { label: "Bericht", value: (row) => row.message },
       ]
     );
@@ -152,6 +153,10 @@ export default function AdminBookings() {
 
       {viewMode === "calendar" ? (
         <div className="mt-5">
+          <p className="mb-3 text-sm leading-6 text-coffee/65">
+            In de kalender zie je boekingen per dag. In week- en dagweergave kun je een boeking verslepen; het systeem
+            controleert dan opnieuw op overlap met andere boekingen en blokkades.
+          </p>
           <AdminCalendar
             view={calendarView}
             date={calendarDate}
@@ -162,15 +167,21 @@ export default function AdminBookings() {
         </div>
       ) : (
         <>
+      <p className="mt-5 text-sm leading-6 text-coffee/65">
+        Gebruik de filters om snel de juiste boekingen te vinden. De filters wijzigen niets aan de boekingen zelf; ze
+        passen alleen de lijst hieronder aan.
+      </p>
       <div className="mt-5 grid gap-3 rounded-lg bg-card p-4 shadow-soft warm-border sm:grid-cols-2 lg:grid-cols-6">
         <input
           type="text"
+          title="Zoeken: filtert op naam of e-mailadres."
           placeholder="Zoek op naam of e-mail"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           className="rounded-lg border border-cocoa/20 bg-cream px-3 py-2 text-sm outline-none focus:border-cocoa lg:col-span-2"
         />
         <select
+          title="Statusfilter: toon alleen boekingen met deze status."
           value={status}
           onChange={(event) => setStatus(event.target.value)}
           className="rounded-lg border border-cocoa/20 bg-cream px-3 py-2 text-sm outline-none focus:border-cocoa"
@@ -183,6 +194,7 @@ export default function AdminBookings() {
           ))}
         </select>
         <select
+          title="Shootfilter: toon alleen boekingen van dit shoot-type."
           value={shootType}
           onChange={(event) => setShootType(event.target.value)}
           className="rounded-lg border border-cocoa/20 bg-cream px-3 py-2 text-sm outline-none focus:border-cocoa"
@@ -195,6 +207,7 @@ export default function AdminBookings() {
           ))}
         </select>
         <select
+          title="Pakketfilter: toon alleen boekingen met dit gekozen pakket."
           value={packageId}
           onChange={(event) => setPackageId(event.target.value)}
           className="rounded-lg border border-cocoa/20 bg-cream px-3 py-2 text-sm outline-none focus:border-cocoa"
@@ -208,17 +221,20 @@ export default function AdminBookings() {
         </select>
         <input
           type="date"
+          title="Vanaf-datum: toon alleen shoots vanaf deze datum."
           value={dateFrom}
           onChange={(event) => setDateFrom(event.target.value)}
           className="rounded-lg border border-cocoa/20 bg-cream px-3 py-2 text-sm outline-none focus:border-cocoa"
         />
         <input
           type="date"
+          title="Tot-datum: toon alleen shoots tot en met deze datum."
           value={dateTo}
           onChange={(event) => setDateTo(event.target.value)}
           className="rounded-lg border border-cocoa/20 bg-cream px-3 py-2 text-sm outline-none focus:border-cocoa"
         />
         <select
+          title="Sortering: bepaalt de volgorde van de lijst."
           value={sort}
           onChange={(event) => setSort(event.target.value)}
           className="rounded-lg border border-cocoa/20 bg-cream px-3 py-2 text-sm outline-none focus:border-cocoa sm:col-span-2 lg:col-span-1"
