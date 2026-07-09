@@ -201,8 +201,6 @@ export default function Contact() {
             </p>
           </div>
 
-          <MonthAvailabilityOverview className="mt-14" />
-
           {loadingBase ? (
             <p className="mt-10 text-sm text-coffee/60">Even laden...</p>
           ) : (
@@ -288,6 +286,12 @@ export default function Contact() {
               </aside>
             </div>
           )}
+        </div>
+      </section>
+
+      <section className="pb-16">
+        <div className="container-soft">
+          <MonthAvailabilityOverview />
         </div>
       </section>
 

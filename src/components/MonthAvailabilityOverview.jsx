@@ -1,12 +1,16 @@
 import { useEffect, useState } from "react";
+import Button from "./Button.jsx";
 import SectionTitle from "./SectionTitle.jsx";
 import MonthAvailabilityCard from "./MonthAvailabilityCard.jsx";
 import { getMonthsAvailability } from "../lib/monthAvailability.js";
+
+const COLLAPSED_COUNT = 4;
 
 export default function MonthAvailabilityOverview({ className = "" }) {
   const [months, setMonths] = useState([]);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -28,6 +32,7 @@ export default function MonthAvailabilityOverview({ className = "" }) {
   }, []);
 
   const hasAvailableMonths = months.some((month) => month.status !== "unavailable");
+  const visibleMonths = expanded ? months : months.slice(0, COLLAPSED_COUNT);
 
   return (
     <div className={className}>
@@ -51,11 +56,20 @@ export default function MonthAvailabilityOverview({ className = "" }) {
       )}
 
       {!loading && !failed && hasAvailableMonths && (
-        <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {months.map((month) => (
-            <MonthAvailabilityCard key={`${month.year}-${month.month}`} month={month} />
-          ))}
-        </div>
+        <>
+          <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {visibleMonths.map((month) => (
+              <MonthAvailabilityCard key={`${month.year}-${month.month}`} month={month} />
+            ))}
+          </div>
+          {!expanded && months.length > COLLAPSED_COUNT && (
+            <div className="mt-6 text-center">
+              <Button type="button" variant="secondary" onClick={() => setExpanded(true)}>
+                Bekijk alle maanden
+              </Button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
