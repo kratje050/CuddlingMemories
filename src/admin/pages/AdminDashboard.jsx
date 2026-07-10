@@ -80,6 +80,21 @@ function buildCharts(rows, availabilityRules) {
   };
 }
 
+function bookingMoment(booking) {
+  if (booking.booking_date) {
+    return `${formatDate(booking.booking_date)} ${booking.start_time?.slice(0, 5) || ""}`.trim();
+  }
+
+  return booking.preferred_period || "Nog niet ingepland";
+}
+
+function shortText(value, fallback = "-") {
+  if (!value) return fallback;
+  const text = String(value).trim();
+  if (!text) return fallback;
+  return text.length > 90 ? `${text.slice(0, 90)}...` : text;
+}
+
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -181,9 +196,9 @@ export default function AdminDashboard() {
         supabase.from("packages").select("id", { count: "exact", head: true }).eq("is_published", true),
         supabase
           .from("bookings")
-          .select("id, customer_name, shoot_type, status, created_at")
+          .select("id, customer_name, customer_email, shoot_type, status, created_at, booking_date, start_time, preferred_period, location, message, model_discount, packages(title)")
           .order("created_at", { ascending: false })
-          .limit(5),
+          .limit(8),
         supabase.from("recent_content_changes").select("*").order("updated_at", { ascending: false }).limit(5),
         supabase
           .from("bookings")
@@ -390,28 +405,78 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-2">
+      <div className="mt-8 grid gap-6">
         <div>
-          <h2 className="display-title text-xl font-semibold text-coffee">Laatste 5 boekingen</h2>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="display-title text-xl font-semibold text-coffee">Klantgegevens</h2>
+              <p className="mt-1 text-sm text-coffee/65">
+                Laatste aanvragen met naam, e-mail, shoot, locatie en bericht.
+              </p>
+            </div>
+            <AdminButton type="button" variant="secondary" onClick={() => navigate("/admin/bookings")}>
+              Alle boekingen bekijken
+            </AdminButton>
+          </div>
           <div className="mt-3">
             <DataTable
               loading={loading}
               rows={recentBookings}
               getRowKey={(row) => row.id}
               emptyLabel="Nog geen boekingen."
+              onRowClick={(row) => navigate(`/admin/bookings/${row.id}`)}
               columns={[
-                { key: "customer_name", label: "Naam" },
-                { key: "shoot_type", label: "Shoot" },
+                {
+                  key: "customer",
+                  label: "Klant",
+                  render: (row) => (
+                    <div>
+                      <p className="font-semibold text-coffee">{row.customer_name || "Naam onbekend"}</p>
+                      <p className="mt-1 text-xs text-coffee/60">{row.customer_email || "Geen e-mail"}</p>
+                    </div>
+                  ),
+                },
+                {
+                  key: "shoot",
+                  label: "Shoot",
+                  render: (row) => (
+                    <div>
+                      <p className="font-semibold text-coffee">{row.shoot_type || "-"}</p>
+                      <p className="mt-1 text-xs text-coffee/60">
+                        {row.packages?.title || "Geen pakket gekozen"}
+                        {row.model_discount ? " · met korting" : ""}
+                      </p>
+                    </div>
+                  ),
+                },
+                {
+                  key: "moment",
+                  label: "Moment",
+                  render: (row) => bookingMoment(row),
+                },
+                {
+                  key: "details",
+                  label: "Locatie / bericht",
+                  render: (row) => (
+                    <div className="max-w-[360px]">
+                      <p className="font-semibold text-coffee">{shortText(row.location, "Geen locatie opgegeven")}</p>
+                      <p className="mt-1 text-xs leading-5 text-coffee/60">{shortText(row.message, "Geen bericht")}</p>
+                    </div>
+                  ),
+                },
                 { key: "status", label: "Status" },
                 {
                   key: "created_at",
-                  label: "Datum",
+                  label: "Aangevraagd",
                   render: (row) => formatDate(row.created_at),
                 },
               ]}
             />
           </div>
         </div>
+      </div>
+
+      <div className="mt-8 grid gap-6 lg:grid-cols-2">
         <div>
           <h2 className="display-title text-xl font-semibold text-coffee">Laatste 5 aangepaste onderdelen</h2>
           <div className="mt-3">

@@ -176,4 +176,48 @@ export const styles = StyleSheet.create({
     color: "#9F1239",
     marginTop: 10,
   },
+  weekRow: {
+    flexDirection: "row",
+  },
+  weekdayLabel: {
+    width: `${100 / 7}%`,
+    textAlign: "center",
+    color: "#8A6B55",
+    fontWeight: "700",
+    fontSize: 12,
+  },
+  dayCellWrap: {
+    width: `${100 / 7}%`,
+    padding: 2,
+  },
+  dayCell: {
+    aspectRatio: 1,
+    borderRadius: 10,
+    backgroundColor: adminPalette.card,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  dayCellBlocked: {
+    backgroundColor: adminPalette.linen,
+  },
+  dayCellSelected: {
+    backgroundColor: adminPalette.cocoa,
+  },
+  dayCellText: {
+    color: adminPalette.coffee,
+    fontWeight: "700",
+  },
+  dayCellTextSelected: {
+    color: adminPalette.card,
+  },
+  dayCellDot: {
+    marginTop: 2,
+    backgroundColor: adminPalette.clay,
+    borderRadius: 999,
+    paddingHorizontal: 5,
+    fontSize: 10,
+    color: adminPalette.card,
+    fontWeight: "700",
+    overflow: "hidden",
+  },
 });

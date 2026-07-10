@@ -25,6 +25,7 @@ import {
 const navItems = [
   { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/admin/bookings", label: "Boekingen", icon: CalendarCheck },
+  { to: "/admin/klantgegevens", label: "Klantgegevens", icon: Users },
   { to: "/admin/beschikbaarheid", label: "Beschikbaarheid", icon: CalendarClock },
   { to: "/admin/geblokkeerde-dagen", label: "Geblokkeerde dagen", icon: CalendarX },
   { to: "/admin/tijdslots", label: "Tijdslots", icon: CalendarPlus },

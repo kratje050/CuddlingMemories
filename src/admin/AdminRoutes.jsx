@@ -6,6 +6,7 @@ import AdminDashboard from "./pages/AdminDashboard.jsx";
 import AdminBookings from "./pages/AdminBookings.jsx";
 import AdminBookingDetail from "./pages/AdminBookingDetail.jsx";
 import AdminBookingNew from "./pages/AdminBookingNew.jsx";
+import AdminCustomers from "./pages/AdminCustomers.jsx";
 import AdminAvailability from "./pages/AdminAvailability.jsx";
 import AdminBlockedPeriods from "./pages/AdminBlockedPeriods.jsx";
 import AdminManualSlots from "./pages/AdminManualSlots.jsx";
@@ -62,6 +63,14 @@ export default function AdminRoutes() {
           element={
             <RequireAdmin>
               <AdminBookingDetail />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="klantgegevens"
+          element={
+            <RequireAdmin>
+              <AdminCustomers />
             </RequireAdmin>
           }
         />

@@ -1,4 +1,4 @@
-import type { Booking, BookingNote, DashboardStats, SupabaseLike } from "./types";
+import type { AppNotification, BlockedPeriod, Booking, BookingNote, CalendarBooking, DashboardStats, SupabaseLike } from "./types";
 
 const startOfTodayIso = () => {
   const date = new Date();
@@ -127,4 +127,67 @@ export async function addBookingNote(supabase: SupabaseLike, bookingId: string, 
   await requireAdmin(supabase);
   const { error } = await supabase.from("booking_notes").insert({ booking_id: bookingId, note, created_by: createdBy || "admin-app" });
   if (error) throw error;
+}
+
+export async function updateBookingDiscount(
+  supabase: SupabaseLike,
+  bookingId: string,
+  discountType: string | null,
+  discountValue: number | null,
+  discountNote: string | null
+) {
+  await requireAdmin(supabase);
+  const { error } = await supabase
+    .from("bookings")
+    .update({ discount_type: discountType, discount_value: discountValue, discount_note: discountNote })
+    .eq("id", bookingId);
+  if (error) throw error;
+}
+
+export async function listNotifications(
+  supabase: SupabaseLike,
+  filters: { onlyUnread?: boolean; type?: string } = {}
+): Promise<AppNotification[]> {
+  await requireAdmin(supabase);
+  let query = supabase.from("notifications").select("*").order("created_at", { ascending: false }).limit(100);
+  if (filters.onlyUnread) query = query.eq("is_read", false);
+  if (filters.type) query = query.eq("type", filters.type);
+  const { data, error } = await query;
+  if (error) throw error;
+  return data || [];
+}
+
+export async function markNotificationRead(supabase: SupabaseLike, id: string) {
+  await requireAdmin(supabase);
+  const { error } = await supabase.from("notifications").update({ is_read: true }).eq("id", id);
+  if (error) throw error;
+}
+
+// year/month zijn 1-based (1=januari), zoals overal elders in dit project.
+export async function calendarBookingsForMonth(supabase: SupabaseLike, year: number, month: number): Promise<CalendarBooking[]> {
+  await requireAdmin(supabase);
+  const monthStart = `${year}-${String(month).padStart(2, "0")}-01`;
+  const monthEnd = new Date(year, month, 0).toISOString().slice(0, 10);
+  const { data, error } = await supabase
+    .from("bookings")
+    .select("id,customer_name,shoot_type,status,booking_date,start_time")
+    .gte("booking_date", monthStart)
+    .lte("booking_date", monthEnd)
+    .order("booking_date", { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function blockedPeriodsForMonth(supabase: SupabaseLike, year: number, month: number): Promise<BlockedPeriod[]> {
+  await requireAdmin(supabase);
+  const monthStart = new Date(Date.UTC(year, month - 1, 1)).toISOString();
+  const monthEnd = new Date(Date.UTC(year, month, 0, 23, 59, 59)).toISOString();
+  const { data, error } = await supabase
+    .from("blocked_periods")
+    .select("id,title,start_datetime,end_datetime,all_day")
+    .lte("start_datetime", monthEnd)
+    .gte("end_datetime", monthStart)
+    .order("start_datetime", { ascending: true });
+  if (error) throw error;
+  return data || [];
 }

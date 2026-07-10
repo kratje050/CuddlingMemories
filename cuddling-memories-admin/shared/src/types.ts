@@ -20,6 +20,46 @@ export type Booking = {
   created_at: string;
   updated_at?: string | null;
   packages?: { id: string; title: string } | null;
+  discount_type?: string | null;
+  discount_value?: number | null;
+  discount_note?: string | null;
+};
+
+// Waarden matchen exact de check-constraint op bookings.discount_type in
+// supabase/schema.sql.
+export const discountTypes: Array<{ value: string; label: string }> = [
+  { value: "vast_bedrag", label: "Vast bedrag" },
+  { value: "percentage", label: "Percentage" },
+  { value: "giveaway", label: "Giveaway" },
+  { value: "winactie", label: "Winactie" },
+];
+
+export type AppNotification = {
+  id: string;
+  type: string;
+  title: string;
+  body?: string | null;
+  related_table?: string | null;
+  related_id?: string | null;
+  is_read: boolean;
+  created_at: string;
+};
+
+export type CalendarBooking = {
+  id: string;
+  customer_name: string;
+  shoot_type: string;
+  status: string;
+  booking_date: string;
+  start_time?: string | null;
+};
+
+export type BlockedPeriod = {
+  id: string;
+  title: string;
+  start_datetime: string;
+  end_datetime: string;
+  all_day: boolean;
 };
 
 export type BookingNote = {
