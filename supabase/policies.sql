@@ -301,3 +301,21 @@ create policy "mini_session_slots_admin_all" on mini_session_slots
 alter table mini_session_bookings enable row level security;
 create policy "mini_session_bookings_admin_all" on mini_session_bookings
   for all using (is_admin()) with check (is_admin());
+
+-- ---------------------------------------------------------------------------
+-- Native Android admin-app: notifications/push_tokens — volledig admin-only.
+-- Meldingen zijn bewust een gedeelde/broadcast-lijst voor alle admins (de
+-- trigger-functies zetten geen specifieke admin_user_id), dus geen extra
+-- "eigen rij"-beperking hier — zelfde eenvoudige patroon als de rest.
+-- `drop policy if exists` maakt dit veilig herdraaibaar, ongeacht of
+-- admin_app_phase1.sql/native_android_push.sql al eens gedraaid is.
+-- ---------------------------------------------------------------------------
+alter table notifications enable row level security;
+drop policy if exists "notifications_admin_all" on notifications;
+create policy "notifications_admin_all" on notifications
+  for all using (is_admin()) with check (is_admin());
+
+alter table push_tokens enable row level security;
+drop policy if exists "push_tokens_admin_all" on push_tokens;
+create policy "push_tokens_admin_all" on push_tokens
+  for all using (is_admin()) with check (is_admin());

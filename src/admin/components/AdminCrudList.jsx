@@ -8,7 +8,7 @@ import ConfirmDialog from "./ConfirmDialog.jsx";
 function emptyValues(fields) {
   const values = {};
   fields.forEach((field) => {
-    values[field.name] = field.type === "checkbox" ? false : "";
+    values[field.name] = field.defaultValue ?? (field.type === "checkbox" ? false : "");
   });
   return values;
 }
@@ -26,6 +26,7 @@ export default function AdminCrudList({
   orderBy = "sort_order",
   emptyLabel = "Nog geen items.",
   newLabel = "Nieuw toevoegen",
+  preparePayload,
 }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -74,7 +75,7 @@ export default function AdminCrudList({
     setSaving(true);
     setError("");
 
-    const payload = { ...values };
+    let payload = { ...values };
     fields.forEach((field) => {
       if (field.type === "number") {
         payload[field.name] = payload[field.name] === "" ? null : Number(payload[field.name]);
@@ -86,6 +87,10 @@ export default function AdminCrudList({
         payload[field.name] = null;
       }
     });
+
+    if (preparePayload) {
+      payload = preparePayload(payload, { editingId });
+    }
 
     const query = editingId
       ? supabase.from(table).update(payload).eq("id", editingId)

@@ -56,26 +56,28 @@ export default function Home() {
   return (
     <>
       <SEO title={title} description={description} />
-      <section className="relative min-h-[720px] overflow-hidden pt-28 md:min-h-[760px] md:pt-32">
+      <section className="home-hero-section relative min-h-[720px] overflow-hidden pt-28 md:min-h-[760px] md:pt-32">
         <img
           src={homeSection("hero_image", "/images/home-hero-cakesmash.png")}
           alt="Cakesmash fotoshoot door Cuddling Memories Fotografie"
           className="home-hero-image absolute inset-0 h-full w-full object-cover"
         />
         <div className="photo-overlay absolute inset-0" />
-        <div className="container-soft relative flex min-h-[590px] items-start pt-4 pb-12 md:min-h-[630px] md:items-center md:py-12">
-          <div className="max-w-2xl animate-floatIn text-center lg:text-left">
-            <p className="script-line text-5xl text-cocoa md:text-6xl">{settings.hero_subtitle}</p>
-            <h1
-              className="font-heroTitle mt-3 whitespace-nowrap text-coffee"
-              style={{ fontWeight: heroTitleWeight, fontSize: "clamp(0.85rem, 3.1vw, 1.5rem)" }}
-            >
-              {settings.hero_title}
-            </h1>
-            <p className="mx-auto mt-6 max-w-xl text-base leading-8 text-coffee/82 lg:mx-0">
+        <div className="home-hero-content container-soft relative flex min-h-[590px] items-start pt-4 pb-12 md:min-h-[630px] md:items-center md:py-12">
+          <div className="home-hero-copy max-w-2xl animate-floatIn text-center lg:text-left">
+            <div className="home-hero-headline">
+              <p className="script-line text-5xl text-cocoa md:text-6xl">{settings.hero_subtitle}</p>
+              <h1
+                className="font-heroTitle mt-3 whitespace-nowrap text-coffee"
+                style={{ fontWeight: heroTitleWeight, fontSize: "clamp(0.85rem, 3.1vw, 1.5rem)" }}
+              >
+                {settings.hero_title}
+              </h1>
+            </div>
+            <p className="home-hero-intro font-heroTitle mx-auto mt-20 max-w-xl text-base leading-8 text-coffee/82 md:mt-6 lg:mx-0">
               {homeSection("hero_intro", "Zwangerschap, newborn, gezin, portret, cakesmash en motherhood fotografie.")}
             </p>
-            <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
+            <div className="home-hero-actions mt-8 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
               <Button to="/contact">Boek een shoot</Button>
               <Button to="/portfolio" variant="secondary">
                 Bekijk portfolio
@@ -126,7 +128,7 @@ export default function Home() {
               <div className="rounded-lg bg-linen p-5 shadow-soft warm-border">
                 <Check className="text-cocoa" size={19} />
                 <p className="mt-3 text-sm leading-7 text-coffee/75">
-                  Bij locatie-afspraken worden eventuele reiskosten standaard als heen- en terugreis berekend vanaf mijn huis in Zoutkamp.
+                    Bij locatie-afspraken worden eventuele reiskosten standaard als heen- en terugreis berekend vanaf mijn locatie in Zoutkamp of Gouda.
                 </p>
               </div>
             </div>

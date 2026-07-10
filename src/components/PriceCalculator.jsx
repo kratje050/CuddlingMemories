@@ -57,8 +57,8 @@ export default function PriceCalculator({ packages }) {
             className="rounded-lg border border-cocoa/20 bg-cream px-4 py-3 text-sm outline-none transition focus:border-cocoa"
           />
         </label>
-        <label className="grid gap-2 text-sm font-semibold text-coffee">
-          Reisafstand enkele reis vanaf Zoutkamp (km)
+          <label className="grid gap-2 text-sm font-semibold text-coffee">
+            Reisafstand enkele reis vanaf Zoutkamp of Gouda (km)
           <input
             type="number"
             min="0"
@@ -82,7 +82,7 @@ export default function PriceCalculator({ packages }) {
         <Button to={`/contact?shoot=${encodeURIComponent(selectedPackage.shoot_type || "Anders")}`}>Boek deze shoot</Button>
       </div>
       <p className="mt-4 text-center text-xs text-coffee/60">
-        Dit is een richtprijs op basis van de vanaf-tarieven. Bij een locatie-afspraak worden reiskosten standaard als retourafstand berekend vanaf mijn huis in Zoutkamp.
+        Dit is een richtprijs op basis van de vanaf-tarieven. Bij een locatie-afspraak worden reiskosten standaard als retourafstand berekend vanaf mijn locatie in Zoutkamp of Gouda.
       </p>
     </div>
   );

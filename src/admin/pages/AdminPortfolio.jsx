@@ -28,7 +28,7 @@ export default function AdminPortfolio() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
-  const [file, setFile] = useState(null);
+  const [files, setFiles] = useState([]);
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [filterAlbum, setFilterAlbum] = useState("");
@@ -52,7 +52,7 @@ export default function AdminPortfolio() {
   const openNew = () => {
     setEditingId(null);
     setForm(emptyForm);
-    setFile(null);
+    setFiles([]);
     setFormOpen(true);
   };
 
@@ -66,7 +66,7 @@ export default function AdminPortfolio() {
       isFeatured: photo.is_featured,
       sortOrder: photo.sort_order || 0,
     });
-    setFile(null);
+    setFiles([]);
     setFormOpen(true);
   };
 
@@ -82,47 +82,83 @@ export default function AdminPortfolio() {
       setError("Alt-tekst is verplicht voor SEO.");
       return;
     }
-    if (!editingId && !file) {
-      setError("Kies een foto om te uploaden.");
+    if (!editingId && !files.length) {
+      setError("Kies een of meerdere foto's om te uploaden.");
       return;
     }
 
     setSaving(true);
 
-    let imageUrl;
-    if (file) {
-      const path = `${form.albumId}/${Date.now()}-${file.name}`;
-      const { error: uploadError } = await supabase.storage.from("portfolio").upload(path, file);
-      if (uploadError) {
-        setError(`Uploaden is mislukt: ${uploadError.message}`);
+    const basePayload = {
+      album_id: form.albumId,
+      category: form.category || null,
+      is_featured: form.isFeatured,
+    };
+
+    if (files.length) {
+      const uploadedRows = [];
+
+      for (const [index, selectedFile] of files.entries()) {
+        const safeName = selectedFile.name.replace(/[^a-zA-Z0-9._-]/g, "-");
+        const path = `${form.albumId}/${Date.now()}-${index}-${safeName}`;
+        const { error: uploadError } = await supabase.storage.from("portfolio").upload(path, selectedFile);
+        if (uploadError) {
+          setError(`Uploaden is mislukt: ${uploadError.message}`);
+          setSaving(false);
+          return;
+        }
+        const imageUrl = supabase.storage.from("portfolio").getPublicUrl(path).data.publicUrl;
+        uploadedRows.push({
+          ...basePayload,
+          title: files.length === 1 && form.title ? form.title : selectedFile.name,
+          alt_text: files.length === 1 ? form.altText.trim() : `${form.altText.trim()} ${index + 1}`,
+          sort_order: (Number(form.sortOrder) || 0) + index,
+          image_url: imageUrl,
+        });
+      }
+
+      if (editingId) {
+        const [firstRow, ...extraRows] = uploadedRows;
+        const { error: updateError } = await supabase.from("portfolio_photos").update(firstRow).eq("id", editingId);
+        if (updateError) {
+          setError(updateError.message);
+          setSaving(false);
+          return;
+        }
+        if (extraRows.length) {
+          const { error: insertError } = await supabase.from("portfolio_photos").insert(extraRows);
+          if (insertError) {
+            setError(insertError.message);
+            setSaving(false);
+            return;
+          }
+        }
+      } else {
+        const { error: insertError } = await supabase.from("portfolio_photos").insert(uploadedRows);
+        if (insertError) {
+          setError(insertError.message);
+          setSaving(false);
+          return;
+        }
+      }
+    } else if (editingId) {
+      const payload = {
+        ...basePayload,
+        title: form.title || null,
+        alt_text: form.altText.trim(),
+        sort_order: Number(form.sortOrder) || 0,
+      };
+
+      const { error: updateError } = await supabase.from("portfolio_photos").update(payload).eq("id", editingId);
+      if (updateError) {
+        setError(updateError.message);
         setSaving(false);
         return;
       }
-      imageUrl = supabase.storage.from("portfolio").getPublicUrl(path).data.publicUrl;
     }
 
-    const payload = {
-      album_id: form.albumId,
-      title: form.title || null,
-      alt_text: form.altText.trim(),
-      category: form.category || null,
-      is_featured: form.isFeatured,
-      sort_order: Number(form.sortOrder) || 0,
-      ...(imageUrl ? { image_url: imageUrl } : {}),
-    };
-
-    const query = editingId
-      ? supabase.from("portfolio_photos").update(payload).eq("id", editingId)
-      : supabase.from("portfolio_photos").insert(payload);
-
-    const { error: saveError } = await query;
     setSaving(false);
-
-    if (saveError) {
-      setError(saveError.message);
-      return;
-    }
-
+    setFiles([]);
     setFormOpen(false);
     reload();
   };
@@ -236,14 +272,18 @@ export default function AdminPortfolio() {
             <span className="text-xs font-normal text-coffee/55">Uitgelichte foto's kunnen op de homepage of bovenaan portfolio-overzichten verschijnen.</span>
           </label>
           <label className="grid gap-2 text-sm font-semibold text-coffee sm:col-span-2">
-            {editingId ? "Nieuwe foto uploaden (optioneel, vervangt huidige)" : "Foto"}
-            <FieldHelp>Kies een JPG, PNG of WebP. Bij bewerken vervang je hiermee de huidige foto.</FieldHelp>
+            {editingId ? "Nieuwe foto uploaden (optioneel)" : "Foto's"}
+            <FieldHelp>
+              Kies een of meerdere JPG, PNG of WebP-bestanden. Bij bewerken vervangt de eerste gekozen foto de huidige foto en worden extra gekozen foto's toegevoegd.
+            </FieldHelp>
             <input
               type="file"
               accept="image/*"
-              onChange={(event) => setFile(event.target.files?.[0] || null)}
+              multiple
+              onChange={(event) => setFiles(Array.from(event.target.files || []))}
               className="rounded-lg border border-cocoa/20 bg-cream px-3 py-2 text-sm outline-none focus:border-cocoa"
             />
+            {files.length > 0 && <FieldHelp>{files.length} bestand(en) gekozen.</FieldHelp>}
           </label>
           <div className="flex gap-3 sm:col-span-2">
             <AdminButton type="submit" disabled={saving}>

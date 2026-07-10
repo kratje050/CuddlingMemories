@@ -5,14 +5,14 @@ import { getMonthStatusGroup, getMonthStatusLabel, getMonthStatusStyle } from ".
 
 const statusContent = {
   green: {
-    text: "Er zijn nog genoeg plekken beschikbaar.",
+    text: "Er zijn nog plekken beschikbaar.",
     button: "Kies shoot voor deze maand",
     className: "border-cocoa bg-cocoa text-card shadow-glow hover:-translate-y-0.5 hover:bg-coffee",
   },
   orange: {
     text: "Deze maand raakt redelijk vol. Boek op tijd als je deze maand wilt.",
     button: "Kies shoot voor deze maand",
-    className: "border-clay bg-clay text-coffee hover:-translate-y-0.5 hover:bg-cocoa hover:text-card",
+    className: "border-cocoa bg-cocoa text-card shadow-glow hover:-translate-y-0.5 hover:bg-coffee",
   },
   red: {
     text: "Deze maand is vol of niet beschikbaar.",

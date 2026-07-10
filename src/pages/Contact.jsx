@@ -129,7 +129,7 @@ export default function Contact() {
 
   const handleDetailsNext = () => {
     const needsLocation = details.locationType === "location";
-    if (!details.naam || !details.email || (needsLocation && !details.omgeving) || !details.bericht || !details.privacy) {
+    if (!details.naam || !details.email || (needsLocation && !details.omgeving) || !details.privacy) {
       setDetailsError("Vul alle verplichte velden in en accepteer de privacyverklaring.");
       return;
     }

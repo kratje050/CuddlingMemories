@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  background: #F7F1EA;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  color: #4E3B2F;
+  background:
+    radial-gradient(circle at top left, rgba(216, 193, 170, 0.3), transparent 26rem),
+    linear-gradient(180deg, #F7F1EA 0%, #FFF9F3 52%, #F7F1EA 100%);
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.safe-bottom {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 5.5rem);
+}

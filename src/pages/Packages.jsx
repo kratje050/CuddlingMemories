@@ -118,7 +118,7 @@ export default function Packages() {
                       <p>Alle prijzen zijn vanaf-prijzen.</p>
                       <p>Na de shoot ontvang je een online galerij waarin je jouw favoriete beelden kiest.</p>
                       <p>Extra beelden en eventuele reiskosten worden alleen toegevoegd als dat nodig is.</p>
-                      <p>Bij een afspraak op locatie worden reiskosten standaard als heen- en terugreis berekend vanaf mijn huis in Zoutkamp.</p>
+                      <p>Bij een afspraak op locatie worden reiskosten standaard als heen- en terugreis berekend vanaf mijn locatie in Zoutkamp of Gouda.</p>
                     </div>
                   </div>
 
@@ -139,7 +139,7 @@ export default function Packages() {
                             {item.description && <p className="mt-1">{item.description}</p>}
                             {item.price_unit === "km" && (
                               <p className="mt-1 text-xs font-semibold text-cocoa">
-                                Standaard als heen- en terugreis berekend vanaf mijn huis in Zoutkamp.
+                                  Standaard als heen- en terugreis berekend vanaf mijn locatie in Zoutkamp of Gouda.
                               </p>
                             )}
                           </div>

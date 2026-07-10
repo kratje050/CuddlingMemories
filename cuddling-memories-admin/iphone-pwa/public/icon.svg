@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#F7F1EA"/>
+  <circle cx="256" cy="256" r="178" fill="#FFF9F3" stroke="#D8C1AA" stroke-width="18"/>
+  <path d="M166 280c-34-48 18-106 72-61 54-45 106 13 72 61-22 31-72 65-72 65s-50-34-72-65z" fill="#8A6B55"/>
+  <text x="256" y="168" text-anchor="middle" font-family="Georgia,serif" font-size="54" fill="#4E3B2F">CM</text>
+</svg>

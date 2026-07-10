@@ -1,0 +1,16 @@
+{
+  "name": "cuddling-memories-admin",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "shared",
+    "android-app",
+    "iphone-pwa"
+  ],
+  "scripts": {
+    "iphone:dev": "npm --workspace cuddling-memories-admin-iphone-pwa run dev",
+    "iphone:build": "npm --workspace cuddling-memories-admin-iphone-pwa run build",
+    "android:start": "npm --workspace cuddling-memories-admin-android run start",
+    "android:typecheck": "npm --workspace cuddling-memories-admin-android run typecheck"
+  }
+}

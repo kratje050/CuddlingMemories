@@ -213,6 +213,23 @@ SMTP_PASS
 EMAIL_FROM
 ```
 
+## Pushmeldingen (native Android admin-app)
+
+De Android-app (`cuddling-memories-admin/native-android/`) registreert bij het inloggen een FCM-token in `push_tokens`. Het daadwerkelijk versturen gebeurt via `netlify/functions/send-push-notification.ts`, aangeroepen door een Postgres-trigger (`fn_notify_admins()`, zie `supabase/schema.sql` en `cuddling-memories-admin/supabase/android-app-migration.sql`) bij een nieuwe boeking, wachtlijst-aanmelding, cadeaubon-aanvraag of mini-shoot-boeking.
+
+Benodigde Netlify-omgevingsvariabelen:
+
+```txt
+INTERNAL_WEBHOOK_SECRET
+FCM_SERVICE_ACCOUNT_JSON
+```
+
+- `INTERNAL_WEBHOOK_SECRET`: een zelfgekozen lange, willekeurige tekenreeks. Zet dezelfde waarde ook één keer in Supabase via de SQL Editor (níet in een gecommit bestand):
+  ```sql
+  select vault.create_secret('jouw-eigen-lange-geheime-waarde', 'internal_webhook_secret', 'Deelt boekingsmeldingen met send-push-notification.ts');
+  ```
+- `FCM_SERVICE_ACCOUNT_JSON`: de volledige inhoud (als één regel JSON) van een Firebase-service-account-sleutel (Firebase Console → Project settings → Service accounts → Generate new private key). Zet dit **alleen** als Netlify-omgevingsvariabele, nooit in de Android-app of in git.
+
 ## Klantgalerijen
 
 Admin routes:

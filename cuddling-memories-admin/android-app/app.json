@@ -1,0 +1,42 @@
+{
+  "expo": {
+    "name": "Cuddling Memories Admin",
+    "slug": "cuddling-memories-admin",
+    "scheme": "cuddlingmemoriesadmin",
+    "version": "0.1.1",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": false,
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "checkAutomatically": "ON_ERROR_RECOVERY",
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/f142b077-035d-43af-a3d4-db7437364213"
+    },
+    "android": {
+      "package": "nl.cuddlingmemories.admin",
+      "versionCode": 2,
+      "adaptiveIcon": {
+        "backgroundColor": "#F7F1EA"
+      }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-notifications",
+      "expo-updates"
+    ],
+    "extra": {
+      "expoRouter": {
+        "origin": false
+      },
+      "router": {},
+      "apkUpdateManifestUrl": "https://cuddling-memories-fotografie.netlify.app/admin-app/android-version.json",
+      "eas": {
+        "projectId": "f142b077-035d-43af-a3d4-db7437364213"
+      }
+    },
+    "ios": {}
+  }
+}

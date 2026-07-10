@@ -90,14 +90,17 @@ export default function DetailsStep({ values, onChange }) {
               className={inputClass}
             />
             <span className="text-xs font-normal leading-5 text-coffee/62">
-              Bij een locatie-afspraak worden eventuele reiskosten standaard als heen- en terugreis berekend vanaf mijn huis in Zoutkamp.
+              Bij een locatie-afspraak worden eventuele reiskosten standaard als heen- en terugreis berekend vanaf mijn locatie in Zoutkamp of Gouda.
             </span>
           </label>
         )}
       </div>
       <label className="grid gap-2 text-sm font-semibold text-coffee">
-        Bericht
-        <textarea required rows="5" value={values.bericht} onChange={update("bericht")} className={`${inputClass} resize-none`} />
+        Bericht (optioneel)
+        <textarea rows="5" value={values.bericht} onChange={update("bericht")} className={`${inputClass} resize-none`} />
+        <span className="text-xs font-normal leading-5 text-coffee/62">
+          Boek je een shoot met korting? Geef dit dan onderaan aan.
+        </span>
       </label>
       <div className="rounded-lg bg-linen/50 p-4">
         <label className="grid gap-2 text-sm font-semibold text-coffee">
