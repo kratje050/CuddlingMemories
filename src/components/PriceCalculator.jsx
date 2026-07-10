@@ -79,7 +79,9 @@ export default function PriceCalculator({ packages }) {
             {selectedPackage.title} · {extraImages || 0} extra beeld(en) · {travelSingleKm || 0} km enkele reis / {travelRoundTripKm} km retour
           </p>
         </div>
-        <Button to={`/contact?shoot=${encodeURIComponent(selectedPackage.shoot_type || "Anders")}`}>Boek deze shoot</Button>
+        <Button to={`/boek-een-shoot?shoot=${encodeURIComponent(selectedPackage.shoot_type || "Anders")}`}>
+          Boek deze shoot
+        </Button>
       </div>
       <p className="mt-4 text-center text-xs text-coffee/60">
         Dit is een richtprijs op basis van de vanaf-tarieven. Bij een locatie-afspraak worden reiskosten standaard als retourafstand berekend vanaf mijn locatie in Zoutkamp of Gouda.

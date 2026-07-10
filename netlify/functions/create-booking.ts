@@ -34,6 +34,7 @@ const normalizePayload = (payload: Record<string, unknown>) => {
   const values = {
     naam: clean(payload.naam, 120),
     email: clean(payload.email, 180),
+    telefoon: clean(payload.telefoon, 40),
     shoot: clean(payload.shoot, 80),
     bookingDate: clean(payload.bookingDate, 10),
     startTime: clean(payload.startTime, 5),
@@ -59,7 +60,7 @@ const normalizePayload = (payload: Record<string, unknown>) => {
     throw new Error("Kies een datum en tijdslot uit de kalender.");
   }
 
-  if (!values.omgeving || !values.bericht || !values.privacy) {
+  if (!values.omgeving || !values.privacy) {
     throw new Error("Vul alle verplichte velden in en accepteer de privacyverklaring.");
   }
 
@@ -82,12 +83,13 @@ const renderText = (
 
 Naam: ${values.naam}
 E-mailadres: ${values.email}
+Telefoonnummer: ${values.telefoon || "-"}
 Gewenste shoot: ${values.shoot}
 Datum en tijd: ${formatDateTime(values.bookingDate, values.startTime)}
 Locatie of omgeving: ${values.omgeving}
 ${giftcard ? `\nCadeaubon toegepast: ${giftcard.code} (${giftcard.type}) — ${formatEuro(giftcard.amount)} gaat van het totaalbedrag af.\n` : ""}
 Bericht:
-${values.bericht}
+${values.bericht || "-"}
 `;
 
 const renderHtml = (
@@ -102,6 +104,7 @@ const renderHtml = (
         <h1 style="margin:0 0 24px;font-size:26px;font-weight:500;">Nieuwe boekingsaanvraag</h1>
         <p><strong>Naam:</strong> ${escapeHtml(values.naam)}</p>
         <p><strong>E-mailadres:</strong> ${escapeHtml(values.email)}</p>
+        <p><strong>Telefoonnummer:</strong> ${escapeHtml(values.telefoon || "-")}</p>
         <p><strong>Gewenste shoot:</strong> ${escapeHtml(values.shoot)}</p>
         <p><strong>Datum en tijd:</strong> ${escapeHtml(formatDateTime(values.bookingDate, values.startTime))}</p>
         <p><strong>Locatie of omgeving:</strong> ${escapeHtml(values.omgeving)}</p>
@@ -112,7 +115,7 @@ const renderHtml = (
         }
         <div style="margin-top:20px;padding-top:18px;border-top:1px solid #e6d1bd;">
           <strong>Bericht:</strong>
-          <p style="line-height:1.7;">${escapeHtml(values.bericht)}</p>
+          <p style="line-height:1.7;">${escapeHtml(values.bericht || "-")}</p>
         </div>
       </div>
     </div>
@@ -180,6 +183,7 @@ const BOOKING_ERROR_MESSAGES: Record<string, string> = {
 
 async function bookSlot(values: ReturnType<typeof normalizePayload>["values"]) {
   const supabase = getSupabaseAdmin();
+  const message = [values.telefoon ? `Telefoonnummer: ${values.telefoon}` : "", values.bericht].filter(Boolean).join("\n\n");
 
   const { data, error } = await supabase.rpc("book_slot", {
     p_payload: {
@@ -190,7 +194,7 @@ async function bookSlot(values: ReturnType<typeof normalizePayload>["values"]) {
       start_time: values.startTime,
       package_id: values.packageId,
       location: values.omgeving,
-      message: values.bericht,
+      message,
       privacy_accepted: values.privacy,
       giftcard_code: values.giftcardCode,
     },

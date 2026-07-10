@@ -6,6 +6,7 @@ import Lightbox from "../components/Lightbox.jsx";
 import SEO from "../components/SEO.jsx";
 import SectionTitle from "../components/SectionTitle.jsx";
 import { getPortfolioAlbumBySlug, getPortfolioPhotos } from "../lib/api.js";
+import { formatPortfolioCategories, parsePortfolioCategories } from "../lib/portfolioCategoryUtils.js";
 
 export default function AlbumDetail() {
   const { slug } = useParams();
@@ -35,7 +36,8 @@ export default function AlbumDetail() {
           photoRows.map((row) => ({
             id: row.id,
             title: row.title,
-            category: row.category,
+            category: formatPortfolioCategories(row.category),
+            categories: parsePortfolioCategories(row.category),
             image: row.image_url,
           }))
         );
@@ -102,7 +104,7 @@ export default function AlbumDetail() {
           )}
 
           <div className="py-14 text-center">
-            <Button to="/contact">Boek een shoot</Button>
+            <Button to="/boek-een-shoot">Boek een shoot</Button>
           </div>
         </div>
       </section>

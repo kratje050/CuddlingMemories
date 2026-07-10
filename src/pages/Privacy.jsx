@@ -9,7 +9,7 @@ const fallbackSections = [
     section_key: "gegevens",
     title: "Welke gegevens",
     content:
-      "Bij een boekingsaanvraag worden je naam, e-mailadres, gewenste shoot, gewenste periode, locatie en bericht verwerkt. Deze gegevens worden alleen gebruikt om je aanvraag te beantwoorden en een shoot met je in te plannen.",
+      "Bij een boekingsaanvraag worden je naam, e-mailadres, eventueel telefoonnummer, gewenste shoot, gewenste periode, locatie en bericht verwerkt. Deze gegevens worden alleen gebruikt om je aanvraag te beantwoorden en een shoot met je in te plannen.",
   },
   {
     section_key: "bewaartermijn",
@@ -31,6 +31,12 @@ const fallbackSections = [
   },
 ];
 
+const normalizePrivacyContent = (content) =>
+  String(content || "").replace(
+    "naam, e-mailadres, gewenste shoot, gewenste periode, locatie en bericht",
+    "naam, e-mailadres, eventueel telefoonnummer, gewenste shoot, gewenste periode, locatie en bericht"
+  );
+
 export default function Privacy() {
   const { title, description } = usePageMeta(
     "privacybeleid",
@@ -49,7 +55,9 @@ export default function Privacy() {
       .then(([page, sectionRows]) => {
         if (!active) return;
         if (page?.content) setIntro(page.content);
-        if (sectionRows?.length) setSections(sectionRows);
+        if (sectionRows?.length) {
+          setSections(sectionRows.map((section) => ({ ...section, content: normalizePrivacyContent(section.content) })));
+        }
       })
       .catch(() => {});
 

@@ -9,9 +9,11 @@ import About from "./pages/About.jsx";
 import Process from "./pages/Process.jsx";
 import ModelCall from "./pages/ModelCall.jsx";
 import Contact from "./pages/Contact.jsx";
+import Booking from "./pages/Booking.jsx";
 import Thanks from "./pages/Thanks.jsx";
 import Privacy from "./pages/Privacy.jsx";
 import GiftCard from "./pages/GiftCard.jsx";
+import Faq from "./pages/Faq.jsx";
 import MiniSessions from "./pages/MiniSessions.jsx";
 import MiniSessionDetail from "./pages/MiniSessionDetail.jsx";
 import GalleryAccess from "./pages/GalleryAccess.jsx";
@@ -45,8 +47,10 @@ function PublicSite() {
             <Route path="/over-demy" element={<About />} />
             <Route path="/werkwijze" element={<Process />} />
             <Route path="/model-gezocht" element={<ModelCall />} />
+            <Route path="/boek-een-shoot" element={<Booking />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/cadeaubon" element={<GiftCard />} />
+            <Route path="/faq" element={<Faq />} />
             <Route path="/mini-shoots" element={<MiniSessions />} />
             <Route path="/mini-shoots/:slug" element={<MiniSessionDetail />} />
             <Route path="/galerij/:secureToken" element={<GalleryAccess />} />

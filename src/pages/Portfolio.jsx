@@ -6,6 +6,7 @@ import Lightbox from "../components/Lightbox.jsx";
 import SEO from "../components/SEO.jsx";
 import { getAllPublishedPhotos, getPortfolioAlbums } from "../lib/api.js";
 import { portfolioCategories } from "../lib/constants.js";
+import { applyDynamicAlbumCovers, formatPortfolioCategories, parsePortfolioCategories, photoMatchesCategory } from "../lib/portfolioCategoryUtils.js";
 
 const filterIcons = {
   Alles: Grid3X3,
@@ -40,12 +41,13 @@ export default function Portfolio() {
     Promise.all([getPortfolioAlbums(), getAllPublishedPhotos()])
       .then(([albumRows, photoRows]) => {
         if (!active) return;
-        setAlbums(albumRows);
+        setAlbums(applyDynamicAlbumCovers(albumRows, photoRows).filter((album) => album.hasPhotos));
         setPhotos(
           photoRows.map((row) => ({
             id: row.id,
             title: row.title,
-            category: row.category,
+            category: formatPortfolioCategories(row.category),
+            categories: parsePortfolioCategories(row.category),
             image: row.image_url,
           }))
         );
@@ -62,7 +64,7 @@ export default function Portfolio() {
   }, []);
 
   const filtered = useMemo(
-    () => (active === "Alles" ? photos : photos.filter((item) => item.category === active)),
+    () => photos.filter((item) => photoMatchesCategory(item, active)),
     [active, photos]
   );
   const albumPreview = albums.slice(0, 6);
@@ -89,7 +91,7 @@ export default function Portfolio() {
                 of open een album voor een gerichtere serie.
               </p>
               <div className="mt-7 flex flex-wrap gap-3">
-                <Button to="/contact" className="gap-2">
+                <Button to="/boek-een-shoot" className="gap-2">
                   Boek een shoot <ArrowRight size={15} />
                 </Button>
                 <Button to="/pakketten" variant="secondary">
@@ -203,7 +205,7 @@ export default function Portfolio() {
             ))}
           </div>
           <div className="py-14 text-center">
-            <Button to="/contact">Boek een shoot</Button>
+            <Button to="/boek-een-shoot">Boek een shoot</Button>
           </div>
         </div>
       </section>

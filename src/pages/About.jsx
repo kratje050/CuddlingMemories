@@ -84,7 +84,7 @@ export default function About() {
                 ))}
               </div>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Button to="/contact" className="gap-2">
+                <Button to="/boek-een-shoot" className="gap-2">
                   Boek een shoot <ArrowRight size={15} />
                 </Button>
                 <Button to="/werkwijze" variant="secondary">

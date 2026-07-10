@@ -5,8 +5,9 @@ import CategoryCard from "../components/CategoryCard.jsx";
 import MonthAvailabilityCard from "../components/MonthAvailabilityCard.jsx";
 import SEO from "../components/SEO.jsx";
 import SectionTitle from "../components/SectionTitle.jsx";
-import { getFeaturedPhotos, getPageSections, getPortfolioAlbums, getVisibleTestimonials } from "../lib/api.js";
+import { getAllPublishedPhotos, getFeaturedPhotos, getPageSections, getPortfolioAlbums, getVisibleTestimonials } from "../lib/api.js";
 import { getMonthsAvailability } from "../lib/monthAvailability.js";
+import { applyDynamicAlbumCovers } from "../lib/portfolioCategoryUtils.js";
 import { usePageMeta } from "../lib/usePageMeta.js";
 import { useSiteSettings } from "../context/SiteSettingsContext.jsx";
 
@@ -25,10 +26,10 @@ export default function Home() {
 
   useEffect(() => {
     let active = true;
-    Promise.all([getPortfolioAlbums(), getVisibleTestimonials(), getFeaturedPhotos(6), getPageSections("home")])
-      .then(([albumRows, reviewRows, featuredRows, sectionRows]) => {
+    Promise.all([getPortfolioAlbums(), getVisibleTestimonials(), getFeaturedPhotos(6), getPageSections("home"), getAllPublishedPhotos()])
+      .then(([albumRows, reviewRows, featuredRows, sectionRows, photoRows]) => {
         if (!active) return;
-        setAlbums(albumRows);
+        setAlbums(applyDynamicAlbumCovers(albumRows, photoRows).filter((album) => album.hasPhotos));
         setReviews(reviewRows);
         setInstagramPreview(featuredRows.map((row) => row.image_url));
         setHomeSections(sectionRows || []);
@@ -78,7 +79,7 @@ export default function Home() {
               {homeSection("hero_intro", "Zwangerschap, newborn, gezin, portret, cakesmash en motherhood fotografie.")}
             </p>
             <div className="home-hero-actions mt-8 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
-              <Button to="/contact">Boek een shoot</Button>
+              <Button to="/boek-een-shoot">Boek een shoot</Button>
               <Button to="/portfolio" variant="secondary">
                 Bekijk portfolio
               </Button>
@@ -146,7 +147,7 @@ export default function Home() {
               ))}
             </div>
             <div className="mt-8 text-center">
-              <Button to="/contact" variant="secondary">
+              <Button to="/boek-een-shoot" variant="secondary">
                 Bekijk alle beschikbare maanden
               </Button>
             </div>
@@ -221,7 +222,7 @@ export default function Home() {
                 <h2 className="display-title text-3xl font-semibold leading-tight text-coffee">
                   Wil je ook zulke warme herinneringen laten vastleggen?
                 </h2>
-                <Button to="/contact" className="mx-auto mt-6 gap-2">
+                <Button to="/boek-een-shoot" className="mx-auto mt-6 gap-2">
                   Boek jouw shoot <ArrowRight size={16} />
                 </Button>
               </div>

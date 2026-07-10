@@ -17,6 +17,7 @@ export default function BookingSummaryContent({ shootType, pkg, date, time, deta
     ["Locatie", details ? location : "-"],
     ["Naam", details?.naam || "-"],
     ["E-mailadres", details?.email || "-"],
+    ["Telefoonnummer", details?.telefoon || "-"],
   ];
 
   return (

@@ -74,7 +74,7 @@ insert into page_sections (page_slug, section_key, title, content, sort_order, i
 ('werkwijze', 'step-1', 'Kies je shoot', 'Op de contactpagina kies je eerst het soort shoot. Zo kan de kalender meteen de juiste duur en beschikbaarheid gebruiken.', 1, true),
 ('werkwijze', 'step-2', 'Kies pakket, maand en datum', 'Daarna kies je eventueel een passend pakket. Kom je vanuit het maandoverzicht, dan opent de kalender direct in die maand.', 2, true),
 ('werkwijze', 'step-3', 'Kies een vrij tijdslot', 'Je ziet alleen beschikbare tijden. Een aanvraag is nog geen definitieve boeking; ik bevestig het moment persoonlijk.', 3, true),
-('werkwijze', 'step-4', 'Vul je gegevens in', 'Je vult je naam, e-mailadres, omgeving en bericht in. Er wordt geen telefoonnummer of adres gevraagd.', 4, true),
+('werkwijze', 'step-4', 'Vul je gegevens in', 'Je vult je naam, e-mailadres en eventueel je telefoonnummer in. Daarna kies je de locatie en kun je een optioneel bericht toevoegen.', 4, true),
 ('werkwijze', 'step-5', 'De fotoshoot', 'Na bevestiging stemmen we de laatste details af. Tijdens de shoot is er ruimte en aandacht voor echte momenten.', 5, true),
 ('werkwijze', 'step-6', 'Online galerij en favorieten', 'Na de shoot ontvang je een beveiligde online galerij. Daar kies je jouw favoriete beelden en kun je extra beelden aanvragen.', 6, true);
 
@@ -87,7 +87,7 @@ insert into page_sections (page_slug, section_key, title, content, button_text, 
 -- page_sections — privacybeleid (4 secties)
 insert into page_sections (page_slug, section_key, title, content, sort_order, is_visible) values
 ('privacybeleid', 'gegevens', 'Welke gegevens',
-  'Bij een boekingsaanvraag worden je naam, e-mailadres, gewenste shoot, gewenste periode, locatie en bericht verwerkt. Deze gegevens worden alleen gebruikt om je aanvraag te beantwoorden en een shoot met je in te plannen.',
+  'Bij een boekingsaanvraag worden je naam, e-mailadres, eventueel telefoonnummer, gewenste shoot, gewenste periode, locatie en bericht verwerkt. Deze gegevens worden alleen gebruikt om je aanvraag te beantwoorden en een shoot met je in te plannen.',
   1, true),
 ('privacybeleid', 'bewaartermijn', 'Bewaartermijn',
   'Gegevens worden niet langer bewaard dan nodig is om je aanvraag af te handelen en, bij een geboekte shoot, de administratie rondom die boeking af te ronden.',

@@ -15,7 +15,7 @@ export default function PackageCard({ item }) {
       <p className="mt-4 display-title text-5xl font-semibold text-cocoa">{formatEuro(item.price)}</p>
       <p className="mt-4 min-h-14 text-sm leading-7 text-coffee/75">{item.description}</p>
       <Button
-        to={`/contact?shoot=${encodeURIComponent(item.shoot_type || "Anders")}`}
+        to={`/boek-een-shoot?shoot=${encodeURIComponent(item.shoot_type || "Anders")}`}
         className="mt-8 w-full gap-2 px-4"
         aria-label={`${item.title} boeken`}
       >

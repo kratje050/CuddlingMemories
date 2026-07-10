@@ -11,6 +11,8 @@ const links = [
   ["Mini-shoots", "/mini-shoots"],
   ["Cadeaubon", "/cadeaubon"],
   ["Model gezocht", "/model-gezocht"],
+  ["FAQ", "/faq"],
+  ["Boek een shoot", "/boek-een-shoot"],
   ["Contact", "/contact"],
 ];
 

@@ -21,7 +21,7 @@ export default function ModelCall() {
   const [discount, setDiscount] = useState("50");
   const [categories, setCategories] = useState(fallbackCategories);
   const [ctaText, setCtaText] = useState("Ik wil model staan");
-  const [ctaUrl, setCtaUrl] = useState("/contact?shoot=Model%20staan%20met%2050%25%20korting");
+  const [ctaUrl, setCtaUrl] = useState("/boek-een-shoot?shoot=Model%20staan%20met%2050%25%20korting");
   const [imageLeft, setImageLeft] = useState("/images/instagram/instagram-07.jpg");
   const [imageRight, setImageRight] = useState("/images/instagram/instagram-11.jpg");
 
@@ -65,6 +65,8 @@ export default function ModelCall() {
     };
   }, []);
 
+  const bookingCtaUrl = ctaUrl.replace(/^\/contact\?shoot=/, "/boek-een-shoot?shoot=");
+
   return (
     <>
       <SEO title={title} description={description} />
@@ -94,7 +96,7 @@ export default function ModelCall() {
                     ))}
                   </div>
                   <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                    <Button to={ctaUrl} className="gap-2">
+                    <Button to={bookingCtaUrl} className="gap-2">
                       {ctaText} <ArrowRight size={15} />
                     </Button>
                     <Button to="/portfolio" variant="secondary">
@@ -106,7 +108,7 @@ export default function ModelCall() {
                 <div className="mt-6 rounded-lg bg-linen p-6 text-sm leading-7 text-coffee/78 warm-border">
                   Er zijn op dit moment geen modelplekken beschikbaar. Kijk later nog eens terug, of{" "}
                   <Button to="/contact" variant="ghost" className="px-0 normal-case tracking-normal">
-                    boek gewoon een reguliere shoot
+                    neem contact op
                   </Button>
                   .
                 </div>

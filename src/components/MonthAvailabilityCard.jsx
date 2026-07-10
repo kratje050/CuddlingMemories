@@ -40,7 +40,7 @@ export default function MonthAvailabilityCard({ month }) {
       </div>
       <p className="mt-4 flex-1 text-sm leading-7 text-coffee/75">{content.text}</p>
       <Link
-        to={waitlistOnly ? `/contact?wachtlijst=${slug}#boeken` : `/contact?maand=${slug}#boeken`}
+        to={waitlistOnly ? `/boek-een-shoot?wachtlijst=${slug}#boeken` : `/boek-een-shoot?maand=${slug}#boeken`}
         className={`mt-6 inline-flex min-h-11 w-full items-center justify-center rounded-full border px-5 py-3 text-center text-xs font-semibold uppercase tracking-[0.16em] transition ${content.className}`}
       >
         {content.button}

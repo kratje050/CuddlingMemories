@@ -73,7 +73,7 @@ export default function Packages() {
                       <p className="fine-label text-[0.68rem] font-semibold text-cocoa">Overzicht</p>
                       <h2 className="display-title mt-1 text-3xl font-semibold text-coffee">Shoots en vanaf-prijzen</h2>
                     </div>
-                    <Button to="/contact" variant="secondary" className="px-5">
+                    <Button to="/boek-een-shoot" variant="secondary" className="px-5">
                       Boeken
                     </Button>
                   </div>
@@ -99,7 +99,7 @@ export default function Packages() {
                         </div>
                         <p className="display-title text-3xl font-semibold text-cocoa">{formatEuro(item.price)}</p>
                         <Button
-                          to={`/contact?shoot=${encodeURIComponent(item.shoot_type || "Anders")}`}
+                          to={`/boek-een-shoot?shoot=${encodeURIComponent(item.shoot_type || "Anders")}`}
                           className="gap-2 px-5"
                           aria-label={`${item.title} boeken`}
                         >

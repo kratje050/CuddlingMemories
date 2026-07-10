@@ -13,6 +13,7 @@ const navItems = [
   { to: "/mini-shoots", label: "Mini-shoots" },
   { to: "/cadeaubon", label: "Cadeaubon" },
   { to: "/model-gezocht", label: "Model gezocht" },
+  { to: "/faq", label: "FAQ" },
   { to: "/contact", label: "Contact" },
 ];
 
@@ -36,7 +37,7 @@ export default function Navbar() {
     <header className="fixed inset-x-0 top-0 z-50 px-3 pt-3 md:px-5">
       <nav className="mx-auto flex max-w-[1500px] items-center justify-between gap-3 rounded-lg bg-card/94 px-4 py-3 shadow-soft backdrop-blur-xl warm-border md:px-5 2xl:px-7">
         <Logo />
-        <div className="hidden flex-1 items-center justify-center gap-3 xl:gap-5 2xl:gap-7 lg:flex">
+        <div className="hidden flex-1 items-center justify-center gap-2 xl:gap-4 2xl:gap-6 lg:flex">
           {navItems.map((item) => (
             <NavLink
               key={item.to}
@@ -48,7 +49,7 @@ export default function Navbar() {
           ))}
         </div>
         <div className="hidden shrink-0 lg:block">
-          <Button to="/contact" className="px-5 2xl:px-7">
+          <Button to="/boek-een-shoot" className="px-5 2xl:px-7">
             Boek een shoot
           </Button>
         </div>
@@ -75,7 +76,7 @@ export default function Navbar() {
                 {item.label}
               </NavLink>
             ))}
-            <Button to="/contact" onClick={() => setOpen(false)} className="mt-2 w-full">
+            <Button to="/boek-een-shoot" onClick={() => setOpen(false)} className="mt-2 w-full">
               Boek een shoot
             </Button>
           </div>

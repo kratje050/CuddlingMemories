@@ -13,7 +13,7 @@ const fallbackSteps = [
     section_key: "step-1",
     title: "Kies je shoot",
     content:
-      "Op de contactpagina kies je eerst het soort shoot. Zo kan de kalender meteen de juiste duur en beschikbaarheid gebruiken.",
+      "Op de boekingspagina kies je eerst het soort shoot. Zo kan de kalender meteen de juiste duur en beschikbaarheid gebruiken.",
   },
   {
     section_key: "step-2",
@@ -31,7 +31,7 @@ const fallbackSteps = [
     section_key: "step-4",
     title: "Vul je gegevens in",
     content:
-      "Je vult je naam, e-mailadres, omgeving en bericht in. Er wordt geen telefoonnummer of adres gevraagd.",
+      "Je vult je naam, e-mailadres en eventueel je telefoonnummer in. Daarna kies je de locatie en kun je een optioneel bericht toevoegen.",
   },
   {
     section_key: "step-5",
@@ -48,13 +48,14 @@ const fallbackSteps = [
 ];
 
 const oldGenericText = "Elke stap is bedoeld om de shoot overzichtelijk en ontspannen te laten verlopen.";
+const oldNoPhoneText = "Je vult je naam, e-mailadres, omgeving en bericht in. Er wordt geen telefoonnummer of adres gevraagd.";
 
 function normalizeSteps(sections) {
   const defaultsByKey = new Map(fallbackSteps.map((step) => [step.section_key, step]));
   return sections.map((section) => {
     const fallback = defaultsByKey.get(section.section_key);
     if (!fallback) return section;
-    if (!section.content || section.content === oldGenericText) {
+    if (!section.content || section.content === oldGenericText || section.content === oldNoPhoneText) {
       return { ...section, title: fallback.title, content: fallback.content };
     }
     return section;
@@ -110,7 +111,7 @@ export default function Process() {
           </div>
           <div className="mt-10 rounded-lg bg-linen p-8 text-center shadow-soft warm-border">
             <h2 className="display-title text-3xl font-semibold text-coffee">Klaar om jouw shoot aan te vragen?</h2>
-            <Button to="/contact" className="mt-6">
+            <Button to="/boek-een-shoot" className="mt-6">
               Boek een shoot
             </Button>
           </div>

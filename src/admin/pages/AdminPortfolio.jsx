@@ -6,12 +6,13 @@ import AdminButton from "../components/AdminButton.jsx";
 import ConfirmDialog from "../components/ConfirmDialog.jsx";
 import DataTable from "../components/DataTable.jsx";
 import { portfolioCategories } from "../utils/portfolioCategories.js";
+import { formatPortfolioCategories, parsePortfolioCategories } from "../../lib/portfolioCategoryUtils.js";
 
 const emptyForm = {
   albumId: "",
   title: "",
   altText: "",
-  category: "",
+  categories: [],
   isFeatured: false,
   sortOrder: 0,
 };
@@ -62,7 +63,7 @@ export default function AdminPortfolio() {
       albumId: photo.album_id || "",
       title: photo.title || "",
       altText: photo.alt_text || "",
-      category: photo.category || "",
+      categories: parsePortfolioCategories(photo.category),
       isFeatured: photo.is_featured,
       sortOrder: photo.sort_order || 0,
     });
@@ -91,7 +92,7 @@ export default function AdminPortfolio() {
 
     const basePayload = {
       album_id: form.albumId,
-      category: form.category || null,
+      category: formatPortfolioCategories(form.categories) || null,
       is_featured: form.isFeatured,
     };
 
@@ -203,7 +204,14 @@ export default function AdminPortfolio() {
             <select
               required
               value={form.albumId}
-              onChange={(event) => setForm((prev) => ({ ...prev, albumId: event.target.value }))}
+              onChange={(event) => {
+                const album = albums.find((item) => item.id === event.target.value);
+                setForm((prev) => ({
+                  ...prev,
+                  albumId: event.target.value,
+                  categories: prev.categories.length || !album?.category ? prev.categories : [album.category],
+                }));
+              }}
               className="rounded-lg border border-cocoa/20 bg-cream px-3 py-2 text-sm outline-none focus:border-cocoa"
             >
               <option value="">Kies een album</option>
@@ -215,20 +223,31 @@ export default function AdminPortfolio() {
             </select>
           </label>
           <label className="grid gap-2 text-sm font-semibold text-coffee">
-            Categorie
-            <FieldHelp>Helpt bij filteren en groeperen. Kies dezelfde categorie als het album als je twijfelt.</FieldHelp>
-            <select
-              value={form.category}
-              onChange={(event) => setForm((prev) => ({ ...prev, category: event.target.value }))}
-              className="rounded-lg border border-cocoa/20 bg-cream px-3 py-2 text-sm outline-none focus:border-cocoa"
-            >
-              <option value="">Kies...</option>
-              {portfolioCategories.map((category) => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
-              ))}
-            </select>
+            Categorieën
+            <FieldHelp>Vink een of meerdere categorieën aan. De foto verschijnt dan onder elke gekozen portfoliofilter.</FieldHelp>
+            <div className="grid gap-2 rounded-lg border border-cocoa/20 bg-cream p-3 sm:grid-cols-2">
+              {portfolioCategories.map((category) => {
+                const checked = form.categories.includes(category);
+                return (
+                  <label key={category} className="flex items-center gap-2 text-xs font-semibold text-coffee/80">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(event) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          categories: event.target.checked
+                            ? [...prev.categories, category]
+                            : prev.categories.filter((item) => item !== category),
+                        }))
+                      }
+                      className="h-4 w-4 accent-cocoa"
+                    />
+                    {category}
+                  </label>
+                );
+              })}
+            </div>
           </label>
           <label className="grid gap-2 text-sm font-semibold text-coffee">
             Titel
@@ -311,7 +330,7 @@ export default function AdminPortfolio() {
               ),
             },
             { key: "title", label: "Titel" },
-            { key: "category", label: "Categorie" },
+            { key: "category", label: "Categorieën" },
             { key: "is_featured", label: "Uitgelicht", render: (row) => (row.is_featured ? "Ja" : "Nee") },
             {
               key: "actions",

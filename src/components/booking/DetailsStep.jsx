@@ -44,6 +44,16 @@ export default function DetailsStep({ values, onChange }) {
         E-mailadres
         <input type="email" required value={values.email} onChange={update("email")} className={inputClass} />
       </label>
+      <label className="grid gap-2 text-sm font-semibold text-coffee">
+        Telefoonnummer (optioneel)
+        <input
+          type="tel"
+          value={values.telefoon || ""}
+          onChange={update("telefoon")}
+          className={inputClass}
+          placeholder="Bijv. 06 12345678"
+        />
+      </label>
       <div className="grid gap-3">
         <p className="text-sm font-semibold text-coffee">Waar wil je de shoot doen?</p>
         <div className="grid gap-3 sm:grid-cols-2">
@@ -97,10 +107,16 @@ export default function DetailsStep({ values, onChange }) {
       </div>
       <label className="grid gap-2 text-sm font-semibold text-coffee">
         Bericht (optioneel)
-        <textarea rows="5" value={values.bericht} onChange={update("bericht")} className={`${inputClass} resize-none`} />
         <span className="text-xs font-normal leading-5 text-coffee/62">
           Boek je een shoot met korting? Geef dit dan onderaan aan.
         </span>
+        <textarea
+          rows="5"
+          value={values.bericht}
+          onChange={update("bericht")}
+          placeholder="Typ hier je bericht. Boek je een shoot met korting? Geef dit dan onderaan aan."
+          className={`${inputClass} resize-none`}
+        />
       </label>
       <div className="rounded-lg bg-linen/50 p-4">
         <label className="grid gap-2 text-sm font-semibold text-coffee">

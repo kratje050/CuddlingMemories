@@ -1,0 +1,30 @@
+-- Nieuwe uitgebreide FAQ voor Cuddling Memories.
+-- Voer dit bestand uit in de Supabase SQL editor om de bestaande FAQ te vervangen.
+
+delete from faq;
+
+insert into faq (question, answer, category, is_visible, sort_order) values
+('Hoe werkt een fotoshoot boeken?', 'Je kiest op de contactpagina eerst het soort shoot, daarna eventueel een pakket, datum en tijd. Daarna vul je je gegevens in en verstuur je de aanvraag. De boeking is pas definitief nadat ik deze heb bevestigd.', 'Boeken', true, 1),
+('Is mijn gekozen datum meteen definitief?', 'Nee, je verstuurt eerst een boekingsaanvraag. Ik controleer de aanvraag en bevestig daarna de datum en tijd. Pas na die bevestiging staat de shoot echt voor jou gepland.', 'Boeken', true, 2),
+('Waar vindt de shoot normaal plaats?', 'Standaard vindt een fotoshoot bij mij thuis in Zoutkamp plaats. Wil je liever op locatie of in de omgeving afspreken, dan kun je dat tijdens het boeken aangeven.', 'Locatie', true, 3),
+('Hoe worden reiskosten berekend?', 'Bij een locatie-afspraak worden eventuele reiskosten standaard als heen- en terugreis berekend vanaf mijn locatie in Zoutkamp of Gouda. Dit is alleen van toepassing als we buiten de afgesproken omgeving afspreken.', 'Locatie', true, 4),
+('Wat zit er in een pakket?', 'Per pakket staat vermeld hoeveel digitale beelden zijn inbegrepen en wat de vanaf-prijs is. Extra beelden en eventuele reiskosten komen alleen erbij als dat nodig is of als je zelf extra beelden kiest.', 'Pakketten', true, 5),
+('Moet ik altijd een pakket kiezen?', 'Nee, als je nog niet precies weet welk pakket past, kun je verder zonder specifiek pakket. Ik kijk dan na je aanvraag met je mee wat het beste aansluit bij je shoot.', 'Pakketten', true, 6),
+('Kan ik extra beeld of reiskosten als shoot boeken?', 'Nee, extra beelden en reiskosten zijn geen losse shoots. Ze staan op de website als extra informatie, zodat je vooraf weet welke kosten eventueel kunnen worden toegevoegd.', 'Pakketten', true, 7),
+('Kan ik extra foto''s bijkopen?', 'Ja. Na de shoot ontvang je een online galerij waarin je jouw favoriete beelden kiest. Wil je meer foto''s dan in je pakket zitten, dan kun je extra beelden per stuk bijbestellen.', 'Galerij', true, 8),
+('Hoe werkt de online galerij?', 'Je ontvangt een beveiligde klantlink naar jouw galerij. Daar bekijk je de foto''s en markeer je jouw favorieten. Daarna kan ik zien welke beelden je hebt gekozen en werk ik de selectie verder af.', 'Galerij', true, 9),
+('Wat gebeurt er nadat ik mijn favoriete foto''s heb gekozen?', 'Zodra je jouw favorieten in de galerij hebt verstuurd, krijg ik je selectie binnen. Daarna werk ik de gekozen beelden verder af en kan ik eventuele extra beelden meenemen als je meer hebt gekozen dan in je pakket zitten.', 'Galerij', true, 10),
+('Kan iemand anders mijn galerij bekijken?', 'Alleen mensen met jouw beveiligde klantlink kunnen de galerij openen. De link gebruikt een lange geheime code en is niet zomaar te raden.', 'Galerij', true, 11),
+('Wat als een maand vol zit?', 'Bij beschikbaarheid per maand zie je of er nog plek is, of een maand redelijk vol of vol is. Is je gewenste maand vol, dan kun je je aanmelden voor de wachtlijst.', 'Beschikbaarheid', true, 12),
+('Wat betekenen de beschikbaarheidskleuren?', 'Beschikbaar betekent dat er nog voldoende plek is. Redelijk vol betekent dat er nog beperkt plek is. Vol betekent dat er op dat moment geen gewone plekken meer beschikbaar zijn in die maand.', 'Beschikbaarheid', true, 13),
+('Hoe werkt de wachtlijst?', 'Als een maand of dag vol zit, kun je je aanmelden voor de wachtlijst. Komt er later toch een passende plek vrij, dan kan ik contact met je opnemen.', 'Beschikbaarheid', true, 14),
+('Kan ik een shoot met korting boeken?', 'Ja, als er een actie, winactie, giveaway of modelkorting geldt, kun je dit onderaan bij Bericht invullen. Dan neem ik dit mee bij het controleren van je aanvraag.', 'Korting', true, 15),
+('Hoe werkt model staan met 50% korting?', 'Bij modelplekken krijg je korting omdat de beelden gebruikt kunnen worden voor portfolio-uitbreiding of promotie. De beschikbare modelcategorieen staan op de pagina Model gezocht.', 'Korting', true, 16),
+('Welke shoots kan ik boeken?', 'Je kunt onder andere een portretshoot, cakesmash, zwangerschapsshoot, gezinsshoot, newbornshoot, motherhood shoot, buiten shoot of modelplek aanvragen. De beschikbare opties staan in het boekingsformulier.', 'Shoots', true, 17),
+('Wat is een mini-shoot?', 'Een mini-shoot is een korte fotoshoot op een vaste dag of met vaste tijdsloten. Op de mini-shoot pagina zie je welke mini-shoots actief zijn en welke plekken nog beschikbaar zijn.', 'Mini-shoots', true, 18),
+('Hoe boek ik een mini-shoot?', 'Op de mini-shoot pagina kies je een beschikbare mini-shoot en daarna een tijdslot. Je vult je gegevens in en verstuurt de aanvraag. Daarna neem ik contact met je op of bevestig ik de plek.', 'Mini-shoots', true, 19),
+('Wanneer ontvang ik mijn foto''s?', 'Na de shoot ontvang je eerst je online galerij om je favorieten te kiezen. De uiteindelijke levertijd hangt af van de gekozen shoot, drukte en het aantal beelden dat afgewerkt moet worden.', 'Galerij', true, 20),
+('Kan ik een cadeaubon aanvragen?', 'Ja, via de cadeaubonpagina kun je een cadeaubon aanvragen. In de admin wordt bijgehouden of de cadeaubon nieuw is, wacht op betaling of al gebruikt is.', 'Cadeaubon', true, 21),
+('Kan ik een cadeaubon gebruiken bij het boeken?', 'Ja, tijdens het boeken kun je een cadeauboncode invullen. De code wordt gecontroleerd en meegenomen bij je aanvraag.', 'Cadeaubon', true, 22),
+('Moet ik een bericht invullen bij mijn aanvraag?', 'Nee, het bericht is optioneel. Je kunt het veld gebruiken voor extra wensen, een kortingsactie, modelkorting, winactie of iets wat handig is om vooraf te weten.', 'Boeken', true, 23),
+('Kan ik later nog iets wijzigen aan mijn aanvraag?', 'Ja, neem dan contact met mij op. Zolang de shoot nog niet definitief is afgerond, kan ik waar mogelijk de gegevens, datum, tijd of notitie aanpassen.', 'Boeken', true, 24);

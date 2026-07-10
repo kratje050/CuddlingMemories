@@ -159,7 +159,7 @@ export default function AdminModelGezocht() {
             </label>
             <label className="mt-3 grid gap-2 text-sm font-semibold text-coffee">
               CTA-link
-              <FieldHelp>Waar de knop naartoe gaat. Meestal /contact?shoot=Model%20staan%20met%2050%25%20korting.</FieldHelp>
+              <FieldHelp>Waar de knop naartoe gaat. Meestal /boek-een-shoot?shoot=Model%20staan%20met%2050%25%20korting.</FieldHelp>
               <input
                 type="text"
                 value={ctaSection.button_url || ""}
