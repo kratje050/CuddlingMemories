@@ -27,7 +27,7 @@ export default function GiftCard() {
               </p>
             </div>
             <div className="mt-7 grid gap-3 text-sm text-coffee/75">
-              {["Vrij bedrag", "Portretshoot", "Cakesmash", "Zwangerschapsshoot", "Gezinsshoot", "Newbornshoot", "Mini-shoot"].map((item) => (
+              {["Vrij bedrag", "Portretshoot", "Cakesmash", "Zwangerschapsshoot", "Gezinsshoot", "Newbornshoot", "Bevalling", "Mini-shoot"].map((item) => (
                 <span key={item} className="flex items-center gap-2 rounded-lg bg-card px-4 py-3 warm-border">
                   <Gift size={16} className="text-cocoa" /> {item}
                 </span>

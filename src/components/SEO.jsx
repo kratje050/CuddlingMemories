@@ -3,7 +3,7 @@ import { useEffect } from "react";
 const keywords =
   "fotograaf Groningen, fotograaf Friesland, fotograaf Zoutkamp, zwangerschapsfotografie, newbornfotografie, cakesmash fotografie, gezinsfotografie, portretfotografie, motherhood fotografie, buiten fotoshoot";
 
-const defaultImage = "/images/instagram/instagram-04.jpg";
+const defaultImage = "/images/home/moeder-met-kind-1200.webp";
 
 export default function SEO({ title, description, image = defaultImage }) {
   useEffect(() => {

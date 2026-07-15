@@ -4,6 +4,20 @@ import { emailTemplateDefaults, renderTemplate } from "../../src/lib/emailTempla
 
 const readEnv = (name: string) => globalThis.Netlify?.env?.get(name) || "";
 
+const ADDITIONAL_ADMIN_NOTIFICATION_EMAILS = ["roy_stavasius@hotmail.com"];
+
+const splitEmailAddresses = (value: string) =>
+  value
+    .split(/[;,]/)
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean);
+
+export const getAdminNotificationEmail = () => {
+  const configuredEmail =
+    readEnv("ADMIN_NOTIFICATION_EMAIL") || readEnv("MAIL_TO") || readEnv("SMTP_USER") || "";
+  return [...new Set([...splitEmailAddresses(configuredEmail), ...ADDITIONAL_ADMIN_NOTIFICATION_EMAILS])].join(",");
+};
+
 export const json = (status: number, body: Record<string, unknown>) =>
   new Response(JSON.stringify(body), {
     status,
@@ -77,12 +91,15 @@ async function deliverMail(to: string, subject: string, text: string, html?: str
   const apiKey = readEnv("EMAIL_API_KEY");
   const provider = (readEnv("EMAIL_PROVIDER") || "resend").toLowerCase();
   const from = readEnv("EMAIL_FROM_ADDRESS") || readEnv("EMAIL_FROM");
+  const recipients = splitEmailAddresses(to);
+
+  if (!recipients.length) throw new Error("Er is geen geldig e-mailadres voor deze mail ingesteld.");
 
   if (apiKey && provider === "resend") {
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from, to, subject, text, html }),
+      body: JSON.stringify({ from, to: recipients, subject, text, html }),
     });
     if (!response.ok) throw new Error(`Resend error: ${response.status}`);
     return;
@@ -101,7 +118,7 @@ async function deliverMail(to: string, subject: string, text: string, html?: str
     secure: port === 465,
     auth: { user: smtpUser, pass: smtpPass },
   });
-  await transporter.sendMail({ from, to, subject, text, html });
+  await transporter.sendMail({ from, to: recipients, subject, text, html });
 }
 
 async function logEmail(
@@ -110,10 +127,12 @@ async function logEmail(
     recipient_email: string;
     template_key: string;
     subject: string;
+    body_text?: string;
     status: string;
     error_message?: string;
     related_booking_id?: string | null;
     related_gallery_id?: string | null;
+    variables?: Record<string, unknown>;
   }
 ) {
   try {
@@ -129,12 +148,20 @@ export async function sendTemplateMail({
   variables = {},
   relatedBookingId = null,
   relatedGalleryId = null,
+  force = false,
+  allowInactive = false,
+  subjectOverride = "",
+  bodyOverride = "",
 }: {
   recipientEmail: string;
   templateKey: string;
   variables?: Record<string, unknown>;
   relatedBookingId?: string | null;
   relatedGalleryId?: string | null;
+  force?: boolean;
+  allowInactive?: boolean;
+  subjectOverride?: string;
+  bodyOverride?: string;
 }) {
   const supabase = getSupabaseAdmin();
   let template = null;
@@ -144,12 +171,24 @@ export async function sendTemplateMail({
       .from("email_templates")
       .select("*")
       .eq("template_key", templateKey)
-      .eq("is_active", true)
       .maybeSingle();
 
     if (error) {
       console.error("E-mailtemplate ophalen is mislukt:", error);
     } else {
+      if (data && data.is_active === false && !allowInactive) {
+        await logEmail(supabase, {
+          recipient_email: recipientEmail,
+          template_key: templateKey,
+          subject: data.subject || templateKey,
+          status: "skipped",
+          error_message: "Template is uitgeschakeld in admin.",
+          related_booking_id: relatedBookingId,
+          related_gallery_id: relatedGalleryId,
+          variables,
+        });
+        return { skipped: true, reason: "template_inactive" };
+      }
       template = data;
     }
   } catch (error) {
@@ -168,6 +207,7 @@ export async function sendTemplateMail({
       error_message: "Template ontbreekt.",
       related_booking_id: relatedBookingId,
       related_gallery_id: relatedGalleryId,
+      variables,
     });
     return { skipped: true, reason: "template_missing" };
   }
@@ -176,13 +216,15 @@ export async function sendTemplateMail({
   let recent = [];
 
   try {
-    const { data, error } = await supabase
+    let recentQuery = supabase
       .from("email_logs")
       .select("id")
       .eq("recipient_email", recipientEmail)
       .eq("template_key", templateKey)
-      .gte("created_at", since)
-      .limit(1);
+      .gte("created_at", since);
+    if (relatedBookingId) recentQuery = recentQuery.eq("related_booking_id", relatedBookingId);
+    if (relatedGalleryId) recentQuery = recentQuery.eq("related_gallery_id", relatedGalleryId);
+    const { data, error } = await recentQuery.limit(1);
 
     if (error) {
       console.error("E-mail duplicaatcontrole is mislukt:", error);
@@ -193,7 +235,7 @@ export async function sendTemplateMail({
     console.error("E-mail duplicaatcontrole is mislukt:", error);
   }
 
-  if (recent.length) {
+  if (recent.length && !force) {
     await logEmail(supabase, {
       recipient_email: recipientEmail,
       template_key: templateKey,
@@ -202,12 +244,13 @@ export async function sendTemplateMail({
       error_message: "Dubbele mail binnen 15 minuten overgeslagen.",
       related_booking_id: relatedBookingId,
       related_gallery_id: relatedGalleryId,
+      variables,
     });
     return { skipped: true, reason: "duplicate_recent" };
   }
 
-  const subject = renderTemplate(effectiveTemplate.subject, variables);
-  const body = renderTemplate(effectiveTemplate.body, variables);
+  const subject = renderTemplate(subjectOverride || effectiveTemplate.subject, variables);
+  const body = renderTemplate(bodyOverride || effectiveTemplate.body, variables);
   const html = renderBrandedEmail(subject, body);
 
   try {
@@ -216,9 +259,11 @@ export async function sendTemplateMail({
       recipient_email: recipientEmail,
       template_key: templateKey,
       subject,
+      body_text: body,
       status: "sent",
       related_booking_id: relatedBookingId,
       related_gallery_id: relatedGalleryId,
+      variables,
     });
     return { ok: true };
   } catch (error) {
@@ -226,11 +271,22 @@ export async function sendTemplateMail({
       recipient_email: recipientEmail,
       template_key: templateKey,
       subject,
+      body_text: body,
       status: "failed",
       error_message: error instanceof Error ? error.message : "Onbekende mailfout",
       related_booking_id: relatedBookingId,
       related_gallery_id: relatedGalleryId,
+      variables,
     });
     throw error;
+  }
+}
+
+export async function sendTemplateMailSafely(options: Parameters<typeof sendTemplateMail>[0], context: string) {
+  try {
+    return await sendTemplateMail(options);
+  } catch (error) {
+    console.error(`${context}:`, error);
+    return { ok: false, error };
   }
 }

@@ -1,6 +1,4 @@
-import { clean, getSupabaseAdmin, json, sendTemplateMail } from "./email-utils.ts";
-
-const readEnv = (name: string) => globalThis.Netlify?.env?.get(name) || "";
+import { clean, getAdminNotificationEmail, getSupabaseAdmin, json, sendTemplateMailSafely } from "./email-utils.ts";
 
 export default async (req: Request) => {
   if (req.method !== "POST") return json(405, { ok: false, message: "Alleen POST is toegestaan." });
@@ -32,6 +30,19 @@ export default async (req: Request) => {
     const selected = selectedPhotos || [];
     const selectedCount = selected.length;
     const extraCount = selected.filter((photo) => photo.is_extra_requested).length;
+    let extraUnitPrice = 0;
+    if (extraCount > 0) {
+      const { data: extraPackage } = await supabase
+        .from("packages")
+        .select("price")
+        .eq("price_unit", "item")
+        .ilike("title", "%extra%")
+        .eq("is_published", true)
+        .limit(1)
+        .maybeSingle();
+      extraUnitPrice = Number(extraPackage?.price || 0);
+    }
+    const extraTotal = extraUnitPrice > 0 ? extraCount * extraUnitPrice : 0;
     const selectedList =
       selected
         .map((photo, index) => {
@@ -49,26 +60,26 @@ export default async (req: Request) => {
       selected_count: selectedCount,
       included_images: gallery.included_images || 0,
       extra_count: extraCount,
-      extra_line: extraCount > 0 ? ` Je hebt ${extraCount} extra beeld(en) gekozen.` : "",
+      extra_line: extraCount > 0 ? ` Je hebt ${extraCount} extra beeld(en) gekozen.${extraTotal > 0 ? ` De extra kosten zijn ${formatEuro(extraTotal)}.` : ""}` : "",
       selected_photos: selectedList,
       admin_link: `${baseUrl}/admin/galleries/${gallery.id}`,
     };
 
-    await sendTemplateMail({
+    await sendTemplateMailSafely({
       recipientEmail: gallery.client_email,
       templateKey: "gallery_selection_received",
       relatedGalleryId: gallery.id,
       variables,
-    });
+    }, "Bevestiging fotokeuze versturen is mislukt");
 
-    const adminEmail = readEnv("ADMIN_NOTIFICATION_EMAIL") || readEnv("MAIL_TO") || readEnv("SMTP_USER");
+    const adminEmail = getAdminNotificationEmail();
     if (adminEmail) {
-      await sendTemplateMail({
+      await sendTemplateMailSafely({
         recipientEmail: adminEmail,
         templateKey: "admin_gallery_selection_received",
         relatedGalleryId: gallery.id,
         variables,
-      });
+      }, "Adminmelding fotokeuze versturen is mislukt");
     }
 
     return json(200, { ok: true });
@@ -78,3 +89,5 @@ export default async (req: Request) => {
 };
 
 export const config = { path: "/api/submit-gallery-selection" };
+
+const formatEuro = (value: number) => new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(Number(value || 0));

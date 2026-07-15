@@ -20,18 +20,22 @@ import {
   Users,
   Images,
   Sparkles,
+  WalletCards,
+  MailCheck,
 } from "lucide-react";
 
 const navItems = [
   { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/admin/bookings", label: "Boekingen", icon: CalendarCheck },
+  { to: "/admin/betalingen", label: "Betalingen", icon: WalletCards },
   { to: "/admin/klantgegevens", label: "Klantgegevens", icon: Users },
   { to: "/admin/beschikbaarheid", label: "Beschikbaarheid", icon: CalendarClock },
   { to: "/admin/geblokkeerde-dagen", label: "Geblokkeerde dagen", icon: CalendarX },
   { to: "/admin/tijdslots", label: "Tijdslots", icon: CalendarPlus },
   { to: "/admin/maandplanning", label: "Maandplanning", icon: CalendarRange },
   { to: "/admin/galleries", label: "Galerijen", icon: Images },
-  { to: "/admin/email-templates", label: "E-mails", icon: Mail },
+  { to: "/admin/email-control", label: "E-mailcontrole", icon: MailCheck },
+  { to: "/admin/email-templates", label: "E-mailtemplates", icon: Mail },
   { to: "/admin/waitlist", label: "Wachtlijst", icon: Users },
   { to: "/admin/giftcards", label: "Cadeaubonnen", icon: Gift },
   { to: "/admin/mini-shoots", label: "Mini-shoots", icon: Sparkles },

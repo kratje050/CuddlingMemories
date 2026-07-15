@@ -28,6 +28,19 @@ const fieldGroups = [
     ],
   },
   {
+    heading: "Portfolio",
+    fields: [
+      {
+        name: "portfolio_album_limit",
+        label: "Aantal albums op portfolio",
+        type: "number",
+        min: 1,
+        max: 24,
+        help: "Bepaalt hoeveel gepubliceerde albums bovenaan de portfoliopagina worden getoond. Kies bijvoorbeeld 8 om alle huidige albums zichtbaar te maken.",
+      },
+    ],
+  },
+  {
     heading: "Footer",
     fields: [{ name: "footer_text", label: "Footer-tekst", type: "textarea", help: "Korte omschrijving onder het logo onderaan de website." }],
   },
@@ -112,9 +125,16 @@ export default function AdminSettings() {
                     />
                   ) : (
                     <input
-                      type="text"
-                      value={values[field.name] || ""}
-                      onChange={(event) => handleChange(field.name, event.target.value)}
+                      type={field.type || "text"}
+                      min={field.min}
+                      max={field.max}
+                      value={values[field.name] ?? ""}
+                      onChange={(event) =>
+                        handleChange(
+                          field.name,
+                          field.type === "number" ? Number(event.target.value) : event.target.value
+                        )
+                      }
                       className="rounded-lg border border-cocoa/20 bg-cream px-3 py-2 text-sm outline-none focus:border-cocoa"
                     />
                   )}

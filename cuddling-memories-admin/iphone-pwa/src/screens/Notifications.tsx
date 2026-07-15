@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Badge, Button, Card, EmptyState, ErrorBox, PageHeader } from "../components/ui";
 import { getNotifications, markNotificationRead, type NotificationRow } from "../lib/mobileAdminApi";
+import { formatMobileDateTime } from "../lib/formatDate";
 
 export default function Notifications() {
   const [rows, setRows] = useState<NotificationRow[]>([]);
@@ -53,7 +54,7 @@ export default function Notifications() {
               <div>
                 <p className="font-semibold text-coffee">{row.title}</p>
                 {row.message ? <p className="mt-2 text-sm leading-6 text-coffee/65">{row.message}</p> : null}
-                <p className="mt-3 text-xs text-coffee/45">{formatDate(row.created_at)}</p>
+                <p className="mt-3 text-xs text-coffee/45">{formatMobileDateTime(row.created_at)}</p>
               </div>
               <Badge tone={row.is_read ? "neutral" : "active"}>{row.is_read ? "Gelezen" : "Nieuw"}</Badge>
             </div>
@@ -65,10 +66,4 @@ export default function Notifications() {
       </div>
     </>
   );
-}
-
-function formatDate(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString("nl-NL", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }

@@ -4,6 +4,7 @@ import RequireAdmin from "./utils/adminGuard.js";
 import AdminLogin from "./pages/AdminLogin.jsx";
 import AdminDashboard from "./pages/AdminDashboard.jsx";
 import AdminBookings from "./pages/AdminBookings.jsx";
+import AdminPayments from "./pages/AdminPayments.jsx";
 import AdminBookingDetail from "./pages/AdminBookingDetail.jsx";
 import AdminBookingNew from "./pages/AdminBookingNew.jsx";
 import AdminCustomers from "./pages/AdminCustomers.jsx";
@@ -24,6 +25,7 @@ import AdminGalleries from "./pages/AdminGalleries.jsx";
 import AdminGalleryDetail from "./pages/AdminGalleryDetail.jsx";
 import AdminGalleryPhotos from "./pages/AdminGalleryPhotos.jsx";
 import AdminEmailTemplates from "./pages/AdminEmailTemplates.jsx";
+import AdminEmailControl from "./pages/AdminEmailControl.jsx";
 import AdminWaitlist from "./pages/AdminWaitlist.jsx";
 import AdminGiftcards from "./pages/AdminGiftcards.jsx";
 import AdminMiniSessions from "./pages/AdminMiniSessions.jsx";
@@ -47,6 +49,14 @@ export default function AdminRoutes() {
           element={
             <RequireAdmin>
               <AdminBookings />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="betalingen"
+          element={
+            <RequireAdmin>
+              <AdminPayments />
             </RequireAdmin>
           }
         />
@@ -143,6 +153,14 @@ export default function AdminRoutes() {
           element={
             <RequireAdmin>
               <AdminEmailTemplates />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="email-control"
+          element={
+            <RequireAdmin>
+              <AdminEmailControl />
             </RequireAdmin>
           }
         />

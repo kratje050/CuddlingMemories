@@ -1,4 +1,4 @@
-import { clean, getSupabaseAdmin, isEmail, json, sendTemplateMail } from "./email-utils.ts";
+import { clean, getAdminNotificationEmail, getSupabaseAdmin, isEmail, json, sendTemplateMailSafely } from "./email-utils.ts";
 
 export default async (req: Request) => {
   if (req.method !== "POST") return json(405, { ok: false, message: "Alleen POST is toegestaan." });
@@ -24,14 +24,25 @@ export default async (req: Request) => {
     const supabase = getSupabaseAdmin();
     const { error } = await supabase.from("giftcards").insert(row);
     if (error) throw error;
-    try {
-      await sendTemplateMail({
+    await sendTemplateMailSafely({
         recipientEmail: row.purchaser_email,
         templateKey: "giftcard_received",
         variables: { customer_name: row.purchaser_name, giftcard_amount: row.amount ? `EUR ${row.amount}` : row.giftcard_type },
-      });
-    } catch (mailError) {
-      console.error("Cadeaubonmail versturen is mislukt:", mailError);
+      }, "Cadeaubonbevestiging versturen is mislukt");
+    const adminEmail = getAdminNotificationEmail();
+    if (adminEmail) {
+      await sendTemplateMailSafely({
+        recipientEmail: adminEmail,
+        templateKey: "admin_giftcard_received",
+        variables: {
+          customer_name: row.purchaser_name,
+          customer_email: row.purchaser_email,
+          recipient_name: row.recipient_name,
+          giftcard_amount: row.amount ? `EUR ${row.amount.toFixed(2)}` : row.giftcard_type,
+          delivery_method: row.delivery_method || "Niet ingevuld",
+          admin_link: `${new URL(req.url).origin}/admin/giftcards`,
+        },
+      }, "Adminmelding cadeaubon versturen is mislukt");
     }
     return json(200, { ok: true });
   } catch (error) {

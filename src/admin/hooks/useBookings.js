@@ -81,7 +81,7 @@ export async function deleteBooking(bookingId) {
 
 export async function getBookingDetail(bookingId) {
   const [{ data: booking, error: bookingError }, { data: notes }, { data: history }, { data: giftcard }] = await Promise.all([
-    supabase.from("bookings").select("*, packages(id, title)").eq("id", bookingId).maybeSingle(),
+    supabase.from("bookings").select("*, packages(id, title, price, included_images), booking_addons(id,package_id,title_snapshot,price_snapshot)").eq("id", bookingId).maybeSingle(),
     supabase.from("booking_notes").select("*").eq("booking_id", bookingId).order("created_at", { ascending: false }),
     supabase
       .from("booking_status_history")

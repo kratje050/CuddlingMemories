@@ -3,6 +3,7 @@ import AdminLayout from "../components/AdminLayout.jsx";
 import AdminCrudList from "../components/AdminCrudList.jsx";
 import { createGiftcardCode, deliveryMethods, giftcardStatuses, giftcardTypes } from "../../lib/giftcards.js";
 import { formatDate } from "../../lib/formatDate.js";
+import { sendTemplateEmail } from "../utils/sendTemplateEmail.js";
 
 const fields = [
   { name: "purchaser_name", label: "Naam aanvrager", type: "text", required: true, help: "Persoon die de cadeaubon aanvraagt." },
@@ -46,9 +47,32 @@ const columns = [
 ];
 
 export default function AdminGiftcards() {
+  const handleSaved = async ({ payload, editingRow, isNew }) => {
+    if (isNew || !editingRow || payload.status === editingRow.status) return;
+    if (!["Betaald", "Verzonden", "Verlopen", "Geannuleerd"].includes(payload.status)) return;
+    const messages = {
+      Betaald: "De betaling is ontvangen. De cadeaubon wordt verder klaargemaakt.",
+      Verzonden: "De cadeaubon is verzonden naar de afgesproken ontvanger.",
+      Verlopen: "De geldigheid van deze cadeaubon is verlopen.",
+      Geannuleerd: "De aanvraag voor deze cadeaubon is geannuleerd.",
+    };
+    await sendTemplateEmail({
+      recipientEmail: payload.purchaser_email,
+      templateKey: "giftcard_status",
+      variables: {
+        customer_name: payload.purchaser_name,
+        recipient_name: payload.recipient_name || "de ontvanger",
+        request_status: payload.status,
+        giftcard_code: payload.code || "Wordt nog aangemaakt",
+        giftcard_amount: payload.amount ? `EUR ${Number(payload.amount).toFixed(2)}` : payload.giftcard_type,
+        status_message: messages[payload.status],
+      },
+    });
+  };
+
   return (
     <AdminLayout>
-      <AdminCrudList title="Cadeaubonnen" table="giftcards" fields={fields} columns={columns} orderBy="created_at" emptyLabel="Nog geen cadeaubonnen." newLabel="Cadeaubon toevoegen" />
+      <AdminCrudList title="Cadeaubonnen" table="giftcards" fields={fields} columns={columns} orderBy="created_at" emptyLabel="Nog geen cadeaubonnen." newLabel="Cadeaubon toevoegen" onSaved={handleSaved} />
     </AdminLayout>
   );
 }

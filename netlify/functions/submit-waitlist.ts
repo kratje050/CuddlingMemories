@@ -1,4 +1,4 @@
-import { clean, getSupabaseAdmin, isEmail, json, sendTemplateMail } from "./email-utils.ts";
+import { clean, getAdminNotificationEmail, getSupabaseAdmin, isEmail, json, sendTemplateMailSafely } from "./email-utils.ts";
 
 export default async (req: Request) => {
   if (req.method !== "POST") return json(405, { ok: false, message: "Alleen POST is toegestaan." });
@@ -21,14 +21,24 @@ export default async (req: Request) => {
     const supabase = getSupabaseAdmin();
     const { error } = await supabase.from("waitlist_entries").insert(row);
     if (error) throw error;
-    try {
-      await sendTemplateMail({
+    await sendTemplateMailSafely({
         recipientEmail: row.customer_email,
         templateKey: "waitlist_confirmed",
         variables: { customer_name: row.customer_name, shoot_type: row.shoot_type },
-      });
-    } catch (mailError) {
-      console.error("Wachtlijstmail versturen is mislukt:", mailError);
+      }, "Wachtlijstbevestiging versturen is mislukt");
+    const adminEmail = getAdminNotificationEmail();
+    if (adminEmail) {
+      await sendTemplateMailSafely({
+        recipientEmail: adminEmail,
+        templateKey: "admin_waitlist_received",
+        variables: {
+          customer_name: row.customer_name,
+          customer_email: row.customer_email,
+          shoot_type: row.shoot_type,
+          preferred_period: row.preferred_date ? formatDate(row.preferred_date) : row.preferred_month || row.flexibility,
+          admin_link: `${new URL(req.url).origin}/admin/waitlist`,
+        },
+      }, "Adminmelding wachtlijst versturen is mislukt");
     }
     return json(200, { ok: true });
   } catch (error) {
@@ -37,3 +47,8 @@ export default async (req: Request) => {
 };
 
 export const config = { path: "/api/submit-waitlist" };
+
+function formatDate(value: string) {
+  const [year, month, day] = String(value || "").slice(0, 10).split("-");
+  return year && month && day ? `${day}/${month}/${year.slice(-2)}` : "-";
+}

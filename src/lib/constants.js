@@ -16,6 +16,7 @@ export const shootTypeOptions = [
   "Zwangerschapsshoot",
   "Gezinsshoot",
   "Newbornshoot",
+  "Bevalling",
   "Motherhood",
   "Buiten shoot",
   "Model staan met 50% korting",

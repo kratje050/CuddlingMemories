@@ -100,6 +100,12 @@ export default function AdminBookings() {
   );
 
   const handleExport = () => {
+    if (bookings.length >= 50) {
+      const typed = window.prompt(
+        `Je staat op het punt ${bookings.length} boekingen met klantgegevens te exporteren. Typ EXPORTEER om door te gaan.`
+      );
+      if (typed?.trim() !== "EXPORTEER") return;
+    }
     downloadCsv(
       `boekingen-${new Date().toISOString().slice(0, 10)}.csv`,
       bookings,

@@ -15,6 +15,7 @@ export default async (req: Request) => {
       recipientEmail: gallery.client_email,
       templateKey: "gallery_ready",
       relatedGalleryId: gallery.id,
+      force: payload.force === true,
       variables: {
         customer_name: gallery.client_name,
         gallery_link: `${baseUrl}/galerij/${gallery.secure_token}`,

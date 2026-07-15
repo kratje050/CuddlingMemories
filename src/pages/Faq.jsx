@@ -1,4 +1,4 @@
-import { ArrowRight, CalendarHeart, Images, MapPin, MessageCircle, Search, Sparkles, X } from "lucide-react";
+import { ArrowRight, CalendarHeart, Images, MapPin, MessageCircle, Search, Sparkles, UserRound, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import Button from "../components/Button.jsx";
 import FAQItem from "../components/FAQItem.jsx";
@@ -12,11 +12,16 @@ const topics = [
   { id: "booking", label: "Boeken", icon: CalendarHeart },
   { id: "location", label: "Locatie & kosten", icon: MapPin },
   { id: "gallery", label: "Galerij & foto's", icon: Images },
+  { id: "portal", label: "Klantportaal", icon: UserRound },
   { id: "specials", label: "Acties & shoots", icon: MessageCircle },
 ];
 
 function getFaqTopic(item) {
   const text = `${item.question || ""} ${item.answer || ""}`.toLowerCase();
+
+  if (["klantportaal", "bankoverschrijving", "contant betalen", "digitale overeenkomst", "factuur", "facturen", "betalingskenmerk", "andere datum aanvragen", "aanbetaling", "restbedrag", "betaaltermijn", "betaalherinnering", "herinneringsmail", "voorbereidingsvragen", "annuleringsvoorwaarden"].some((keyword) => text.includes(keyword))) {
+    return "portal";
+  }
 
   if (
     ["galerij", "favoriete", "favorieten", "foto's gekozen", "beelden gekozen", "online", "ontvang ik mijn foto's"].some(
@@ -27,7 +32,7 @@ function getFaqTopic(item) {
   }
 
   if (
-    ["reiskosten", "locatie", "zoutkamp", "gouda", "pakket", "extra beeld", "extra foto's", "kosten"].some((keyword) =>
+    ["locatie", "zoutkamp", "pakket", "extra beeld", "extra foto's", "kosten", "inbegrepen"].some((keyword) =>
       text.includes(keyword),
     )
   ) {
@@ -101,7 +106,7 @@ export default function Faq() {
     <>
       <SEO
         title="FAQ"
-        description="Veelgestelde vragen over fotoshoots boeken, pakketten, locatie, reiskosten, online galerijen en korting bij Cuddling Memories Fotografie."
+        description="Veelgestelde vragen over fotoshoots boeken, pakketten, locaties, online galerijen en korting bij Cuddling Memories Fotografie."
       />
       <section className="pt-32 pb-20">
         <div className="container-soft">
@@ -112,7 +117,7 @@ export default function Faq() {
                 Alles over jouw fotoshoot
               </h1>
               <p className="mt-5 max-w-2xl text-base leading-8 text-coffee/72">
-                Van boeken tot locatie, reiskosten, kortingen en de online galerij. Hier vind je snel wat je vooraf
+                Van boeken tot locaties, pakketprijzen, kortingen en de online galerij. Hier vind je snel wat je vooraf
                 wilt weten, zonder dat je door losse pagina's hoeft te zoeken.
               </p>
               <div className="mt-7 grid gap-3 sm:grid-cols-3">
@@ -148,14 +153,14 @@ export default function Faq() {
           </div>
 
           <div className="mt-8 rounded-lg bg-card/82 p-4 shadow-soft warm-border sm:p-5">
-            <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
+            <div className="grid gap-4">
               <label className="relative block">
                 <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-cocoa" size={18} />
                 <input
                   type="search"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Zoek bijvoorbeeld reiskosten, galerij of korting"
+                  placeholder="Zoek bijvoorbeeld locatie, galerij of korting"
                   className="min-h-12 w-full rounded-full border border-cocoa/20 bg-cream/70 px-12 text-sm text-coffee outline-none transition placeholder:text-coffee/38 focus:border-cocoa/50 focus:bg-card"
                 />
                 {query && (
@@ -170,7 +175,7 @@ export default function Faq() {
                 )}
               </label>
 
-              <div className="flex gap-2 overflow-x-auto pb-1 lg:justify-end lg:overflow-visible">
+              <div className="flex max-w-full gap-2 overflow-x-auto pb-1 lg:flex-wrap lg:overflow-visible">
                 {topics.map((topic) => {
                   const Icon = topic.icon;
                   const selected = activeTopic === topic.id;

@@ -7,6 +7,7 @@ import FAQItem from "../components/FAQItem.jsx";
 import SEO from "../components/SEO.jsx";
 import SectionTitle from "../components/SectionTitle.jsx";
 import MonthAvailabilityOverview from "../components/MonthAvailabilityOverview.jsx";
+import PregnancyPlanner from "../components/PregnancyPlanner.jsx";
 import WaitlistForm from "../components/WaitlistForm.jsx";
 import StepIndicator from "../components/booking/StepIndicator.jsx";
 import ShootTypeStep from "../components/booking/ShootTypeStep.jsx";
@@ -20,8 +21,50 @@ import { getPublishedPackages, getVisibleFaqs } from "../lib/api.js";
 import { getBookableShootTypes } from "../lib/bookingAvailability.js";
 import { mergeFaqs } from "../lib/faqUtils.js";
 import { usePageMeta } from "../lib/usePageMeta.js";
+import { CANCELLATION_TERMS_VERSION } from "../data/legalTerms.js";
+import { trackConversionEvent } from "../lib/conversionTracking.js";
 
-const emptyDetails = { naam: "", email: "", telefoon: "", locationType: "studio", omgeving: "", bericht: "", privacy: false, giftcardCode: "" };
+const emptyDetails = {
+  naam: "",
+  email: "",
+  telefoon: "",
+  locationType: "studio",
+  omgeving: "",
+  locationStreet: "",
+  locationHouseNumber: "",
+  locationPostalCode: "",
+  locationCity: "",
+  bericht: "",
+  privacy: false,
+  termsAccepted: false,
+  modelUsageConsent: false,
+  questionnaire: {},
+  giftcardCode: "",
+};
+
+const isModelDiscountShootType = (value) => {
+  const normalized = String(value || "").toLowerCase();
+  return normalized.includes("model") && normalized.includes("korting");
+};
+
+const getPackagesForShootType = (allPackages, selectedShootType) => {
+  if (!isModelDiscountShootType(selectedShootType)) {
+    return allPackages.filter((pkg) => !pkg.is_addon && pkg.shoot_type === selectedShootType && pkg.price_unit === "shoot");
+  }
+
+  return allPackages
+    .filter((pkg) => !pkg.is_addon && pkg.price_unit === "shoot" && pkg.model_discount_eligible)
+    .filter((pkg) => !`${pkg.title || ""} ${pkg.shoot_type || ""}`.toLowerCase().includes("bevalling"))
+    .map((pkg) => ({
+      ...pkg,
+      original_price: Number(pkg.price || 0),
+      price: Math.round(Number(pkg.price || 0) * 50) / 100,
+      deposit_value: pkg.deposit_type === "fixed"
+        ? Math.min(Number(pkg.deposit_value || 0), Math.round(Number(pkg.price || 0) * 50) / 100)
+        : pkg.deposit_value,
+      is_model_discount_price: true,
+    }));
+};
 
 export default function Booking() {
   const [params] = useSearchParams();
@@ -29,6 +72,7 @@ export default function Booking() {
   const navigate = useNavigate();
   const requestedShoot = params.get("shoot");
   const requestedMonthParam = params.get("maand");
+  const waitlistOfferToken = params.get("aanbod");
   const waitlistMonthParam = params.get("wachtlijst");
   const wizardRef = useRef(null);
 
@@ -52,8 +96,10 @@ export default function Booking() {
 
   const [shootType, setShootType] = useState(null);
   const [packageId, setPackageId] = useState(null);
+  const [addonPackageIds, setAddonPackageIds] = useState([]);
   const [date, setDate] = useState(null);
   const [time, setTime] = useState(null);
+  const [plannedMonth, setPlannedMonth] = useState(null);
   const [details, setDetails] = useState(emptyDetails);
   const [botField, setBotField] = useState("");
   const [detailsError, setDetailsError] = useState("");
@@ -66,12 +112,27 @@ export default function Booking() {
     Promise.all([getBookableShootTypes(), getPublishedPackages(), getVisibleFaqs()])
       .then(([types, pkgs, faqRows]) => {
         if (!active) return;
-        setBookableTypes(types);
-        setPackages(pkgs);
+        const normalizedPackages = pkgs.filter((pkg) => pkg.price_unit !== "km").map((pkg) => (
+          pkg.price_unit === "shoot" && !pkg.shoot_type && pkg.title
+            ? { ...pkg, shoot_type: pkg.title }
+            : pkg
+        ));
+        const packageShootTypes = normalizedPackages
+          .filter((pkg) => pkg.price_unit === "shoot" && pkg.shoot_type)
+          .map((pkg) => pkg.shoot_type);
+        const mergedTypes = [...new Set([...types, ...packageShootTypes])];
+        setBookableTypes(mergedTypes);
+        setPackages(normalizedPackages);
         setFaqs(mergeFaqs(faqRows || [], fallbackFaqs));
-        if (requestedShoot && types.includes(requestedShoot)) {
+        if (requestedShoot && mergedTypes.includes(requestedShoot)) {
+          const matchingPackages = getPackagesForShootType(normalizedPackages, requestedShoot);
           setShootType(requestedShoot);
-          setStep(1);
+          if (matchingPackages.length === 1) {
+            setPackageId(matchingPackages[0].id);
+            setStep(2);
+          } else {
+            setStep(1);
+          }
         }
       })
       .catch(() => {
@@ -96,25 +157,95 @@ export default function Booking() {
     }
   }, [requestedMonthParam, location.hash]);
 
-  const packagesForShoot = useMemo(
-    () => packages.filter((pkg) => pkg.shoot_type === shootType && pkg.price_unit === "shoot"),
+  useEffect(() => {
+    if (shootType) trackConversionEvent("booking_started", "/boek-een-shoot");
+  }, [shootType]);
+
+  const packagesForShoot = useMemo(() => getPackagesForShootType(packages, shootType), [packages, shootType]);
+  const addonsForShoot = useMemo(
+    () => packages.filter((pkg) => pkg.is_addon && pkg.price_unit === "shoot" && (!pkg.shoot_type || pkg.shoot_type === shootType)),
     [packages, shootType]
   );
-  const selectedPackage = useMemo(() => packages.find((pkg) => pkg.id === packageId) || null, [packages, packageId]);
+  const selectedPackage = useMemo(() => packagesForShoot.find((pkg) => pkg.id === packageId) || null, [packagesForShoot, packageId]);
+  const selectedAddons = useMemo(() => addonsForShoot.filter((pkg) => addonPackageIds.includes(pkg.id)), [addonsForShoot, addonPackageIds]);
+  const modelUsageConsentRequired = useMemo(() => {
+    const labels = [shootType, selectedPackage?.title, ...selectedAddons.map((pkg) => pkg.title)]
+      .filter(Boolean)
+      .map((value) => String(value).toLowerCase());
+    return labels.some((value) => value.includes("model") && (value.includes("50%") || value.includes("korting")));
+  }, [shootType, selectedPackage, selectedAddons]);
+
+  useEffect(() => {
+    if (!modelUsageConsentRequired && details.modelUsageConsent) {
+      setDetails((current) => ({ ...current, modelUsageConsent: false }));
+    }
+  }, [modelUsageConsentRequired, details.modelUsageConsent]);
 
   const goTo = (nextStep) => {
-    window.scrollTo({ top: window.scrollY, behavior: "instant" });
     setStep(nextStep);
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        const wizard = wizardRef.current;
+        if (!wizard) return;
+        const headerOffset = window.innerWidth < 1024 ? 118 : 132;
+        const top = wizard.getBoundingClientRect().top + window.scrollY - headerOffset;
+        window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+      });
+    });
+  };
+
+  const handlePregnancyPlan = (recommendedDate) => {
+    const today = new Date();
+    const target = recommendedDate >= today ? recommendedDate : today;
+    setPlannedMonth(new Date(target.getFullYear(), target.getMonth(), 1));
+    setDate(null);
+    setTime(null);
+    goTo(2);
   };
 
   const handleShootSelect = (option) => {
+    const matchingPackages = getPackagesForShootType(packages, option);
     setShootType(option);
+    setAddonPackageIds([]);
+    setDate(null);
+    setTime(null);
+    setPlannedMonth(null);
+
+    if (matchingPackages.length === 1) {
+      const onlyPackage = matchingPackages[0];
+      setPackageId(onlyPackage.id);
+      trackConversionEvent("package_selected", "/boek-een-shoot", {
+        package_id: onlyPackage.id,
+        package_name: onlyPackage.title,
+        package_names: [onlyPackage.title],
+        shoot_type: option,
+      });
+      goTo(2);
+      return;
+    }
+
     setPackageId(null);
     goTo(1);
   };
 
   const handlePackageSelect = (id) => {
     setPackageId(id);
+  };
+
+  const handleAddonToggle = (id) => {
+    setAddonPackageIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
+  };
+
+  const handlePackageContinue = () => {
+    const names = [selectedPackage, ...selectedAddons].filter(Boolean).map((pkg) => pkg.title);
+    if (names.length) {
+      trackConversionEvent("package_selected", "/boek-een-shoot", {
+        package_id: selectedPackage?.id || "",
+        package_name: selectedPackage?.title || names[0],
+        package_names: names,
+        shoot_type: shootType,
+      });
+    }
     goTo(2);
   };
 
@@ -131,8 +262,18 @@ export default function Booking() {
 
   const handleDetailsNext = () => {
     const needsLocation = details.locationType === "location";
-    if (!details.naam || !details.email || (needsLocation && !details.omgeving) || !details.privacy) {
-      setDetailsError("Vul alle verplichte velden in en accepteer de privacyverklaring.");
+    const emailIsValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(details.email.trim());
+    if (!emailIsValid) {
+      setDetailsError("Vul een geldig e-mailadres in, bijvoorbeeld naam@gmail.com.");
+      return;
+    }
+    const locationIncomplete = needsLocation && (!details.locationStreet || !details.locationHouseNumber || !details.locationPostalCode || !details.locationCity);
+    if (!details.naam || !details.email || locationIncomplete || !details.privacy || !details.termsAccepted || (modelUsageConsentRequired && !details.modelUsageConsent)) {
+      setDetailsError(modelUsageConsentRequired
+        ? "Vul alle verplichte velden in en accepteer ook het gebruik van de modelfoto's voor social media en het portfolio."
+        : needsLocation && locationIncomplete
+          ? "Vul het volledige locatieadres in voordat je verdergaat."
+          : "Vul alle verplichte velden in en accepteer de privacyverklaring en annuleringsvoorwaarden.");
       return;
     }
     setDetailsError("");
@@ -144,8 +285,9 @@ export default function Booking() {
     setSubmitError("");
 
     try {
-      const bookingLocation =
-        details.locationType === "location" ? `Op locatie: ${details.omgeving}` : "Bij mij thuis in Zoutkamp";
+      const bookingLocation = details.locationType === "location"
+        ? `Op locatie: ${details.locationStreet} ${details.locationHouseNumber}, ${details.locationPostalCode} ${details.locationCity}${details.omgeving ? ` (${details.omgeving})` : ""}`
+        : "Bij mij thuis in Zoutkamp";
 
       const response = await fetch("/api/create-booking", {
         method: "POST",
@@ -158,10 +300,22 @@ export default function Booking() {
           bookingDate: format(date, "yyyy-MM-dd"),
           startTime: time.start,
           packageId: packageId || "",
+          addonPackageIds,
           omgeving: bookingLocation,
+          locationType: details.locationType,
+          locationStreet: details.locationStreet,
+          locationHouseNumber: details.locationHouseNumber,
+          locationPostalCode: details.locationPostalCode,
+          locationCity: details.locationCity,
+          locationNotes: details.omgeving,
           bericht: details.bericht,
           privacy: details.privacy,
+          termsAccepted: details.termsAccepted,
+          modelUsageConsent: details.modelUsageConsent,
+          termsVersion: CANCELLATION_TERMS_VERSION,
+          questionnaire: details.questionnaire || {},
           giftcardCode: details.giftcardCode || "",
+          waitlistOfferToken: waitlistOfferToken || "",
           "bot-field": botField,
           renderedAt: formRenderedAt.current,
         }),
@@ -170,7 +324,8 @@ export default function Booking() {
       const body = await response.json().catch(() => ({}));
 
       if (response.ok && body.ok) {
-        navigate("/bedankt");
+        trackConversionEvent("booking_completed", "/bedankt");
+        navigate("/bedankt", { state: { portalUrl: body.portal_url || "" } });
         return;
       }
 
@@ -182,10 +337,12 @@ export default function Booking() {
     }
   };
 
-  const backButton = step > 0 && step < 5 && (
+  const packageStepWasSkipped = packagesForShoot.length === 1 && packageId === packagesForShoot[0]?.id;
+  const previousStep = step === 2 && packageStepWasSkipped ? 0 : step - 1;
+  const backButton = step > 0 && (
     <button
       type="button"
-      onClick={() => goTo(step - 1)}
+      onClick={() => goTo(previousStep)}
       className="mb-5 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.1em] text-coffee/60 transition hover:text-cocoa"
     >
       <ArrowLeft size={14} /> Vorige stap
@@ -235,8 +392,8 @@ export default function Booking() {
                     Kies eerst het soort shoot. Daarna opent de kalender direct in de gekozen maand.
                   </p>
                 )}
-                <div className="mb-6 overflow-x-auto">
-                  <StepIndicator current={step} />
+                <div className="mb-6 min-w-0">
+                  <StepIndicator current={step} onStepSelect={goTo} />
                 </div>
 
                 {backButton}
@@ -247,19 +404,17 @@ export default function Booking() {
 
                 {step === 1 && (
                   <div>
-                    <PackageStep packages={packagesForShoot} value={packageId} onSelect={handlePackageSelect} />
-                    <button
-                      type="button"
-                      onClick={() => goTo(2)}
-                      className="mt-4 text-xs font-semibold uppercase tracking-[0.1em] text-coffee/60 underline-offset-4 hover:text-cocoa hover:underline"
-                    >
-                      {packagesForShoot.length > 0 ? "Verder zonder specifiek pakket" : "Volgende stap"}
-                    </button>
+                    {shootType?.toLowerCase().includes("zwangerschap") && (
+                      <div className="mb-5">
+                        <PregnancyPlanner compact onPlan={handlePregnancyPlan} />
+                      </div>
+                    )}
+                    <PackageStep packages={packagesForShoot} addons={addonsForShoot} value={packageId} addonValues={addonPackageIds} onSelect={handlePackageSelect} onToggleAddon={handleAddonToggle} onContinue={handlePackageContinue} />
                   </div>
                 )}
 
                 {step === 2 && (
-                  <BookingCalendar shootType={shootType} value={date} onSelect={handleDateSelect} initialMonth={initialMonth} />
+                  <BookingCalendar shootType={shootType} value={date} onSelect={handleDateSelect} initialMonth={plannedMonth || initialMonth} />
                 )}
 
                 {step === 3 && (
@@ -268,7 +423,7 @@ export default function Booking() {
 
                 {step === 4 && (
                   <div>
-                    <DetailsStep values={details} onChange={setDetails} />
+                    <DetailsStep values={details} onChange={setDetails} shootType={shootType} modelUsageConsentRequired={modelUsageConsentRequired} />
                     <input
                       type="text"
                       value={botField}
@@ -291,7 +446,7 @@ export default function Booking() {
                 {step === 5 && (
                   <div>
                     <p className="mb-5 text-sm text-coffee/75">Controleer je aanvraag en verstuur 'm hieronder.</p>
-                    <BookingSummaryContent shootType={shootType} pkg={selectedPackage} date={date} time={time} details={details} />
+                    <BookingSummaryContent shootType={shootType} pkg={selectedPackage} addons={selectedAddons} date={date} time={time} details={details} />
                     {submitStatus === "error" && (
                       <p className="mt-5 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800">{submitError}</p>
                     )}
@@ -307,10 +462,10 @@ export default function Booking() {
                 )}
               </div>
 
-              <aside className="h-fit rounded-lg bg-linen/70 p-5 shadow-soft warm-border lg:sticky lg:top-28">
+              <aside className={`h-fit rounded-lg bg-linen/70 p-5 shadow-soft warm-border lg:sticky lg:top-28 ${step === 5 ? "hidden lg:block" : ""}`}>
                 <h2 className="fine-label text-sm font-semibold text-cocoa">Jouw keuzes</h2>
                 <div className="mt-4">
-                  <BookingSummaryContent shootType={shootType} pkg={selectedPackage} date={date} time={time} details={details} />
+                  <BookingSummaryContent shootType={shootType} pkg={selectedPackage} addons={selectedAddons} date={date} time={time} details={details} />
                 </div>
               </aside>
             </div>

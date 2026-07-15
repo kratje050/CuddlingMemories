@@ -1,5 +1,6 @@
 import { requireAdmin } from "@shared/index";
 import { supabase } from "./supabase";
+import { formatMobileDate } from "./formatDate";
 
 export type MonthStatus = {
   year: number;
@@ -152,7 +153,7 @@ export async function uploadGalleryPhotos(galleryId: string, files: File[], star
 
   const rows = [];
   for (const [index, file] of files.entries()) {
-    const safeName = `${Date.now()}-${index}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "-")}`;
+    const safeName = createAutomaticFileName(file, `klantgalerij-${galleryId.slice(0, 8)}`, index);
     const path = `${galleryId}/${safeName}`;
     const { error: uploadError } = await supabase.storage.from("client-galleries").upload(path, file);
     if (uploadError) throw uploadError;
@@ -160,8 +161,8 @@ export async function uploadGalleryPhotos(galleryId: string, files: File[], star
     const { data: publicData } = supabase.storage.from("client-galleries").getPublicUrl(path);
     rows.push({
       gallery_id: galleryId,
-      title: file.name,
-      filename: file.name,
+      title: safeName.replace(/\.[^.]+$/, ""),
+      filename: safeName,
       image_url: publicData.publicUrl,
       sort_order: startOrder + index,
     });
@@ -178,6 +179,19 @@ export async function deleteGalleryPhoto(photoId: string) {
   if (error) throw error;
 }
 
+export async function deleteGalleryCompletely(galleryId: string) {
+  await requireAdmin(supabase as any);
+  const { data: storedFiles } = await supabase.storage.from("client-galleries").list(galleryId, { limit: 1000 });
+  if (storedFiles?.length) {
+    const { error: storageError } = await supabase.storage
+      .from("client-galleries")
+      .remove(storedFiles.map((file) => `${galleryId}/${file.name}`));
+    if (storageError) throw storageError;
+  }
+  const { error } = await supabase.from("client_galleries").delete().eq("id", galleryId);
+  if (error) throw error;
+}
+
 export async function listPortfolioAlbums(): Promise<PortfolioAlbum[]> {
   await requireAdmin(supabase as any);
   const { data, error } = await supabase
@@ -189,7 +203,7 @@ export async function listPortfolioAlbums(): Promise<PortfolioAlbum[]> {
 }
 
 export async function uploadPortfolioPhotos(values: {
-  albumId: string;
+  albumIds: string[];
   category?: string;
   title?: string;
   altText: string;
@@ -197,22 +211,23 @@ export async function uploadPortfolioPhotos(values: {
   files: File[];
 }): Promise<number> {
   await requireAdmin(supabase as any);
-  if (!values.albumId) throw new Error("Kies eerst een album.");
+  const albumIds = [...new Set(values.albumIds.filter(Boolean))];
+  if (!albumIds.length) throw new Error("Kies minimaal een album.");
   if (!values.altText.trim()) throw new Error("Vul een alt-tekst in.");
   if (!values.files.length) return 0;
 
   const rows = [];
   for (const [index, file] of values.files.entries()) {
-    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
-    const path = `${values.albumId}/${Date.now()}-${index}-${safeName}`;
+    const safeName = createAutomaticFileName(file, [values.category, values.title].filter(Boolean).join("-") || "portfolio", index);
+    const path = `${albumIds[0]}/${safeName}`;
     const { error: uploadError } = await supabase.storage.from("portfolio").upload(path, file);
     if (uploadError) throw uploadError;
 
     const imageUrl = supabase.storage.from("portfolio").getPublicUrl(path).data.publicUrl;
     rows.push({
-      album_id: values.albumId,
+      album_id: albumIds[0],
       category: values.category || null,
-      title: values.files.length === 1 && values.title ? values.title : file.name,
+      title: values.files.length === 1 && values.title ? values.title : safeName.replace(/\.[^.]+$/, ""),
       alt_text: values.files.length === 1 ? values.altText.trim() : `${values.altText.trim()} ${index + 1}`,
       sort_order: Number(values.sortOrder || 0) + index,
       image_url: imageUrl,
@@ -220,8 +235,15 @@ export async function uploadPortfolioPhotos(values: {
     });
   }
 
-  const { error } = await supabase.from("portfolio_photos").insert(rows);
+  const { data: insertedRows, error } = await supabase.from("portfolio_photos").insert(rows).select("id");
   if (error) throw error;
+  const links = (insertedRows || []).flatMap((photo) =>
+    albumIds.map((albumId) => ({ photo_id: photo.id, album_id: albumId }))
+  );
+  if (links.length) {
+    const { error: linkError } = await supabase.from("portfolio_photo_albums").insert(links);
+    if (linkError) throw linkError;
+  }
   return rows.length;
 }
 
@@ -231,14 +253,21 @@ export function createSecureToken() {
   return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
+function createAutomaticFileName(file: File, context: string, index: number) {
+  const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+  const prefix = context.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 54) || "fotografie";
+  const extensionFromName = file.name.split(".").pop()?.toLowerCase();
+  const extension = extensionFromName && /^[a-z0-9]{2,5}$/.test(extensionFromName) ? (extensionFromName === "jpeg" ? "jpg" : extensionFromName) : "jpg";
+  return `cuddling-memories-${prefix}-${date}-${String(index + 1).padStart(2, "0")}-${crypto.randomUUID().slice(0, 8)}.${extension}`;
+}
+
 export function formatAdminValue(value: unknown) {
   if (value === null || value === undefined || value === "") return "";
   if (typeof value === "boolean") return value ? "Ja" : "Nee";
   if (typeof value === "number") return String(value);
   if (typeof value === "string") {
     if (/^\d{4}-\d{2}-\d{2}/.test(value)) {
-      const [year, month, day] = value.slice(0, 10).split("-");
-      return `${day}-${month}-${year}`;
+      return formatMobileDate(value.slice(0, 10));
     }
     return value;
   }

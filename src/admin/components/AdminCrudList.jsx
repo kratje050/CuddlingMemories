@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { GripVertical, Pencil, Plus, Trash2 } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient.js";
 import DataTable from "./DataTable.jsx";
 import AdminButton from "./AdminButton.jsx";
@@ -27,6 +27,9 @@ export default function AdminCrudList({
   emptyLabel = "Nog geen items.",
   newLabel = "Nieuw toevoegen",
   preparePayload,
+  onSaved,
+  reorderable = false,
+  filterRows,
 }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -36,12 +39,19 @@ export default function AdminCrudList({
   const [values, setValues] = useState(() => emptyValues(fields));
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [editingRow, setEditingRow] = useState(null);
+  const [draggingId, setDraggingId] = useState(null);
+  const [reorderSaving, setReorderSaving] = useState(false);
+  const rowsRef = useRef([]);
+  const draggingIdRef = useRef(null);
 
   const reload = async () => {
     setLoading(true);
     const { data, error: queryError } = await supabase.from(table).select("*").order(orderBy, { ascending: true });
     if (queryError) setError(queryError.message);
-    setRows(data || []);
+    const visibleRows = filterRows ? (data || []).filter(filterRows) : (data || []);
+    rowsRef.current = visibleRows;
+    setRows(visibleRows);
     setLoading(false);
   };
 
@@ -52,12 +62,14 @@ export default function AdminCrudList({
 
   const openNew = () => {
     setEditingId(null);
+    setEditingRow(null);
     setValues(emptyValues(fields));
     setFormOpen(true);
   };
 
   const openEdit = (row) => {
     setEditingId(row.id);
+    setEditingRow(row);
     const nextValues = {};
     fields.forEach((field) => {
       nextValues[field.name] = row[field.name] ?? (field.type === "checkbox" ? false : "");
@@ -104,6 +116,13 @@ export default function AdminCrudList({
       return;
     }
 
+    if (onSaved) {
+      try {
+        await onSaved({ payload, editingRow, isNew: !editingId });
+      } catch (callbackError) {
+        console.error("Actie na opslaan is mislukt:", callbackError);
+      }
+    }
     setFormOpen(false);
     reload();
   };
@@ -112,6 +131,50 @@ export default function AdminCrudList({
     await supabase.from(table).delete().eq("id", deleteTarget.id);
     setDeleteTarget(null);
     reload();
+  };
+
+  const handleReorderStart = (event, row) => {
+    event.preventDefault();
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    const rowId = String(row.id);
+    draggingIdRef.current = rowId;
+    setDraggingId(rowId);
+  };
+
+  const handleReorderMove = (event) => {
+    const activeId = draggingIdRef.current;
+    if (!activeId) return;
+    event.preventDefault();
+    const target = document.elementFromPoint(event.clientX, event.clientY)?.closest?.("[data-sort-row-key]");
+    const targetId = target?.getAttribute("data-sort-row-key");
+    if (!targetId || targetId === activeId) return;
+    const current = rowsRef.current;
+    const fromIndex = current.findIndex((row) => String(row.id) === activeId);
+    const toIndex = current.findIndex((row) => String(row.id) === targetId);
+    if (fromIndex < 0 || toIndex < 0) return;
+    const next = [...current];
+    const [moved] = next.splice(fromIndex, 1);
+    next.splice(toIndex, 0, moved);
+    rowsRef.current = next;
+    setRows(next);
+  };
+
+  const handleReorderEnd = async (event) => {
+    if (!draggingIdRef.current) return;
+    event.preventDefault();
+    event.stopPropagation();
+    draggingIdRef.current = null;
+    setDraggingId(null);
+    setReorderSaving(true);
+    setError("");
+    const results = await Promise.all(rowsRef.current.map((row, index) => supabase.from(table).update({ sort_order: index + 1 }).eq("id", row.id)));
+    const failed = results.find((result) => result.error);
+    setReorderSaving(false);
+    if (failed) {
+      setError(failed.error.message || "De nieuwe volgorde kon niet worden opgeslagen.");
+      reload();
+    }
   };
 
   return (
@@ -156,8 +219,8 @@ export default function AdminCrudList({
                 >
                   <option value="">Kies...</option>
                   {field.options.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
+                    <option key={typeof option === "string" ? option : option.value} value={typeof option === "string" ? option : option.value}>
+                      {typeof option === "string" ? option : option.label}
                     </option>
                   ))}
                 </select>
@@ -195,12 +258,19 @@ export default function AdminCrudList({
       )}
 
       <div className="mt-5">
+        {reorderable && <p className="mb-3 text-xs leading-5 text-coffee/55">Sleep pakketten met de handgreep naar de gewenste plek. De volgorde wordt bij loslaten automatisch opgeslagen.{reorderSaving ? " Bezig met opslaan..." : ""}</p>}
         <DataTable
           loading={loading}
           rows={rows}
           getRowKey={(row) => row.id}
           emptyLabel={emptyLabel}
+          getRowProps={reorderable ? (row) => ({ "data-sort-row-key": String(row.id), className: String(row.id) === draggingId ? "bg-linen/75 opacity-80" : "transition-colors" }) : undefined}
           columns={[
+            ...(reorderable ? [{
+              key: "reorder",
+              label: "Volgorde",
+              render: (row) => <button type="button" onPointerDown={(event) => handleReorderStart(event, row)} onPointerMove={handleReorderMove} onPointerUp={handleReorderEnd} onPointerCancel={handleReorderEnd} className="grid h-10 w-10 touch-none place-items-center rounded-md border border-cocoa/20 bg-cream text-cocoa active:cursor-grabbing" aria-label={`${row.title || "Item"} verslepen`} title="Versleep om de volgorde aan te passen"><GripVertical size={19} /></button>,
+            }] : []),
             ...columns,
             {
               key: "actions",

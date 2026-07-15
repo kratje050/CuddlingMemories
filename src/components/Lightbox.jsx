@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useEffect } from "react";
+import ResponsiveImage from "./ResponsiveImage.jsx";
 
 export default function Lightbox({ items, activeIndex, onClose, onPrev, onNext }) {
   useEffect(() => {
@@ -64,7 +65,7 @@ export default function Lightbox({ items, activeIndex, onClose, onPrev, onNext }
         className="max-h-[85vh] max-w-4xl overflow-hidden rounded-lg shadow-soft"
         onClick={(event) => event.stopPropagation()}
       >
-        <img src={item.image} alt={item.title} className="max-h-[75vh] w-full object-contain" />
+        <ResponsiveImage src={item.image} srcSet={item.imageSrcSet} width={item.imageWidth} height={item.imageHeight} alt={item.title} sizes="90vw" loading="eager" className="max-h-[75vh] w-full object-contain" />
         <figcaption className="bg-card px-5 py-4 text-center">
           <p className="fine-label text-[0.64rem] font-semibold text-cocoa">{item.category}</p>
           <p className="display-title mt-1 text-xl font-semibold text-coffee">{item.title}</p>

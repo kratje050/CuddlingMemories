@@ -12,20 +12,20 @@ export const faqs = [
     answer: "Standaard vindt een fotoshoot bij mij thuis in Zoutkamp plaats. Wil je liever op locatie of in de omgeving afspreken, dan kun je dat tijdens het boeken aangeven.",
   },
   {
-    question: "Hoe worden reiskosten berekend?",
-    answer: "Bij een locatie-afspraak worden eventuele reiskosten standaard als heen- en terugreis berekend vanaf mijn locatie in Zoutkamp of Gouda. Dit is alleen van toepassing als we buiten de afgesproken omgeving afspreken.",
+    question: "Is een shoot op locatie bij de pakketprijs inbegrepen?",
+    answer: "Ja. Een afspraak op locatie is inbegrepen in de pakketprijs; er worden hiervoor geen losse kosten toegevoegd.",
   },
   {
     question: "Wat zit er in een pakket?",
-    answer: "Per pakket staat vermeld hoeveel digitale beelden zijn inbegrepen en wat de vanaf-prijs is. Extra beelden en eventuele reiskosten komen alleen erbij als dat nodig is of als je zelf extra beelden kiest.",
+    answer: "Per pakket staat vermeld hoeveel digitale beelden zijn inbegrepen en wat de vanaf-prijs is. Extra beelden komen er alleen bij als je na de shoot zelf meer foto's kiest dan in het pakket zijn inbegrepen.",
   },
   {
     question: "Moet ik altijd een pakket kiezen?",
     answer: "Nee, als je nog niet precies weet welk pakket past, kun je verder zonder specifiek pakket. Ik kijk dan na je aanvraag met je mee wat het beste aansluit bij je shoot.",
   },
   {
-    question: "Kan ik extra beeld of reiskosten als shoot boeken?",
-    answer: "Nee, extra beelden en reiskosten zijn geen losse shoots. Ze staan op de website als extra informatie, zodat je vooraf weet welke kosten eventueel kunnen worden toegevoegd.",
+    question: "Kan ik extra beelden als losse shoot boeken?",
+    answer: "Nee, extra beelden zijn geen losse shoot. Je kunt ze na de shoot vanuit jouw online galerij bijbestellen.",
   },
   {
     question: "Kan ik extra foto's bijkopen?",
@@ -53,7 +53,7 @@ export const faqs = [
   },
   {
     question: "Hoe werkt de wachtlijst?",
-    answer: "Als een maand of dag vol zit, kun je je aanmelden voor de wachtlijst. Komt er later toch een passende plek vrij, dan kan ik contact met je opnemen.",
+    answer: "Als een maand of dag vol zit, kun je je aanmelden voor de wachtlijst. Zodra er een passende plek vrijkomt, krijgt de eerstvolgende geschikte persoon automatisch een e-mail met een tijdelijke boekingslink.",
   },
   {
     question: "Kan ik een shoot met korting boeken?",
@@ -94,5 +94,77 @@ export const faqs = [
   {
     question: "Kan ik later nog iets wijzigen aan mijn aanvraag?",
     answer: "Ja, neem dan contact met mij op. Zolang de shoot nog niet definitief is afgerond, kan ik waar mogelijk de gegevens, datum, tijd of notitie aanpassen.",
+  },
+  {
+    question: "Wat is het klantportaal?",
+    answer: "Het klantportaal is jouw beveiligde omgeving voor de fotoshoot. Je ziet er de afspraak, voortgang, voorbereiding, overeenkomst, betaalwijze, facturen en later je online galerij.",
+  },
+  {
+    question: "Hoe krijg ik toegang tot mijn klantportaal?",
+    answer: "Na een nieuwe boekingsaanvraag kun je het portaal openen vanaf de bedankpagina. Ik kan de unieke beveiligde link ook per e-mail versturen. Bewaar deze link goed en deel hem niet openbaar.",
+  },
+  {
+    question: "Wat moet ik doen als ik mijn klantportaallink kwijt ben?",
+    answer: "Neem contact met mij op via de contactpagina. Ik kan de beveiligde link opnieuw naar het e-mailadres van de boeking sturen.",
+  },
+  {
+    question: "Kan ik mijn voorbereidingsvragen later aanvullen?",
+    answer: "Ja. In het klantportaal kun je de voorbereidingsvragen later aanvullen en opslaan. Zodra de voorbereiding is vergrendeld, kun je de antwoorden alleen nog bekijken.",
+  },
+  {
+    question: "Hoe kan ik mijn aanbetaling voldoen?",
+    answer: "In het klantportaal kies je tussen bankoverschrijving en contant betalen. Bij bankoverschrijving zie je het bedrag, IBAN, rekeninghouder en jouw unieke betalingskenmerk.",
+  },
+  {
+    question: "Wanneer staat mijn bankoverschrijving als betaald?",
+    answer: "Een bankoverschrijving wordt na ontvangst handmatig gecontroleerd en daarna in het klantportaal als betaald gemarkeerd. Dit kan daardoor iets later zichtbaar zijn dan de overschrijving zelf.",
+  },
+  {
+    question: "Hoe werkt de digitale overeenkomst?",
+    answer: "Tijdens het boeken accepteer je de actuele annuleringsvoorwaarden. De gebruikte versie, datum, tijd en het e-mailadres worden bij de boeking opgeslagen. In het klantportaal kun je dit later teruglezen; je hoeft daar niet opnieuw te ondertekenen.",
+  },
+  {
+    question: "Waar kan ik mijn facturen vinden?",
+    answer: "Facturen verschijnen in het klantportaal zodra ze zijn aangemaakt. Je kunt iedere factuur daar als PDF bekijken en downloaden.",
+  },
+  {
+    question: "Kan ik via het klantportaal een andere datum aanvragen?",
+    answer: "Ja. Je kunt een gewenste nieuwe datum, dagdeel en toelichting doorgeven. De bestaande afspraak verandert pas nadat ik het verzoek heb bekeken en bevestigd.",
+  },
+  {
+    question: "Hoelang is een uitnodiging van de wachtlijst geldig?",
+    answer: "Een automatische wachtlijstuitnodiging is 24 uur geldig. De aangeboden plek is pas definitief nadat je via de link een boekingsaanvraag hebt verstuurd en ik deze heb bevestigd. Reageer je niet op tijd, dan kan de volgende passende persoon worden benaderd.",
+  },
+  {
+    question: "Wanneer moet ik de aanbetaling betalen?",
+    answer: "Dit verschilt per pakket. Bij sommige pakketten wordt de aanbetaling direct na het boeken gevraagd; bij andere geldt een termijn vóór de shoot. Het bedrag en de uiterste betaaldatum staan in je klantportaal en op de factuur.",
+  },
+  {
+    question: "Wordt mijn aanbetaling van het totaalbedrag afgetrokken?",
+    answer: "Ja. Zodra de aanbetaling als ontvangen is verwerkt, wordt deze automatisch van het volledige factuurbedrag afgetrokken. Je betaalt daarna alleen het resterende bedrag en dus nooit dubbel.",
+  },
+  {
+    question: "Wanneer moet het restbedrag betaald zijn?",
+    answer: "Het betaalmoment staat per pakket ingesteld. Dit kan direct bij boeken, een aantal dagen vóór de shoot of een aantal dagen ná de daadwerkelijke shoot zijn. De actuele uiterste betaaldatum en het openstaande bedrag staan altijd in je klantportaal.",
+  },
+  {
+    question: "Hoe werkt de betaling bij een bevallingsshoot?",
+    answer: "Bij een bevallingsshoot reserveert de aanbetaling de periode rond de uitgerekende datum. Omdat de werkelijke datum niet vooraf vaststaat, wordt het restbedrag uiterlijk zeven dagen na de daadwerkelijke bevalling of fotoshoot betaald. De galerij wordt definitief geleverd nadat het volledige bedrag is ontvangen.",
+  },
+  {
+    question: "Krijg ik herinneringsmails voor mijn shoot en betaling?",
+    answer: "Ja. Voor geplande shoots kan ik automatisch voorbereidingstips en een herinnering sturen. Als een aanbetaling of factuur betaald moet worden, ontvang je rond de uiterste betaaldatum ook een betaalherinnering zolang de betaling nog niet als ontvangen staat.",
+  },
+  {
+    question: "Waarom staan er voorbereidingsvragen bij het boeken?",
+    answer: "De vragen helpen mij om de shoot goed voor te bereiden. Je kunt bijvoorbeeld namen en leeftijden van kinderen, deelnemers, allergieën bij een cakesmash en andere bijzonderheden doorgeven. De velden zijn niet allemaal verplicht en kunnen later in het klantportaal worden aangevuld.",
+  },
+  {
+    question: "Wanneer verschijnt mijn galerij in het klantportaal?",
+    answer: "Wanneer ik een galerij aanmaak met hetzelfde e-mailadres als je boeking, wordt deze automatisch aan je klantportaal gekoppeld. Zodra de galerij is gepubliceerd, kun je de foto's daar openen en je favorieten kiezen.",
+  },
+  {
+    question: "Kan mijn galerij worden tegengehouden als er nog een bedrag openstaat?",
+    answer: "Bij pakketten waarbij het restbedrag na de shoot betaald wordt, kan de definitieve galerij worden vrijgegeven nadat het volledige bedrag als ontvangen is verwerkt. In het klantportaal zie je welk bedrag nog openstaat.",
   },
 ];

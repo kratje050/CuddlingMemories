@@ -29,6 +29,7 @@ create table site_settings (
   facebook_url text,
   hero_title text,
   hero_subtitle text,
+  portfolio_album_limit integer not null default 6 check (portfolio_album_limit between 1 and 24),
   footer_text text,
   default_seo_title text,
   default_seo_description text,
@@ -39,6 +40,38 @@ create table site_settings (
 create trigger trg_site_settings_updated_at
   before update on site_settings
   for each row execute function set_updated_at();
+
+-- Privacyvriendelijke unieke bezoekers. Alleen een gehashte willekeurige
+-- browsercode wordt bewaard; geen IP-adres of klantgegeven.
+create table site_visitors (
+  visitor_hash text primary key,
+  first_seen timestamptz not null default now(),
+  last_seen timestamptz not null default now(),
+  last_path text,
+  created_at timestamptz not null default now()
+);
+
+create table site_visitor_days (
+  visitor_hash text not null references site_visitors(visitor_hash) on delete cascade,
+  visit_date date not null default current_date,
+  first_seen timestamptz not null default now(),
+  last_seen timestamptz not null default now(),
+  primary key (visitor_hash, visit_date)
+);
+
+create index idx_site_visitors_last_seen on site_visitors(last_seen desc);
+create index idx_site_visitor_days_date on site_visitor_days(visit_date desc);
+
+create table site_conversion_events (
+  visitor_hash text not null references site_visitors(visitor_hash) on delete cascade,
+  event_key text not null check (event_key in ('packages_viewed', 'booking_opened', 'booking_started', 'package_selected', 'booking_completed')),
+  event_data jsonb not null default '{}'::jsonb,
+  first_seen timestamptz not null default now(),
+  last_seen timestamptz not null default now(),
+  primary key (visitor_hash, event_key)
+);
+
+create index idx_site_conversion_events_last_seen on site_conversion_events (last_seen desc);
 
 -- ---------------------------------------------------------------------------
 -- 2. pages — hoofdtekst + SEO per pagina (slug is de sleutel, bv. 'home').
@@ -115,6 +148,11 @@ create table portfolio_photos (
   alt_text text not null,
   image_url text not null,
   thumbnail_url text,
+  image_srcset text,
+  image_width integer,
+  image_height integer,
+  image_variants jsonb not null default '[]'::jsonb,
+  image_source text not null default 'supabase' check (image_source in ('supabase', 'netlify')),
   category text,
   is_featured boolean not null default false,
   sort_order int not null default 0,
@@ -126,23 +164,92 @@ create trigger trg_portfolio_photos_updated_at
   before update on portfolio_photos
   for each row execute function set_updated_at();
 
+-- Een openbare portfoliofoto kan in meerdere albums voorkomen. album_id op
+-- portfolio_photos blijft het hoofdalbum voor achterwaartse compatibiliteit.
+create table portfolio_photo_albums (
+  photo_id uuid not null references portfolio_photos(id) on delete cascade,
+  album_id uuid not null references portfolio_albums(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (photo_id, album_id)
+);
+
+create index idx_portfolio_photo_albums_album on portfolio_photo_albums (album_id, photo_id);
+
+-- Veilige wachtrij voor openbare afbeeldingen die eerst in GitHub worden
+-- vastgelegd en pas na een geslaagde Netlify-deploy aan publieke records
+-- worden gekoppeld.
+create table public_image_publish_jobs (
+  id uuid primary key default gen_random_uuid(),
+  admin_user_id uuid not null references auth.users(id) on delete restrict,
+  target_type text not null check (target_type in ('portfolio_photo', 'page_section')),
+  target_record_id uuid,
+  target_payload jsonb not null default '{}'::jsonb,
+  status text not null default 'processing' check (status in ('processing', 'deploying', 'ready', 'failed')),
+  public_base_url text not null,
+  primary_path text not null,
+  public_paths jsonb not null default '[]'::jsonb,
+  repo_paths jsonb not null default '[]'::jsonb,
+  srcset text,
+  variants jsonb not null default '[]'::jsonb,
+  image_width integer,
+  image_height integer,
+  github_commit_sha text,
+  github_branch text,
+  error_message text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  completed_at timestamptz
+);
+
+create trigger trg_public_image_publish_jobs_updated_at
+  before update on public_image_publish_jobs
+  for each row execute function set_updated_at();
+
+create table public_image_assets (
+  id uuid primary key default gen_random_uuid(),
+  publish_job_id uuid not null unique references public_image_publish_jobs(id) on delete restrict,
+  target_type text not null,
+  target_record_id uuid,
+  primary_path text not null,
+  srcset text,
+  variants jsonb not null default '[]'::jsonb,
+  width integer,
+  height integer,
+  alt_text text,
+  category text,
+  github_commit_sha text,
+  created_at timestamptz not null default now()
+);
+
+create index idx_public_image_publish_jobs_admin_created on public_image_publish_jobs (admin_user_id, created_at desc);
+create index idx_public_image_publish_jobs_status on public_image_publish_jobs (status, created_at);
+
 -- ---------------------------------------------------------------------------
 -- 6. packages
 -- price_unit/shoot_type zijn toegevoegd t.o.v. de basislijst: nodig zodat de
--- prijscalculator en het boekingsformulier "Extra beeld"/"Reiskosten" (per
--- stuk/per km) kunnen onderscheiden van echte shoot-pakketten.
+-- prijscalculator en het boekingsformulier extra beelden per stuk kunnen
+-- onderscheiden van echte shoot-pakketten.
 -- ---------------------------------------------------------------------------
 create table packages (
   id uuid primary key default gen_random_uuid(),
   title text not null,
   slug text not null unique,
   price numeric(10,2) not null,
-  price_unit text not null default 'shoot' check (price_unit in ('shoot', 'item', 'km')),
+  price_unit text not null default 'shoot' check (price_unit in ('shoot', 'item')),
   shoot_type text,
   description text,
   included_images int,
   extra_info text,
+  deposit_type text not null default 'none' check (deposit_type in ('none', 'fixed', 'percentage')),
+  deposit_value numeric(10,2),
+  deposit_due_mode text not null default 'before_shoot' check (deposit_due_mode in ('booking', 'before_shoot')),
+  deposit_due_days_before_shoot int not null default 7 check (deposit_due_days_before_shoot >= 0),
+  full_payment_due_mode text not null default 'before_shoot' check (full_payment_due_mode in ('booking', 'before_shoot', 'after_shoot')),
+  full_payment_due_days_before_shoot int not null default 0 check (full_payment_due_days_before_shoot >= 0),
+  cancellation_terms text,
   button_text text not null default 'Boek dit pakket',
+  is_addon boolean not null default false,
+  model_discount_eligible boolean not null default false,
   is_featured boolean not null default false,
   is_published boolean not null default true,
   sort_order int not null default 0,
@@ -177,8 +284,35 @@ create table bookings (
   budget numeric(10,2),
   package_id uuid references packages(id) on delete set null,
   model_discount boolean not null default false,
+  model_usage_consent boolean not null default false,
+  model_usage_consent_at timestamptz,
+  model_usage_consent_version text,
+  auto_invoice_disabled boolean not null default false,
+  location_type text not null default 'studio' check (location_type in ('studio', 'location')),
+  location_street text,
+  location_house_number text,
+  location_postcode text,
+  location_city text,
+  location_notes text,
   privacy_accepted boolean not null default false,
   is_important boolean not null default false,
+  deposit_type text check (deposit_type is null or deposit_type in ('none', 'fixed', 'percentage')),
+  deposit_value numeric(10,2),
+  deposit_amount numeric(10,2),
+  deposit_due_mode text check (deposit_due_mode is null or deposit_due_mode in ('booking', 'before_shoot')),
+  deposit_due_days_before_shoot int,
+  deposit_due_date date,
+  full_payment_due_mode text check (full_payment_due_mode is null or full_payment_due_mode in ('booking', 'before_shoot', 'after_shoot')),
+  full_payment_due_days_before_shoot int,
+  full_payment_due_date date,
+  actual_shoot_date date,
+  cancellation_terms text,
+  deposit_status text not null default 'Niet gevraagd'
+    check (deposit_status in ('Niet gevraagd', 'Gevraagd', 'Betaald', 'Terugbetaald', 'Vervallen')),
+  deposit_paid_at timestamptz,
+  deposit_payment_method text check (deposit_payment_method is null or deposit_payment_method in ('bank_transfer', 'cash')),
+  deposit_payment_reference text,
+  full_payment_method text check (full_payment_method is null or full_payment_method in ('bank_transfer', 'cash')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -189,6 +323,18 @@ create trigger trg_bookings_updated_at
 
 create index idx_bookings_status on bookings (status);
 create index idx_bookings_created_at on bookings (created_at desc);
+
+create table booking_addons (
+  id uuid primary key default gen_random_uuid(),
+  booking_id uuid not null references bookings(id) on delete cascade,
+  package_id uuid references packages(id) on delete set null,
+  title_snapshot text not null,
+  price_snapshot numeric(10,2) not null default 0,
+  created_at timestamptz not null default now(),
+  unique (booking_id, package_id)
+);
+
+create index idx_booking_addons_booking_id on booking_addons (booking_id);
 
 -- ---------------------------------------------------------------------------
 -- 8. booking_notes
@@ -1252,6 +1398,7 @@ grant execute on function get_months_status(int, int, int) to authenticated, ser
 -- ---------------------------------------------------------------------------
 create table client_galleries (
   id uuid primary key default gen_random_uuid(),
+  booking_id uuid references bookings(id) on delete set null,
   title text not null,
   client_name text not null,
   client_email text not null,
@@ -1292,6 +1439,7 @@ create trigger trg_gallery_photos_updated_at
   for each row execute function set_updated_at();
 
 create index idx_client_galleries_token on client_galleries (secure_token);
+create index idx_client_galleries_booking_id on client_galleries (booking_id);
 create index idx_gallery_photos_gallery on gallery_photos (gallery_id);
 
 insert into storage.buckets (id, name, public)
@@ -1415,14 +1563,34 @@ create table email_logs (
   recipient_email text not null,
   template_key text not null,
   subject text,
+  body_text text,
   status text not null default 'pending' check (status in ('pending', 'sent', 'failed', 'skipped')),
   error_message text,
+  variables jsonb not null default '{}'::jsonb,
   related_booking_id uuid references bookings(id) on delete set null,
   related_gallery_id uuid references client_galleries(id) on delete set null,
   created_at timestamptz not null default now()
 );
 
 create index idx_email_logs_created_at on email_logs (created_at desc);
+
+create table scheduled_email_overrides (
+  id uuid primary key default gen_random_uuid(),
+  booking_id uuid not null references bookings(id) on delete cascade,
+  template_key text not null,
+  subject text not null,
+  body text not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (booking_id, template_key)
+);
+
+create trigger trg_scheduled_email_overrides_updated_at
+  before update on scheduled_email_overrides
+  for each row execute function set_updated_at();
+
+create index idx_scheduled_email_overrides_booking
+  on scheduled_email_overrides (booking_id, template_key);
 
 -- ---------------------------------------------------------------------------
 -- 22. Wachtlijst
@@ -1442,9 +1610,25 @@ create table waitlist_entries (
   )),
   internal_note text,
   converted_booking_id uuid references bookings(id) on delete set null,
+  auto_contact_enabled boolean not null default true,
+  invitation_token text unique,
+  invitation_sent_at timestamptz,
+  invitation_expires_at timestamptz,
+  offered_date date,
+  offered_start_time time,
+  offered_end_time time,
+  invitation_count integer not null default 0,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+create index idx_waitlist_auto_contact
+  on waitlist_entries (status, auto_contact_enabled, created_at)
+  where auto_contact_enabled = true;
+
+create index idx_waitlist_active_invitation
+  on waitlist_entries (shoot_type, invitation_expires_at)
+  where invitation_token is not null;
 
 create trigger trg_waitlist_entries_updated_at
   before update on waitlist_entries
@@ -1720,3 +1904,106 @@ drop trigger if exists trg_notify_new_mini_session_booking on mini_session_booki
 create trigger trg_notify_new_mini_session_booking
   after insert on mini_session_bookings
   for each row execute function fn_notify_new_mini_session_booking();
+
+-- ---------------------------------------------------------------------------
+-- Aanbetalingsregels: pakketinstellingen worden als momentopname opgeslagen
+-- op de boeking. Latere pakketwijzigingen veranderen oude boekingen niet.
+-- ---------------------------------------------------------------------------
+create or replace function fn_snapshot_booking_deposit()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+declare
+  v_package packages%rowtype;
+begin
+  if new.package_id is null then
+    if tg_op = 'INSERT' or new.package_id is distinct from old.package_id then
+      new.deposit_type := 'none';
+      new.deposit_value := null;
+      new.deposit_amount := null;
+      new.deposit_due_mode := null;
+      new.deposit_due_days_before_shoot := null;
+      new.deposit_due_date := null;
+      new.full_payment_due_mode := null;
+      new.full_payment_due_days_before_shoot := null;
+      new.full_payment_due_date := null;
+      new.cancellation_terms := null;
+      new.deposit_status := 'Niet gevraagd';
+      new.deposit_paid_at := null;
+    end if;
+    return new;
+  end if;
+
+  if tg_op = 'INSERT'
+     or new.package_id is distinct from old.package_id
+     or old.deposit_type is null then
+    select * into v_package from packages where id = new.package_id;
+    if found then
+      new.deposit_type := v_package.deposit_type;
+      new.deposit_value := v_package.deposit_value;
+      new.deposit_due_mode := v_package.deposit_due_mode;
+      new.deposit_due_days_before_shoot := v_package.deposit_due_days_before_shoot;
+      new.full_payment_due_mode := v_package.full_payment_due_mode;
+      new.full_payment_due_days_before_shoot := v_package.full_payment_due_days_before_shoot;
+      new.cancellation_terms := v_package.cancellation_terms;
+      new.deposit_amount := case v_package.deposit_type
+        when 'fixed' then least(coalesce(v_package.deposit_value, 0), v_package.price)
+        when 'percentage' then round(v_package.price * coalesce(v_package.deposit_value, 0) / 100, 2)
+        else null
+      end;
+      if v_package.deposit_type = 'none' then
+        new.deposit_status := 'Niet gevraagd';
+      elsif v_package.deposit_due_mode = 'booking' then
+        new.deposit_status := 'Gevraagd';
+      end if;
+    end if;
+  end if;
+
+  if new.booking_date is not null and new.deposit_type is distinct from 'none' then
+    -- Een betaaldeadline mag bij een last-minute aanvraag nooit voor de
+    -- aanvraagdatum liggen.
+    new.deposit_due_date := case
+      when new.deposit_due_mode = 'booking' then coalesce((new.created_at at time zone 'Europe/Amsterdam')::date, (now() at time zone 'Europe/Amsterdam')::date)
+      when new.deposit_due_days_before_shoot is not null then greatest(
+        new.booking_date - new.deposit_due_days_before_shoot,
+        coalesce((new.created_at at time zone 'Europe/Amsterdam')::date, (now() at time zone 'Europe/Amsterdam')::date)
+      )
+      else null
+    end;
+  else
+    new.deposit_due_date := null;
+  end if;
+
+  new.full_payment_due_date := case
+    when new.full_payment_due_mode = 'booking' then
+      coalesce((new.created_at at time zone 'Europe/Amsterdam')::date, (now() at time zone 'Europe/Amsterdam')::date)
+    when new.full_payment_due_mode = 'before_shoot' and new.booking_date is not null then greatest(
+      new.booking_date - coalesce(new.full_payment_due_days_before_shoot, 0),
+      coalesce((new.created_at at time zone 'Europe/Amsterdam')::date, (now() at time zone 'Europe/Amsterdam')::date)
+    )
+    when new.full_payment_due_mode = 'after_shoot' and new.actual_shoot_date is not null then
+      new.actual_shoot_date + coalesce(new.full_payment_due_days_before_shoot, 0)
+    else null
+  end;
+
+  if new.deposit_status = 'Betaald' and new.deposit_paid_at is null then
+    new.deposit_paid_at := now();
+  elsif tg_op = 'UPDATE' and new.deposit_status <> 'Betaald' and old.deposit_status = 'Betaald' then
+    new.deposit_paid_at := null;
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_snapshot_booking_deposit on bookings;
+create trigger trg_snapshot_booking_deposit
+  before insert or update of package_id, booking_date, actual_shoot_date, deposit_status on bookings
+  for each row execute function fn_snapshot_booking_deposit();
+
+-- De aanvullende boekingsworkflow (voorwaardenversies, vragenlijst en taken)
+-- staat idempotent in supabase/booking-workflow-migration.sql. Voer dat
+-- bestand na dit basisschema uit.
+
+notify pgrst, 'reload schema';

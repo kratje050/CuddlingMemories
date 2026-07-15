@@ -4,6 +4,8 @@ import { ArrowRight, Camera, Grid3X3, Heart, Sparkles } from "lucide-react";
 import Button from "../components/Button.jsx";
 import Lightbox from "../components/Lightbox.jsx";
 import SEO from "../components/SEO.jsx";
+import ResponsiveImage from "../components/ResponsiveImage.jsx";
+import { useSiteSettings } from "../context/SiteSettingsContext.jsx";
 import { getAllPublishedPhotos, getPortfolioAlbums } from "../lib/api.js";
 import { portfolioCategories } from "../lib/constants.js";
 import { applyDynamicAlbumCovers, formatPortfolioCategories, parsePortfolioCategories, photoMatchesCategory } from "../lib/portfolioCategoryUtils.js";
@@ -27,6 +29,7 @@ const getMosaicClass = (index) => {
 };
 
 export default function Portfolio() {
+  const settings = useSiteSettings();
   const [params] = useSearchParams();
   const initial = params.get("category") || "Alles";
   const [active, setActive] = useState(portfolioCategories.includes(initial) ? initial : "Alles");
@@ -45,10 +48,13 @@ export default function Portfolio() {
         setPhotos(
           photoRows.map((row) => ({
             id: row.id,
-            title: row.title,
+            title: row.title || row.alt_text || "Portfoliofoto",
             category: formatPortfolioCategories(row.category),
             categories: parsePortfolioCategories(row.category),
             image: row.image_url,
+            imageSrcSet: row.image_srcset || undefined,
+            imageWidth: row.image_width || undefined,
+            imageHeight: row.image_height || undefined,
           }))
         );
         setLoading(false);
@@ -67,7 +73,11 @@ export default function Portfolio() {
     () => photos.filter((item) => photoMatchesCategory(item, active)),
     [active, photos]
   );
-  const albumPreview = albums.slice(0, 6);
+  const configuredAlbumLimit = Number(settings.portfolio_album_limit);
+  const albumPreviewLimit = Number.isFinite(configuredAlbumLimit)
+    ? Math.min(24, Math.max(1, configuredAlbumLimit))
+    : 6;
+  const albumPreview = albums.slice(0, albumPreviewLimit);
 
   useEffect(() => {
     setActiveIndex(null);
@@ -118,9 +128,10 @@ export default function Portfolio() {
                       index === 0 ? "lg:col-span-2" : ""
                     }`}
                   >
-                    <img
+                    <ResponsiveImage
                       src={album.cover_image_url}
                       alt={album.title}
+                      sizes={index === 0 ? "(min-width: 1024px) 66vw, 100vw" : "(min-width: 1024px) 33vw, 50vw"}
                       className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-coffee/70 via-coffee/18 to-transparent" />
@@ -195,7 +206,7 @@ export default function Portfolio() {
                 style={{ animationDelay: `${index * 45}ms` }}
                 onClick={() => setActiveIndex(index)}
               >
-                <img src={item.image} alt={item.title} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+                <ResponsiveImage src={item.image} srcSet={item.imageSrcSet} width={item.imageWidth} height={item.imageHeight} alt={item.title} sizes="(min-width: 1024px) 34vw, (min-width: 640px) 50vw, 100vw" className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
                 <div className="absolute inset-0 bg-gradient-to-t from-coffee/60 via-transparent to-transparent opacity-0 transition group-hover:opacity-100" />
                 <div className="absolute inset-x-0 bottom-0 translate-y-3 p-5 text-card opacity-0 transition duration-300 group-hover:translate-y-0 group-hover:opacity-100">
                   <p className="fine-label text-[0.64rem] font-semibold">{item.category}</p>

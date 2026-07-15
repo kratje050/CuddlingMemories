@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": ["node"],
+    "strict": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "netlify/functions/public-image-publish.ts",
+    "netlify/functions/public-image-finalize-background.ts",
+    "netlify/functions/_shared/public-image.ts",
+    "netlify/functions/_shared/public-image-processor.ts",
+    "scripts/test-public-image-processing.ts",
+    "scripts/test-public-image-github.ts"
+  ]
+}

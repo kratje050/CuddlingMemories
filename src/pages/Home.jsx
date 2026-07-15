@@ -5,11 +5,20 @@ import CategoryCard from "../components/CategoryCard.jsx";
 import MonthAvailabilityCard from "../components/MonthAvailabilityCard.jsx";
 import SEO from "../components/SEO.jsx";
 import SectionTitle from "../components/SectionTitle.jsx";
+import ResponsiveImage from "../components/ResponsiveImage.jsx";
 import { getAllPublishedPhotos, getFeaturedPhotos, getPageSections, getPortfolioAlbums, getVisibleTestimonials } from "../lib/api.js";
 import { getMonthsAvailability } from "../lib/monthAvailability.js";
 import { applyDynamicAlbumCovers } from "../lib/portfolioCategoryUtils.js";
 import { usePageMeta } from "../lib/usePageMeta.js";
 import { useSiteSettings } from "../context/SiteSettingsContext.jsx";
+
+const legacyHeroImage = "/images/home-hero-cakesmash.png";
+const defaultHeroImage = "/images/home/moeder-met-kind-1200.webp";
+const defaultHeroSrcSet = [
+  "/images/home/moeder-met-kind-640.webp 640w",
+  "/images/home/moeder-met-kind-1200.webp 1200w",
+  "/images/home/moeder-met-kind-1800.webp 1800w",
+].join(", ");
 
 export default function Home() {
   const settings = useSiteSettings();
@@ -53,14 +62,19 @@ export default function Home() {
   const homeSection = (key, fallback) => homeSections.find((item) => item.section_key === key && item.is_visible !== false)?.content || fallback;
   const homeSectionTitle = (key, fallback) => homeSections.find((item) => item.section_key === key && item.is_visible !== false)?.title || fallback;
   const heroTitleWeight = Math.min(700, Math.max(300, Number(homeSection("hero_title_weight", "400")) || 400));
+  const configuredHeroImage = homeSection("hero_image", defaultHeroImage);
+  const heroImage = configuredHeroImage === legacyHeroImage ? defaultHeroImage : configuredHeroImage;
+  const usesDefaultHero = heroImage === defaultHeroImage;
 
   return (
     <>
       <SEO title={title} description={description} />
       <section className="home-hero-section relative min-h-[720px] overflow-hidden pt-28 md:min-h-[760px] md:pt-32">
         <img
-          src={homeSection("hero_image", "/images/home-hero-cakesmash.png")}
-          alt="Cakesmash fotoshoot door Cuddling Memories Fotografie"
+          src={heroImage}
+          srcSet={usesDefaultHero ? defaultHeroSrcSet : undefined}
+          sizes={usesDefaultHero ? "(max-width: 768px) 100vw, 62vw" : undefined}
+          alt="Moeder houdt haar kindje vast tijdens een buitenfotoshoot"
           className="home-hero-image absolute inset-0 h-full w-full object-cover"
         />
         <div className="photo-overlay absolute inset-0" />
@@ -115,21 +129,23 @@ export default function Home() {
             </div>
           </div>
           <div className="grid grid-cols-[1fr_0.82fr] gap-4">
-            <img
+            <ResponsiveImage
               src={homeSection("memory_image_main", "/images/instagram/instagram-04.jpg")}
               alt="Warme familieshoot door Cuddling Memories"
+              sizes="(min-width: 1024px) 36vw, 56vw"
               className="aspect-[4/5] w-full rounded-lg object-cover shadow-soft warm-border"
             />
             <div className="grid gap-4">
-              <img
+              <ResponsiveImage
                 src={homeSection("memory_image_small", "/images/instagram/instagram-12.jpg")}
                 alt="Detailbeeld van een fotoshoot"
+                sizes="(min-width: 1024px) 28vw, 40vw"
                 className="aspect-[4/3] w-full rounded-lg object-cover shadow-soft warm-border"
               />
               <div className="rounded-lg bg-linen p-5 shadow-soft warm-border">
                 <Check className="text-cocoa" size={19} />
                 <p className="mt-3 text-sm leading-7 text-coffee/75">
-                    Bij locatie-afspraken worden eventuele reiskosten standaard als heen- en terugreis berekend vanaf mijn locatie in Zoutkamp of Gouda.
+                    Een shoot op locatie kost niet extra. Reizen naar de afgesproken locatie is inbegrepen in de pakketprijs.
                 </p>
               </div>
             </div>
@@ -165,9 +181,10 @@ export default function Home() {
             />
             <div className="mt-10 grid gap-5 lg:grid-cols-[1.1fr_1.6fr]">
               <div className="relative min-h-[24rem] overflow-hidden rounded-lg bg-card shadow-soft warm-border">
-                <img
+                <ResponsiveImage
                   src={albums[0].cover_image_url}
                   alt={albums[0].category}
+                  sizes="(min-width: 1024px) 40vw, 100vw"
                   className="absolute inset-0 h-full w-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-coffee/70 via-coffee/20 to-transparent" />
@@ -248,7 +265,7 @@ export default function Home() {
                   rel="noopener noreferrer"
                   className="group relative aspect-square overflow-hidden rounded-lg warm-border"
                 >
-                  <img src={src} alt="Post van Cuddling Memories op Instagram" className="h-full w-full object-cover transition duration-500 group-hover:scale-110" />
+                  <ResponsiveImage src={src} alt="Post van Cuddling Memories op Instagram" sizes="(min-width: 1024px) 16vw, (min-width: 640px) 33vw, 50vw" className="h-full w-full object-cover transition duration-500 group-hover:scale-110" />
                   <div className="absolute inset-0 grid place-items-center bg-coffee/0 text-card opacity-0 transition group-hover:bg-coffee/40 group-hover:opacity-100">
                     <Instagram size={22} />
                   </div>

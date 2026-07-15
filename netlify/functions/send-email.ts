@@ -16,6 +16,7 @@ export default async (req: Request) => {
       variables: payload.variables || {},
       relatedBookingId: clean(payload.related_booking_id, 80) || null,
       relatedGalleryId: clean(payload.related_gallery_id, 80) || null,
+      force: payload.force === true,
     });
     return json(200, { ok: true });
   } catch (error) {

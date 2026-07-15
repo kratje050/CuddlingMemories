@@ -21,8 +21,13 @@ export function applyDynamicAlbumCovers(albums, photos) {
   const firstPhotoByAlbum = new Map();
 
   photos.forEach((photo) => {
-    if (!photo.album_id || !photo.image_url || firstPhotoByAlbum.has(photo.album_id)) return;
-    firstPhotoByAlbum.set(photo.album_id, photo);
+    if (!photo.image_url) return;
+    const albumIds = Array.isArray(photo.album_ids) && photo.album_ids.length
+      ? photo.album_ids
+      : [photo.album_id].filter(Boolean);
+    albumIds.forEach((albumId) => {
+      if (!firstPhotoByAlbum.has(albumId)) firstPhotoByAlbum.set(albumId, photo);
+    });
   });
 
   return albums.map((album) => {

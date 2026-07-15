@@ -134,8 +134,7 @@ insert into packages (title, slug, price, price_unit, shoot_type, description, i
 ('Zwangerschapsshoot', 'zwangerschapsshoot', 200.00, 'shoot', 'Zwangerschapsshoot', 'Inclusief 7 digitale beelden', 7, false, 3),
 ('Gezinsshoot', 'gezinsshoot', 200.00, 'shoot', 'Gezinsshoot', 'Inclusief 7 digitale beelden', 7, false, 4),
 ('Newbornshoot', 'newbornshoot', 175.00, 'shoot', 'Newbornshoot', 'Inclusief 7 digitale beelden', 7, false, 5),
-('Extra beeld', 'extra-beeld', 7.50, 'item', 'Anders', 'Per stuk bij te bestellen uit jouw online galerij', null, false, 6),
-('Reiskosten', 'reiskosten', 0.35, 'km', 'Anders', 'Per kilometer, standaard als heen- en terugreis berekend vanaf mijn huis in Zoutkamp', null, false, 7);
+('Extra beeld', 'extra-beeld', 7.50, 'item', 'Anders', 'Per stuk bij te bestellen uit jouw online galerij', null, false, 6);
 
 -- ---------------------------------------------------------------------------
 -- testimonials
@@ -222,6 +221,7 @@ insert into email_templates (template_key, label, subject, body, is_active) valu
 ('admin_gallery_selection_received', 'Galerijkeuze ontvangen admin', 'Nieuwe fotokeuze ontvangen: {{gallery_title}}', E'Er is een nieuwe fotokeuze ingestuurd.\n\nKlant: {{customer_name}}\nGalerij: {{gallery_title}}\nGekozen beelden: {{selected_count}}\nExtra beelden: {{extra_count}}\n\nGekozen foto''s:\n{{selected_photos}}\n\nOpen admin om de keuze te verwerken: {{admin_link}}', true),
 ('extra_images_selected', 'Extra beelden gekozen', 'Extra beelden gekozen', E'{{customer_name}} heeft {{extra_images}} extra beelden gekozen in de galerij:\n{{gallery_link}}', true),
 ('waitlist_confirmed', 'Wachtlijst bevestiging', 'Je staat op de wachtlijst', E'Hoi {{customer_name}},\n\nJe staat op de wachtlijst voor {{shoot_type}}. Als er een passende plek vrijkomt, neem ik contact met je op.\n\nDank je wel voor je geduld.', true),
+('waitlist_slot_available', 'Plek vrijgekomen voor wachtlijst', 'Er is een plek vrij voor je {{shoot_type}}', E'Hoi {{customer_name}},\n\nEr is een plek vrijgekomen voor je {{shoot_type}} op {{offered_date}} van {{offered_start_time}} tot {{offered_end_time}}.\n\nVia onderstaande persoonlijke link kun je deze plek aanvragen:\n{{booking_link}}\n\nDit aanbod is geldig tot {{offer_expires_at}}. De plek is pas definitief gereserveerd nadat je de boekingsaanvraag hebt verstuurd en deze is bevestigd. Reageer daarom op tijd.', true),
 ('giftcard_received', 'Cadeaubon aanvraag ontvangen', 'Je cadeaubon aanvraag is ontvangen', E'Hoi {{customer_name}},\n\nDank je wel voor je cadeaubon aanvraag van {{giftcard_amount}}. Ik neem contact met je op om de gegevens, betaling en verzending netjes af te stemmen.\n\nJe kunt het bedrag alvast overmaken naar:\nR Stavasius\nNL25 RABO 0316 0597 49\nOnder vermelding van: cadeaubon + je naam\n\nZodra de betaling binnen is, ontvang je de unieke cadeaubon-code. Na bevestiging en betaling is de cadeaubon geldig.', true),
 ('mini_session_confirmed', 'Mini-shoot aanvraag ontvangen', 'Je mini-shoot aanvraag is ontvangen', E'Hoi {{customer_name}},\n\nJe aanvraag voor {{mini_session_title}} is ontvangen. Ik neem contact met je op voor de definitieve bevestiging en eventuele praktische informatie.\n\nLeuk dat je erbij wilt zijn.', true);
 

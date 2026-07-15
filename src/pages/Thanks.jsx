@@ -1,8 +1,11 @@
 import { CheckCircle2 } from "lucide-react";
 import Button from "../components/Button.jsx";
 import SEO from "../components/SEO.jsx";
+import { useLocation } from "react-router-dom";
 
 export default function Thanks() {
+  const { state } = useLocation();
+  const portalUrl = state?.portalUrl || "";
   return (
     <>
       <SEO
@@ -21,6 +24,7 @@ export default function Thanks() {
               gereserveerd.
             </p>
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+              {portalUrl && <Button href={portalUrl}>Open mijn klantportaal</Button>}
               <Button to="/portfolio" variant="secondary">
                 Bekijk portfolio
               </Button>

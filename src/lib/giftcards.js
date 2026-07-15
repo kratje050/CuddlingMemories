@@ -7,6 +7,7 @@ export const giftcardTypes = [
   "Zwangerschapsshoot",
   "Gezinsshoot",
   "Newbornshoot",
+  "Bevalling",
   "Mini-shoot",
 ];
 

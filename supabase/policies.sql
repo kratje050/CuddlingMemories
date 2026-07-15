@@ -29,6 +29,20 @@ create policy "site_settings_public_read" on site_settings
 create policy "site_settings_admin_write" on site_settings
   for all using (is_admin()) with check (is_admin());
 
+-- Bezoekersstatistieken zijn alleen voor admins leesbaar. Registratie loopt
+-- via een Netlify-function met service-role en krijgt geen publieke policy.
+alter table site_visitors enable row level security;
+create policy "site_visitors_admin_read" on site_visitors
+  for select using (is_admin());
+
+alter table site_visitor_days enable row level security;
+create policy "site_visitor_days_admin_read" on site_visitor_days
+  for select using (is_admin());
+
+alter table site_conversion_events enable row level security;
+create policy "site_conversion_events_admin_read" on site_conversion_events
+  for select using (is_admin());
+
 -- ---------------------------------------------------------------------------
 -- pages
 -- ---------------------------------------------------------------------------
@@ -84,6 +98,11 @@ create policy "portfolio_photos_public_read" on portfolio_photos
     is_admin() or exists (
       select 1 from portfolio_albums a
       where a.id = portfolio_photos.album_id and a.is_published = true
+    ) or exists (
+      select 1
+      from portfolio_photo_albums pa
+      join portfolio_albums a on a.id = pa.album_id
+      where pa.photo_id = portfolio_photos.id and a.is_published = true
     )
   );
 
@@ -93,6 +112,33 @@ create policy "portfolio_photos_admin_update" on portfolio_photos
   for update using (is_admin()) with check (is_admin());
 create policy "portfolio_photos_admin_delete" on portfolio_photos
   for delete using (is_admin());
+
+-- ---------------------------------------------------------------------------
+-- portfolio_photo_albums
+-- ---------------------------------------------------------------------------
+alter table portfolio_photo_albums enable row level security;
+
+create policy "portfolio_photo_albums_public_read" on portfolio_photo_albums
+  for select using (
+    is_admin() or exists (
+      select 1 from portfolio_albums a
+      where a.id = portfolio_photo_albums.album_id and a.is_published = true
+    )
+  );
+create policy "portfolio_photo_albums_admin_insert" on portfolio_photo_albums
+  for insert with check (is_admin());
+create policy "portfolio_photo_albums_admin_delete" on portfolio_photo_albums
+  for delete using (is_admin());
+
+-- Openbare beeldpublicaties worden door de service-role Function geschreven.
+-- Ingelogde admins mogen alleen hun eigen taakstatus lezen.
+alter table public_image_publish_jobs enable row level security;
+create policy "public_image_jobs_admin_read" on public_image_publish_jobs
+  for select using (is_admin() and admin_user_id = auth.uid());
+
+alter table public_image_assets enable row level security;
+create policy "public_image_assets_admin_read" on public_image_assets
+  for select using (is_admin());
 
 -- ---------------------------------------------------------------------------
 -- packages
@@ -162,6 +208,10 @@ create policy "bookings_admin_update" on bookings
   for update using (is_admin()) with check (is_admin());
 create policy "bookings_admin_delete" on bookings
   for delete using (is_admin());
+
+alter table booking_addons enable row level security;
+create policy "booking_addons_admin_all" on booking_addons
+  for all using (is_admin()) with check (is_admin());
 
 -- ---------------------------------------------------------------------------
 -- booking_notes / booking_status_history — uitsluitend voor admins.
@@ -269,6 +319,10 @@ create policy "email_templates_admin_all" on email_templates
 
 alter table email_logs enable row level security;
 create policy "email_logs_admin_all" on email_logs
+  for all using (is_admin()) with check (is_admin());
+
+alter table scheduled_email_overrides enable row level security;
+create policy "scheduled_email_overrides_admin_all" on scheduled_email_overrides
   for all using (is_admin()) with check (is_admin());
 
 alter table waitlist_entries enable row level security;

@@ -7,6 +7,7 @@ import DataTable from "../components/DataTable.jsx";
 import { miniSessionBookingStatuses, miniSessionStatuses, slugifyMiniSession } from "../../lib/miniSessions.js";
 import { formatDate } from "../../lib/formatDate.js";
 import { supabase } from "../../lib/supabaseClient.js";
+import { sendTemplateEmail } from "../utils/sendTemplateEmail.js";
 
 const emptySession = {
   title: "",
@@ -112,7 +113,29 @@ export default function AdminMiniSessionDetail() {
   };
 
   const updateBookingStatus = async (bookingId, status) => {
+    const current = bookings.find((booking) => booking.id === bookingId);
     await supabase.from("mini_session_bookings").update({ status }).eq("id", bookingId);
+    if (current && current.status !== status && ["Bevestigd", "Wacht op betaling", "Betaald", "Geannuleerd", "Afgerond"].includes(status)) {
+      const messages = {
+        Bevestigd: "Je plek is bevestigd en voor jou gereserveerd.",
+        "Wacht op betaling": "Je plek wacht nog op de afgesproken betaling.",
+        Betaald: "Je betaling is ontvangen en verwerkt. Dank je wel.",
+        Geannuleerd: "Je mini-shootaanvraag is geannuleerd.",
+        Afgerond: "Je mini-shoot is afgerond. Dank je wel dat je erbij was.",
+      };
+      await sendTemplateEmail({
+        recipientEmail: current.customer_email,
+        templateKey: "mini_session_status",
+        variables: {
+          customer_name: current.customer_name,
+          mini_session_title: form.title,
+          booking_date: form.date ? formatDate(form.date) : "de afgesproken datum",
+          booking_time: current.mini_session_slots?.start_time ? `${String(current.mini_session_slots.start_time).slice(0, 5)} - ${String(current.mini_session_slots.end_time).slice(0, 5)}` : "de afgesproken tijd",
+          request_status: status,
+          status_message: messages[status],
+        },
+      });
+    }
     loadRelated();
   };
 

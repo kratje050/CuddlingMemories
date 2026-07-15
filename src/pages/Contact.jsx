@@ -1,4 +1,5 @@
 import { ArrowRight, Facebook, Instagram, Mail, MessageCircle, Send, Sparkles } from "lucide-react";
+import { Navigate, useLocation } from "react-router-dom";
 import Button from "../components/Button.jsx";
 import SEO from "../components/SEO.jsx";
 import { useSiteSettings } from "../context/SiteSettingsContext.jsx";
@@ -7,6 +8,7 @@ import { usePageMeta } from "../lib/usePageMeta.js";
 const fallbackEmail = "ddytuber@gmail.com";
 
 export default function Contact() {
+  const location = useLocation();
   const settings = useSiteSettings();
   const email = settings.primary_email || fallbackEmail;
   const { title, description } = usePageMeta(
@@ -14,6 +16,14 @@ export default function Contact() {
     "Contact",
     "Neem contact op met Cuddling Memories Fotografie via e-mail, Instagram of Facebook. Voor boeken gebruik je de aparte boekingspagina."
   );
+
+  const legacyBookingLink = ["shoot", "maand", "wachtlijst"].some((key) =>
+    new URLSearchParams(location.search).has(key)
+  );
+
+  if (legacyBookingLink) {
+    return <Navigate to={`/boek-een-shoot${location.search}${location.hash}`} replace />;
+  }
 
   return (
     <>
@@ -27,10 +37,11 @@ export default function Contact() {
                 alt="Cuddling Memories Fotografie contact"
                 className="h-full min-h-[26rem] w-full object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-coffee/72 via-coffee/18 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-coffee/90 via-coffee/28 via-45% to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 h-[42%] bg-gradient-to-t from-coffee/88 via-coffee/48 to-transparent" />
               <div className="absolute bottom-0 left-0 right-0 p-6 text-card sm:p-8">
-                <p className="script-line text-4xl text-blush sm:text-5xl">Neem gerust contact op</p>
-                <p className="mt-3 max-w-md text-sm leading-7 text-card/82">
+                <p className="script-line text-4xl text-card drop-shadow-[0_2px_10px_rgba(57,38,29,0.75)] sm:text-5xl">Neem gerust contact op</p>
+                <p className="mt-3 max-w-md text-sm font-medium leading-7 text-card drop-shadow-[0_1px_6px_rgba(57,38,29,0.9)]">
                   Voor vragen over shoots, pakketten, galerijen, cadeaubonnen of iets wat je vooraf wilt bespreken.
                 </p>
               </div>

@@ -5,6 +5,7 @@ import Button from "../components/Button.jsx";
 import Lightbox from "../components/Lightbox.jsx";
 import SEO from "../components/SEO.jsx";
 import SectionTitle from "../components/SectionTitle.jsx";
+import ResponsiveImage from "../components/ResponsiveImage.jsx";
 import { getPortfolioAlbumBySlug, getPortfolioPhotos } from "../lib/api.js";
 import { formatPortfolioCategories, parsePortfolioCategories } from "../lib/portfolioCategoryUtils.js";
 
@@ -35,10 +36,13 @@ export default function AlbumDetail() {
         setPhotos(
           photoRows.map((row) => ({
             id: row.id,
-            title: row.title,
+            title: row.title || row.alt_text || "Portfoliofoto",
             category: formatPortfolioCategories(row.category),
             categories: parsePortfolioCategories(row.category),
             image: row.image_url,
+            imageSrcSet: row.image_srcset || undefined,
+            imageWidth: row.image_width || undefined,
+            imageHeight: row.image_height || undefined,
           }))
         );
         setLoading(false);
@@ -97,7 +101,7 @@ export default function AlbumDetail() {
                   className="group relative aspect-[4/5] cursor-pointer overflow-hidden rounded-lg bg-card shadow-soft warm-border"
                   onClick={() => setActiveIndex(index)}
                 >
-                  <img src={item.image} alt={item.title} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+                  <ResponsiveImage src={item.image} srcSet={item.imageSrcSet} width={item.imageWidth} height={item.imageHeight} alt={item.title} sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw" className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
                 </article>
               ))}
             </div>

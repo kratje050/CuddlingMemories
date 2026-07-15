@@ -67,6 +67,9 @@ export default function Footer() {
           <Link to="/privacybeleid" className="mt-2 block text-xs text-coffee/60 underline-offset-2 hover:underline">
             Privacybeleid
           </Link>
+          <Link to="/annuleringsvoorwaarden" className="mt-2 block text-xs text-coffee/60 underline-offset-2 hover:underline">
+            Annuleringsvoorwaarden
+          </Link>
         </div>
       </div>
     </footer>

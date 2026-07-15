@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CalendarCheck, CalendarClock, CalendarX, Clock, Gift, Image, Images, Inbox, Mail, Sparkles, Tag, TrendingUp, Users, XCircle } from "lucide-react";
+import { CalendarCheck, CalendarClock, CalendarX, Clock, Eye, Gift, Image, Images, Inbox, Mail, Sparkles, Tag, TrendingUp, Users, XCircle } from "lucide-react";
 import { eachDayOfInterval, endOfMonth, format, getDay, startOfMonth } from "date-fns";
 import { nl } from "date-fns/locale";
 import { supabase } from "../../lib/supabaseClient.js";
@@ -12,6 +12,8 @@ import BarList from "../components/BarList.jsx";
 import AvailabilityStatusBadge from "../../components/AvailabilityStatusBadge.jsx";
 import { formatDate } from "../../lib/formatDate.js";
 import { getMonthsStatusAdmin } from "../../lib/monthAvailability.js";
+import DashboardAlerts from "../components/DashboardAlerts.jsx";
+import ConversionOverview from "../components/ConversionOverview.jsx";
 
 const OPEN_STATUSES = ["Nieuw", "Gelezen", "Contact opgenomen", "Wacht op reactie"];
 
@@ -144,6 +146,7 @@ export default function AdminDashboard() {
     availableMiniSlots: 0,
     fullMiniSessions: 0,
   });
+  const [visitorStats, setVisitorStats] = useState({ today: 0, week: 0, month: 0, total: 0 });
 
   useEffect(() => {
     let active = true;
@@ -155,6 +158,12 @@ export default function AdminDashboard() {
 
       const endOfMonthDate = new Date(startOfMonth.getFullYear(), startOfMonth.getMonth() + 1, 1);
       const todayStr = format(new Date(), "yyyy-MM-dd");
+      const weekStart = new Date();
+      weekStart.setDate(weekStart.getDate() - ((weekStart.getDay() + 6) % 7));
+      weekStart.setHours(0, 0, 0, 0);
+      const weekStartStr = format(weekStart, "yyyy-MM-dd");
+      const monthStartStr = format(startOfMonth, "yyyy-MM-dd");
+      const visitorRangeStart = weekStart < startOfMonth ? weekStartStr : monthStartStr;
 
       const yearAgo = new Date();
       yearAgo.setFullYear(yearAgo.getFullYear() - 1);
@@ -187,6 +196,8 @@ export default function AdminDashboard() {
         activeMiniSessionsRes,
         miniSlotsRes,
         fullMiniSessionsRes,
+        visitorDaysRes,
+        visitorTotalRes,
       ] = await Promise.all([
         supabase.from("bookings").select("id", { count: "exact", head: true }).eq("status", "Nieuw"),
         supabase.from("bookings").select("id", { count: "exact", head: true }).gte("created_at", startOfMonth.toISOString()),
@@ -236,6 +247,8 @@ export default function AdminDashboard() {
         supabase.from("mini_sessions").select("id", { count: "exact", head: true }).eq("is_published", true),
         supabase.from("mini_session_slots").select("is_available, current_bookings, max_bookings"),
         supabase.from("mini_sessions").select("id", { count: "exact", head: true }).eq("status", "Vol"),
+        supabase.from("site_visitor_days").select("visitor_hash,visit_date").gte("visit_date", visitorRangeStart),
+        supabase.from("site_visitors").select("visitor_hash", { count: "exact", head: true }),
       ]);
 
       if (!active) return;
@@ -299,6 +312,13 @@ export default function AdminDashboard() {
         availableMiniSlots: (miniSlotsRes.data || []).filter((slot) => slot.is_available && Number(slot.current_bookings || 0) < Number(slot.max_bookings || 1)).length,
         fullMiniSessions: fullMiniSessionsRes.count || 0,
       });
+      const visitorDays = visitorDaysRes.data || [];
+      setVisitorStats({
+        today: new Set(visitorDays.filter((row) => row.visit_date === todayStr).map((row) => row.visitor_hash)).size,
+        week: new Set(visitorDays.filter((row) => row.visit_date >= weekStartStr).map((row) => row.visitor_hash)).size,
+        month: new Set(visitorDays.filter((row) => row.visit_date >= monthStartStr).map((row) => row.visitor_hash)).size,
+        total: visitorTotalRes.count || 0,
+      });
       setLoading(false);
     }
 
@@ -313,7 +333,14 @@ export default function AdminDashboard() {
       <h1 className="display-title text-3xl font-semibold text-coffee">Dashboard</h1>
       <p className="mt-1 text-sm text-coffee/70">Overzicht van boekingen en content.</p>
 
+      <DashboardAlerts />
+      <ConversionOverview />
+
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <StatCard label="Unieke bezoekers vandaag" value={loading ? "-" : visitorStats.today} icon={Eye} hint="Unieke browsers" />
+        <StatCard label="Unieke bezoekers deze week" value={loading ? "-" : visitorStats.week} icon={Eye} hint="Vanaf maandag" />
+        <StatCard label="Unieke bezoekers deze maand" value={loading ? "-" : visitorStats.month} icon={Eye} hint="Huidige maand" />
+        <StatCard label="Unieke bezoekers totaal" value={loading ? "-" : visitorStats.total} icon={Users} hint="Sinds de teller actief is" />
         <StatCard label="Nieuwe boekingen" value={loading ? "-" : stats.newCount} icon={Inbox} />
         <StatCard label="Deze maand" value={loading ? "-" : stats.monthCount} icon={CalendarCheck} />
         <StatCard label="Openstaand" value={loading ? "-" : stats.openCount} icon={Clock} />

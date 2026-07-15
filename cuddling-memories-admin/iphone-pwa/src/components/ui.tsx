@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import type { ButtonHTMLAttributes, ComponentPropsWithoutRef, ReactNode } from "react";
 
 export function PageHeader({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
@@ -10,8 +10,8 @@ export function PageHeader({ title, subtitle }: { title: string; subtitle?: stri
   );
 }
 
-export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <section className={`rounded-2xl border border-cocoa/15 bg-card p-4 shadow-soft ${className}`}>{children}</section>;
+export function Card({ children, className = "", ...props }: ComponentPropsWithoutRef<"section"> & { children: ReactNode }) {
+  return <section {...props} className={`rounded-2xl border border-cocoa/15 bg-card p-4 shadow-soft ${className}`}>{children}</section>;
 }
 
 export function Badge({ children, tone = "neutral" }: { children: ReactNode; tone?: "neutral" | "active" | "warning" }) {

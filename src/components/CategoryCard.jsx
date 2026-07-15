@@ -1,5 +1,6 @@
 import { Camera, Heart, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
+import ResponsiveImage from "./ResponsiveImage.jsx";
 
 const icons = [Camera, Heart, Sparkles];
 
@@ -13,9 +14,10 @@ export default function CategoryCard({ item, index = 0 }) {
       aria-label={`Bekijk ${item.category}`}
     >
       <div className="relative aspect-[5/4] overflow-hidden rounded-lg shadow-soft warm-border">
-        <img
+        <ResponsiveImage
           src={item.image}
           alt={item.category}
+          sizes="(min-width: 1024px) 20vw, (min-width: 640px) 33vw, 50vw"
           className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
         />
         <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-coffee/35 to-transparent opacity-80" />

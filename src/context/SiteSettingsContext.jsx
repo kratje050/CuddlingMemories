@@ -10,6 +10,7 @@ const defaults = {
   facebook_url: "https://www.facebook.com/profile.php?id=61590264604841",
   hero_title: "Voor herinneringen die blijven",
   hero_subtitle: "Liefdevolle fotografie",
+  portfolio_album_limit: 6,
   footer_text: "Liefdevolle, pure en tijdloze fotografie voor momenten die steeds waardevoller worden.",
   default_seo_title: "Cuddling Memories Fotografie",
   default_seo_description:

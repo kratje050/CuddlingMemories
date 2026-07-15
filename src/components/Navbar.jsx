@@ -21,9 +21,9 @@ function Logo() {
   const settings = useSiteSettings();
 
   return (
-    <Link to="/" className="group flex items-center gap-3" aria-label={`${settings.logo_text} home`}>
-      <span>
-        <span className="script-line block text-3xl leading-none text-coffee md:text-4xl">{settings.logo_text}</span>
+    <Link to="/" className="group flex shrink-0 items-center gap-3 min-[1450px]:w-[11.5rem]" aria-label={`${settings.logo_text} home`}>
+      <span className="min-w-0">
+        <span className="script-line block text-3xl leading-none text-coffee min-[1450px]:max-w-[11rem] min-[1450px]:text-4xl min-[1450px]:leading-[0.86]">{settings.logo_text}</span>
         <span className="fine-label block text-[0.62rem] text-cocoa">{settings.subtitle}</span>
       </span>
     </Link>
@@ -35,28 +35,30 @@ export default function Navbar() {
 
   return (
     <header className="fixed inset-x-0 top-0 z-50 px-3 pt-3 md:px-5">
-      <nav className="mx-auto flex max-w-[1500px] items-center justify-between gap-3 rounded-lg bg-card/94 px-4 py-3 shadow-soft backdrop-blur-xl warm-border md:px-5 2xl:px-7">
+      <nav className="mx-auto flex max-w-[1500px] items-center justify-between gap-4 rounded-lg bg-card px-4 py-3 shadow-[0_14px_45px_rgba(78,59,47,0.16)] warm-border md:px-5 2xl:px-7">
         <Logo />
-        <div className="hidden flex-1 items-center justify-center gap-2 xl:gap-4 2xl:gap-6 lg:flex">
+        <div className="hidden min-w-0 flex-1 items-center justify-end gap-2 min-[1450px]:flex 2xl:gap-4">
           {navItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
-              className="nav-link fine-label whitespace-nowrap text-[0.66rem] font-semibold text-coffee/85 transition hover:text-cocoa xl:text-[0.7rem]"
+              className={({ isActive }) => `fine-label relative whitespace-nowrap py-2 text-[0.62rem] font-semibold transition 2xl:text-[0.68rem] ${
+                isActive ? "text-cocoa after:absolute after:inset-x-0 after:-bottom-0.5 after:h-px after:bg-cocoa" : "text-coffee hover:text-cocoa"
+              }`}
             >
               {item.label}
             </NavLink>
           ))}
         </div>
-        <div className="hidden shrink-0 lg:block">
-          <Button to="/boek-een-shoot" className="px-5 2xl:px-7">
+        <div className="ml-2 hidden shrink-0 min-[1450px]:block 2xl:ml-3">
+          <Button to="/boek-een-shoot" className="px-4 2xl:px-6">
             Boek een shoot
           </Button>
         </div>
         <button
           type="button"
           onClick={() => setOpen((value) => !value)}
-          className="grid h-11 w-11 place-items-center rounded-full border border-cocoa/25 bg-card text-coffee lg:hidden"
+          className="grid h-11 w-11 place-items-center rounded-full border border-cocoa/25 bg-card text-coffee min-[1450px]:hidden"
           aria-label={open ? "Sluit menu" : "Open menu"}
           aria-expanded={open}
         >
@@ -64,7 +66,7 @@ export default function Navbar() {
         </button>
       </nav>
       {open && (
-        <div className="mx-auto mt-2 max-w-[1500px] rounded-lg bg-card p-4 shadow-soft warm-border lg:hidden">
+        <div className="mx-auto mt-2 max-h-[calc(100vh-7rem)] max-w-[1500px] overflow-y-auto rounded-lg bg-card p-4 shadow-soft warm-border min-[1450px]:hidden">
           <div className="grid gap-2">
             {navItems.map((item) => (
               <NavLink

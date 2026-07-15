@@ -1,5 +1,4 @@
 import { createClient } from "@supabase/supabase-js";
-import { shootTypeOptions } from "../../src/lib/constants.js";
 
 const json = (status: number, body: Record<string, unknown>) =>
   new Response(JSON.stringify(body), {
@@ -36,11 +35,51 @@ export default async (req: Request) => {
     const mode = url.searchParams.get("mode");
     const shootType = url.searchParams.get("shootType") || "";
 
-    if (!shootTypeOptions.includes(shootType)) {
-      return json(400, { ok: false, message: "Onbekend shoot-type." });
+    const supabase = getSupabaseAdmin();
+    let { data: shootSetting, error: shootError } = await supabase
+      .from("shoot_type_settings")
+      .select("id,is_bookable")
+      .eq("shoot_type", shootType)
+      .maybeSingle();
+    if (shootError) throw new Error(shootError.message);
+
+    // A newly published package should be bookable immediately, even when an
+    // older admin session did not create its availability setting yet.
+    if (!shootSetting) {
+      const { data: linkedPackages, error: packageError } = await supabase
+        .from("packages")
+        .select("id,shoot_type,title")
+        .eq("price_unit", "shoot")
+        .eq("is_published", true)
+        .limit(100);
+      if (packageError) throw new Error(packageError.message);
+      const linkedPackage = linkedPackages?.find((pkg) => pkg.shoot_type === shootType || (!pkg.shoot_type && pkg.title === shootType));
+
+      if (linkedPackage) {
+        const { error: insertError } = await supabase.from("shoot_type_settings").insert({
+          shoot_type: shootType,
+          duration_minutes: 60,
+          buffer_before_minutes: 15,
+          buffer_after_minutes: 15,
+          max_per_day: 2,
+          is_bookable: true,
+          allowed_days: [0, 1, 2, 3, 4, 5, 6],
+        });
+        if (insertError && insertError.code !== "23505") throw new Error(insertError.message);
+
+        const { data: createdSetting, error: createdError } = await supabase
+          .from("shoot_type_settings")
+          .select("id,is_bookable")
+          .eq("shoot_type", shootType)
+          .maybeSingle();
+        if (createdError) throw new Error(createdError.message);
+        shootSetting = createdSetting;
+      }
     }
 
-    const supabase = getSupabaseAdmin();
+    if (!shootSetting?.is_bookable) {
+      return json(400, { ok: false, message: "Onbekend of niet boekbaar shoot-type." });
+    }
 
     if (mode === "month") {
       const year = Number(url.searchParams.get("year"));

@@ -36,10 +36,4 @@ export const packages = [
     details: "Per stuk bij te bestellen uit jouw online galerij",
     shoot: "Anders",
   },
-  {
-    name: "Reiskosten",
-    price: "€0,35",
-    details: "Per kilometer, standaard als heen- en terugreis berekend vanaf mijn locatie in Zoutkamp of Gouda",
-    shoot: "Anders",
-  },
 ];

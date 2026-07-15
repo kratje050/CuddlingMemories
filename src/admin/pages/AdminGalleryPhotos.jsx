@@ -5,6 +5,7 @@ import AdminButton from "../components/AdminButton.jsx";
 import AdminLayout from "../components/AdminLayout.jsx";
 import DataTable from "../components/DataTable.jsx";
 import { supabase } from "../../lib/supabaseClient.js";
+import { createAutomaticFileName } from "../../lib/automaticFileName.js";
 
 export default function AdminGalleryPhotos() {
   const { id } = useParams();
@@ -41,7 +42,7 @@ export default function AdminGalleryPhotos() {
     const rows = [];
 
     for (const [index, file] of files.entries()) {
-      const safeName = `${Date.now()}-${index}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "-")}`;
+      const safeName = createAutomaticFileName(file, title || `klantgalerij-${id.slice(0, 8)}`, index);
       const path = `${id}/${safeName}`;
       const { error: uploadError } = await supabase.storage.from("client-galleries").upload(path, file);
       if (uploadError) {
@@ -52,8 +53,8 @@ export default function AdminGalleryPhotos() {
       const { data: publicData } = supabase.storage.from("client-galleries").getPublicUrl(path);
       rows.push({
         gallery_id: id,
-        title: files.length === 1 && title ? title : file.name,
-        filename: file.name,
+        title: files.length === 1 && title ? title : safeName.replace(/\.[^.]+$/, ""),
+        filename: safeName,
         image_url: publicData.publicUrl,
         sort_order: startOrder + index,
       });

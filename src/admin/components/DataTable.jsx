@@ -1,4 +1,4 @@
-export default function DataTable({ columns, rows, loading, emptyLabel = "Nog geen gegevens.", getRowKey, onRowClick }) {
+export default function DataTable({ columns, rows, loading, emptyLabel = "Nog geen gegevens.", getRowKey, onRowClick, getRowProps }) {
   if (loading) {
     return <p className="rounded-lg bg-card p-6 text-sm text-coffee/70 shadow-soft warm-border">Laden...</p>;
   }
@@ -20,19 +20,21 @@ export default function DataTable({ columns, rows, loading, emptyLabel = "Nog ge
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
-            <tr
+          {rows.map((row) => {
+            const extraProps = getRowProps?.(row) || {};
+            return <tr
+              {...extraProps}
               key={getRowKey(row)}
-              onClick={onRowClick ? () => onRowClick(row) : undefined}
-              className={`border-b border-cocoa/10 last:border-0 ${onRowClick ? "cursor-pointer hover:bg-linen/60" : ""}`}
+              onClick={extraProps.onClick || (onRowClick ? () => onRowClick(row) : undefined)}
+              className={`border-b border-cocoa/10 last:border-0 ${onRowClick ? "cursor-pointer hover:bg-linen/60" : ""} ${extraProps.className || ""}`}
             >
               {columns.map((col) => (
                 <td key={col.key} className="px-4 py-3 text-coffee/85">
                   {col.render ? col.render(row) : row[col.key]}
                 </td>
               ))}
-            </tr>
-          ))}
+            </tr>;
+          })}
         </tbody>
       </table>
     </div>

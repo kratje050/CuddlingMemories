@@ -1,4 +1,4 @@
-import { clean, getSupabaseAdmin, isEmail, json, sendTemplateMail } from "./email-utils.ts";
+import { clean, getAdminNotificationEmail, getSupabaseAdmin, isEmail, json, sendTemplateMailSafely } from "./email-utils.ts";
 
 export default async (req: Request) => {
   if (req.method !== "POST") return json(405, { ok: false, message: "Alleen POST is toegestaan." });
@@ -19,7 +19,7 @@ export default async (req: Request) => {
     const supabase = getSupabaseAdmin();
     const { data: slot, error: slotError } = await supabase
       .from("mini_session_slots")
-      .select("*, mini_sessions(title)")
+      .select("*, mini_sessions(title,date)")
       .eq("id", row.slot_id)
       .eq("mini_session_id", row.mini_session_id)
       .maybeSingle();
@@ -33,14 +33,26 @@ export default async (req: Request) => {
       .from("mini_session_slots")
       .update({ current_bookings: Number(slot.current_bookings || 0) + 1 })
       .eq("id", row.slot_id);
-    try {
-      await sendTemplateMail({
+    const miniTitle = slot.mini_sessions?.title || "mini-shoot";
+    await sendTemplateMailSafely({
         recipientEmail: row.customer_email,
         templateKey: "mini_session_confirmed",
-        variables: { customer_name: row.customer_name, mini_session_title: slot.mini_sessions?.title || "mini-shoot" },
-      });
-    } catch (mailError) {
-      console.error("Mini-shootmail versturen is mislukt:", mailError);
+        variables: { customer_name: row.customer_name, mini_session_title: miniTitle },
+      }, "Mini-shootbevestiging versturen is mislukt");
+    const adminEmail = getAdminNotificationEmail();
+    if (adminEmail) {
+      await sendTemplateMailSafely({
+        recipientEmail: adminEmail,
+        templateKey: "admin_mini_session_received",
+        variables: {
+          customer_name: row.customer_name,
+          customer_email: row.customer_email,
+          mini_session_title: miniTitle,
+          booking_date: formatDate(slot.mini_sessions?.date),
+          booking_time: `${String(slot.start_time).slice(0, 5)} - ${String(slot.end_time).slice(0, 5)}`,
+          admin_link: `${new URL(req.url).origin}/admin/mini-sessions`,
+        },
+      }, "Adminmelding mini-shoot versturen is mislukt");
     }
     return json(200, { ok: true });
   } catch (error) {
@@ -49,3 +61,9 @@ export default async (req: Request) => {
 };
 
 export const config = { path: "/api/submit-mini-session-booking" };
+
+function formatDate(value?: string | null) {
+  if (!value) return "Niet ingevuld";
+  const [year, month, day] = String(value).slice(0, 10).split("-");
+  return year && month && day ? `${day}/${month}/${year.slice(-2)}` : "Niet ingevuld";
+}

@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Home, MapPin, Gift } from "lucide-react";
+import { Home, MapPin, Gift, ClipboardList, Images } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "../../lib/supabaseClient.js";
 import { checkGiftcardCode } from "../../lib/giftcards.js";
@@ -7,12 +7,19 @@ import { checkGiftcardCode } from "../../lib/giftcards.js";
 const inputClass =
   "rounded-lg border border-cocoa/20 bg-cream px-4 py-3 text-sm outline-none transition focus:border-cocoa";
 
-export default function DetailsStep({ values, onChange }) {
+export default function DetailsStep({ values, onChange, shootType, modelUsageConsentRequired = false }) {
   const [giftcardStatus, setGiftcardStatus] = useState(null); // null | "checking" | {valid, message?, amount?, giftcardType?}
 
   const update = (field) => (event) => {
-    const value = field === "privacy" ? event.target.checked : event.target.value;
+    const value = ["privacy", "termsAccepted", "modelUsageConsent"].includes(field) ? event.target.checked : event.target.value;
     onChange({ ...values, [field]: value });
+  };
+
+  const updateQuestionnaire = (field) => (event) => {
+    onChange({
+      ...values,
+      questionnaire: { ...(values.questionnaire || {}), [field]: event.target.value },
+    });
   };
 
   const handleGiftcardBlur = async () => {
@@ -32,6 +39,10 @@ export default function DetailsStep({ values, onChange }) {
       locationType,
       omgeving: locationType === "studio" ? "" : values.omgeving,
     });
+  };
+
+  const updateAddress = (field) => (event) => {
+    onChange({ ...values, [field]: event.target.value });
   };
 
   return (
@@ -89,22 +100,38 @@ export default function DetailsStep({ values, onChange }) {
           </button>
         </div>
         {values.locationType === "location" && (
-          <label className="grid gap-2 text-sm font-semibold text-coffee">
-            Locatie of omgeving
-            <input
-              type="text"
-              required
-              placeholder="Bijv. Groningen, Friesland of een buitenlocatie"
-              value={values.omgeving}
-              onChange={update("omgeving")}
-              className={inputClass}
-            />
-            <span className="text-xs font-normal leading-5 text-coffee/62">
-              Bij een locatie-afspraak worden eventuele reiskosten standaard als heen- en terugreis berekend vanaf mijn locatie in Zoutkamp of Gouda.
-            </span>
-          </label>
+          <div className="rounded-lg border border-cocoa/15 bg-linen/45 p-4 sm:p-5">
+            <p className="text-sm font-semibold text-coffee">Adres van de shoot</p>
+            <p className="mt-1 text-xs leading-5 text-coffee/60">Vul het volledige adres in, zodat de afspraak op de juiste locatie kan worden ingepland.</p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_9rem]">
+              <label className="grid gap-2 text-sm font-semibold text-coffee">Straat<input type="text" required value={values.locationStreet || ""} onChange={updateAddress("locationStreet")} className={inputClass} placeholder="Bijv. Dorpsstraat" /></label>
+              <label className="grid gap-2 text-sm font-semibold text-coffee">Huisnummer<input type="text" required value={values.locationHouseNumber || ""} onChange={updateAddress("locationHouseNumber")} className={inputClass} placeholder="12A" /></label>
+              <label className="grid gap-2 text-sm font-semibold text-coffee">Postcode<input type="text" required value={values.locationPostalCode || ""} onChange={updateAddress("locationPostalCode")} className={`${inputClass} uppercase`} placeholder="9974 AA" /></label>
+              <label className="grid gap-2 text-sm font-semibold text-coffee">Plaats<input type="text" required value={values.locationCity || ""} onChange={updateAddress("locationCity")} className={inputClass} placeholder="Groningen" /></label>
+              <label className="grid gap-2 text-sm font-semibold text-coffee sm:col-span-2">Aanvulling locatie (optioneel)<input type="text" value={values.omgeving || ""} onChange={update("omgeving")} className={inputClass} placeholder="Bijv. ingang bij het parkeerterrein" /></label>
+            </div>
+            <p className="mt-4 rounded-lg bg-card p-4 text-xs leading-5 text-coffee/65 warm-border">Een shoot op locatie kost niet extra. Eventuele reisuren en reisafstand zijn al inbegrepen in de pakketprijs.</p>
+          </div>
         )}
       </div>
+      <section className="rounded-lg border border-cocoa/15 bg-card p-4 sm:p-5">
+        <div className="flex items-start gap-3">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-linen text-cocoa"><ClipboardList size={19} /></span>
+          <div>
+            <h3 className="font-semibold text-coffee">Korte vragenlijst vóór de shoot</h3>
+            <p className="mt-1 text-xs leading-5 text-coffee/60">Met deze informatie kan ik de shoot beter voorbereiden. Vul in wat voor jouw situatie van toepassing is.</p>
+          </div>
+        </div>
+        <div className="mt-5 grid gap-4">
+          <Question label="Namen en leeftijden van de kinderen" value={values.questionnaire?.children || ""} onChange={updateQuestionnaire("children")} placeholder="Bijv. Mila (4) en Sem (1)" />
+          <Question label="Wie komen er op de foto?" value={values.questionnaire?.participants || ""} onChange={updateQuestionnaire("participants")} placeholder="Bijv. twee ouders en twee kinderen" />
+          {String(shootType || "").toLowerCase().includes("cakesmash") && (
+            <Question label="Allergieën of voedingswensen" value={values.questionnaire?.allergies || ""} onChange={updateQuestionnaire("allergies")} placeholder="Noem allergieën ook wanneer er maar een vermoeden is" />
+          )}
+          <Question label="Bijzonderheden" value={values.questionnaire?.specialDetails || ""} onChange={updateQuestionnaire("specialDetails")} placeholder="Bijv. gevoeligheid voor prikkels, mobiliteit of iets waar ik rekening mee kan houden" />
+          <Question label="Wat moet ik verder vooraf weten?" value={values.questionnaire?.photographerNotes || ""} onChange={updateQuestionnaire("photographerNotes")} placeholder="Andere informatie die helpt bij de voorbereiding" />
+        </div>
+      </section>
       <label className="grid gap-2 text-sm font-semibold text-coffee">
         Bericht (optioneel)
         <span className="text-xs font-normal leading-5 text-coffee/62">
@@ -152,6 +179,34 @@ export default function DetailsStep({ values, onChange }) {
           en geef toestemming om mijn aanvraag te beantwoorden.
         </span>
       </label>
+      <label className="flex gap-3 rounded-lg border border-cocoa/20 bg-card p-4 text-sm leading-6 text-coffee/78">
+        <input type="checkbox" required checked={Boolean(values.termsAccepted)} onChange={update("termsAccepted")} className="mt-1 h-4 w-4 accent-cocoa" />
+        <span>
+          Ik heb de{" "}
+          <Link to="/annuleringsvoorwaarden" className="font-semibold text-cocoa underline underline-offset-2" target="_blank">
+            annuleringsvoorwaarden
+          </Link>{" "}
+          gelezen en ga akkoord. Annuleren of verplaatsen kan alleen schriftelijk of per e-mail.
+        </span>
+      </label>
+      {modelUsageConsentRequired && (
+        <label className="flex gap-3 rounded-lg border border-cocoa/30 bg-linen p-4 text-sm leading-6 text-coffee/85">
+          <input type="checkbox" required checked={Boolean(values.modelUsageConsent)} onChange={update("modelUsageConsent")} className="mt-1 h-4 w-4 shrink-0 accent-cocoa" />
+          <span>
+            <span className="mb-1 flex items-center gap-2 font-semibold text-coffee"><Images size={17} className="text-cocoa" /> Toestemming gebruik foto&apos;s</span>
+            Ik ga ermee akkoord dat de foto&apos;s uit deze modelsessie door Cuddling Memories Fotografie mogen worden gebruikt op social media en in het portfolio, waaronder de website.
+          </span>
+        </label>
+      )}
     </div>
+  );
+}
+
+function Question({ label, value, onChange, placeholder }) {
+  return (
+    <label className="grid gap-2 text-sm font-semibold text-coffee">
+      {label} <span className="text-xs font-normal text-coffee/50">(optioneel)</span>
+      <textarea rows="2" value={value} onChange={onChange} placeholder={placeholder} className={`${inputClass} resize-none`} />
+    </label>
   );
 }

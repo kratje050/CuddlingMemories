@@ -3,6 +3,8 @@ import { supabase } from "../../lib/supabaseClient.js";
 import AdminLayout from "../components/AdminLayout.jsx";
 import AdminButton from "../components/AdminButton.jsx";
 import { Image, Upload } from "lucide-react";
+import { createAutomaticFileName } from "../../lib/automaticFileName.js";
+import { getPublicImageJob, publishPublicImage, waitForPublicImage } from "../utils/publicImagePublisher.js";
 
 const pageSlugs = [
   { slug: "home", label: "Home" },
@@ -16,7 +18,7 @@ const slugsWithSections = ["home", "over-demy", "werkwijze", "model-gezocht", "p
 
 const defaultSections = {
   home: [
-    { page_slug: "home", section_key: "hero_image", title: "Hero achtergrondfoto", content: "/images/home-hero-cakesmash.png", sort_order: 0, is_visible: true },
+    { page_slug: "home", section_key: "hero_image", title: "Hero achtergrondfoto", content: "/images/home/moeder-met-kind-1200.webp", sort_order: 0, is_visible: true },
     { page_slug: "home", section_key: "hero_title_weight", title: "Dikte grote home-titel", content: "600", sort_order: 1, is_visible: true },
     { page_slug: "home", section_key: "hero_intro", title: "Korte tekst onder de home-titel", content: "Zwangerschap, newborn, gezin, portret, cakesmash en motherhood fotografie.", sort_order: 2, is_visible: true },
     { page_slug: "home", section_key: "memory_intro", title: "Foto's die voelen als een herinnering zodra je ze terugziet", content: "Ik fotografeer met zachte kleuren, warme details en aandacht voor wat echt bij jullie past. Van kleine handjes tot grote mijlpalen: elk beeld mag iets bewaren van hoe het nu voelt.", sort_order: 10, is_visible: true },
@@ -51,6 +53,7 @@ export default function AdminPages() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState(null);
+  const [publishJobs, setPublishJobs] = useState([]);
 
   useEffect(() => {
     let active = true;
@@ -58,7 +61,10 @@ export default function AdminPages() {
     setFeedback(null);
 
     async function load() {
-      const { data: pageData } = await supabase.from("pages").select("*").eq("slug", activeSlug).maybeSingle();
+      const [{ data: pageData }, { data: jobRows }] = await Promise.all([
+        supabase.from("pages").select("*").eq("slug", activeSlug).maybeSingle(),
+        supabase.from("public_image_publish_jobs").select("id, status, primary_path, error_message, created_at").eq("target_type", "page_section").order("created_at", { ascending: false }).limit(8),
+      ]);
       let sectionData = [];
       if (slugsWithSections.includes(activeSlug)) {
         const { data } = await supabase
@@ -75,6 +81,7 @@ export default function AdminPages() {
       if (!active) return;
       setPage(pageData);
       setSections(sectionData);
+      setPublishJobs(jobRows || []);
       setLoading(false);
     }
 
@@ -83,6 +90,16 @@ export default function AdminPages() {
       active = false;
     };
   }, [activeSlug]);
+
+  useEffect(() => {
+    const activeJobs = publishJobs.filter((job) => job.status === "processing" || job.status === "deploying");
+    if (!activeJobs.length) return undefined;
+    const timer = window.setTimeout(async () => {
+      const refreshed = await Promise.all(activeJobs.map((job) => getPublicImageJob(job.id).catch(() => job)));
+      setPublishJobs((current) => current.map((job) => refreshed.find((item) => item.id === job.id) || job));
+    }, 5000);
+    return () => window.clearTimeout(timer);
+  }, [publishJobs]);
 
   const handleFieldChange = (name, value) => {
     setPage((prev) => ({ ...prev, [name]: value }));
@@ -140,8 +157,53 @@ export default function AdminPages() {
     const sectionKey = getSectionKey(section);
     setSaving(true);
     setFeedback(null);
-    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
-    const path = `page-sections/${activeSlug}/${section.section_key}-${Date.now()}-${safeName}`;
+    if (import.meta.env.VITE_PUBLIC_IMAGE_UPLOAD_MODE !== "github") {
+      await handleSectionImageUploadSupabase(section, file);
+      return;
+    }
+    try {
+      let targetId = section.id;
+      if (!targetId) {
+        const { data: inserted, error: insertError } = await supabase.from("page_sections").insert({
+          page_slug: section.page_slug || activeSlug,
+          section_key: section.section_key,
+          title: section.title,
+          content: section.content,
+          sort_order: section.sort_order || 0,
+          is_visible: section.is_visible !== false,
+        }).select("*").single();
+        if (insertError) throw insertError;
+        targetId = inserted.id;
+        setSections((prev) => prev.map((item) => (getSectionKey(item) === sectionKey ? inserted : item)));
+      }
+      setFeedback({ type: "progress", message: "Upload verwerken" });
+      const job = await publishPublicImage(file, {
+        target_type: "page_section",
+        target_record_id: targetId,
+        target_field: "content",
+        page_slug: activeSlug,
+        title: section.title || section.section_key,
+        alt_text: section.title || `Afbeelding voor ${activeSlug}`,
+        category: activeSlug,
+      });
+      setFeedback({ type: "progress", message: "Website wordt bijgewerkt" });
+      const completed = await waitForPublicImage(job.id, (nextJob) => {
+        if (nextJob.status === "ready") setFeedback({ type: "success", message: "Gereed" });
+        if (nextJob.status === "failed") setFeedback({ type: "error", message: "Mislukt" });
+      });
+      handleSectionChange(targetId, "content", completed.primary_path);
+      setFeedback({ type: "success", message: "Gereed. De nieuwe afbeelding staat op de website." });
+    } catch (uploadError) {
+      setFeedback({ type: "error", message: uploadError instanceof Error ? uploadError.message : "Publiceren is niet gelukt." });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSectionImageUploadSupabase = async (section, file) => {
+    const sectionKey = getSectionKey(section);
+    const safeName = createAutomaticFileName(file, `${activeSlug}-${section.section_key}`);
+    const path = `page-sections/${activeSlug}/${safeName}`;
     const { error: uploadError } = await supabase.storage.from("portfolio").upload(path, file);
     if (uploadError) {
       setSaving(false);
@@ -151,7 +213,7 @@ export default function AdminPages() {
     const { data } = supabase.storage.from("portfolio").getPublicUrl(path);
     handleSectionChange(sectionKey, "content", data.publicUrl);
     setSaving(false);
-    setFeedback({ type: "success", message: "Afbeelding geupload. Klik op Sectie opslaan om hem vast te zetten." });
+    setFeedback({ type: "success", message: "Afbeelding via de tijdelijke Supabase-fallback geupload. Klik op Sectie opslaan om hem vast te zetten." });
   };
 
   return (
@@ -172,6 +234,23 @@ export default function AdminPages() {
           </button>
         ))}
       </div>
+
+      {publishJobs.length > 0 && (
+        <div className="mt-4 rounded-lg bg-card p-4 shadow-soft warm-border">
+          <h2 className="text-sm font-semibold text-coffee">Recente websiteafbeeldingen</h2>
+          <div className="mt-3 grid gap-2">
+            {publishJobs.map((job) => (
+              <div key={job.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-cream px-3 py-2 text-xs text-coffee/70">
+                <span className="min-w-0 truncate">{job.primary_path}</span>
+                <span className={`rounded-full px-3 py-1 font-semibold ${job.status === "ready" ? "bg-emerald-50 text-emerald-800" : job.status === "failed" ? "bg-red-50 text-red-800" : "bg-linen text-coffee"}`}>
+                  {job.status === "processing" ? "Upload verwerken" : job.status === "deploying" ? "Website wordt bijgewerkt" : job.status === "ready" ? "Gereed" : "Mislukt"}
+                </span>
+                {job.error_message && <p className="w-full text-red-700">{job.error_message}</p>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {loading || !page ? (
         <p className="mt-6 text-sm text-coffee/70">Laden...</p>
@@ -242,7 +321,7 @@ export default function AdminPages() {
             {feedback && (
               <p
                 className={`rounded-lg px-4 py-3 text-sm ${
-                  feedback.type === "error" ? "bg-red-50 text-red-800" : "bg-linen text-coffee"
+                  feedback.type === "error" ? "bg-red-50 text-red-800" : feedback.type === "success" ? "bg-emerald-50 text-emerald-800" : "bg-linen text-coffee"
                 }`}
               >
                 {feedback.message}
@@ -296,15 +375,17 @@ export default function AdminPages() {
                         </div>
                         <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-cocoa/25 bg-card px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-coffee transition hover:bg-cream">
                           <Upload size={14} />
-                          Upload afbeelding
+                          {saving ? "Publiceren..." : "Upload afbeelding"}
                           <input
                             type="file"
                             accept="image/*"
+                            disabled={saving}
                             className="sr-only"
                             onChange={(event) => handleSectionImageUpload(section, event.target.files?.[0])}
                           />
                         </label>
                       </div>
+                      <FieldHelp>De afbeelding wordt via de ingestelde openbare publicatieroute opgeslagen. Maximaal 5 MB. Privé-klantfoto&apos;s gebruiken deze route niet.</FieldHelp>
                       {section.content ? (
                         <img
                           src={section.content}

@@ -12,15 +12,18 @@ import Contact from "./pages/Contact.jsx";
 import Booking from "./pages/Booking.jsx";
 import Thanks from "./pages/Thanks.jsx";
 import Privacy from "./pages/Privacy.jsx";
+import CancellationTerms from "./pages/CancellationTerms.jsx";
 import GiftCard from "./pages/GiftCard.jsx";
 import Faq from "./pages/Faq.jsx";
 import MiniSessions from "./pages/MiniSessions.jsx";
 import MiniSessionDetail from "./pages/MiniSessionDetail.jsx";
 import GalleryAccess from "./pages/GalleryAccess.jsx";
+import ClientPortal from "./pages/ClientPortal.jsx";
 import NotFound from "./pages/NotFound.jsx";
 import AdminRoutes from "./admin/AdminRoutes.jsx";
 import { SiteSettingsProvider } from "./context/SiteSettingsContext.jsx";
 import AlbumDetail from "./pages/AlbumDetail.jsx";
+import VisitorTracker from "./components/VisitorTracker.jsx";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -38,6 +41,7 @@ function PublicSite() {
       <div className="min-h-screen bg-cream text-coffee">
         <Navbar />
         <ScrollToTop />
+        <VisitorTracker />
         <main>
           <Routes>
             <Route path="/" element={<Home />} />
@@ -54,8 +58,10 @@ function PublicSite() {
             <Route path="/mini-shoots" element={<MiniSessions />} />
             <Route path="/mini-shoots/:slug" element={<MiniSessionDetail />} />
             <Route path="/galerij/:secureToken" element={<GalleryAccess />} />
+            <Route path="/klantportaal/:token" element={<ClientPortal />} />
             <Route path="/bedankt" element={<Thanks />} />
             <Route path="/privacybeleid" element={<Privacy />} />
+            <Route path="/annuleringsvoorwaarden" element={<CancellationTerms />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
