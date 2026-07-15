@@ -144,10 +144,13 @@ export async function listGalleryPhotos(galleryId: string): Promise<GalleryPhoto
     supabase.from("client_galleries").select("secure_token").eq("id", galleryId).maybeSingle(),
   ]);
   if (error) throw error;
-  return (data || []).map((photo) => photo.storage_provider === "r2"
-    ? { ...photo, image_url: `/api/gallery-media?${new URLSearchParams({ photo: photo.id, token: gallery?.secure_token || "", variant: "thumbnail" })}` }
-    : photo
-  );
+  const adminUrls = await getAdminGalleryPhotoUrls(data || []).catch(() => ({}));
+  return (data || []).map((photo) => ({
+    ...photo,
+    image_url: adminUrls[photo.id]?.thumbnail || ((photo.storage_provider === "r2" || (photo.storage_provider === "supabase" && photo.object_key))
+      ? `/api/gallery-media?${new URLSearchParams({ photo: photo.id, token: gallery?.secure_token || "", variant: "thumbnail" })}`
+      : photo.image_url),
+  }));
 }
 
 export async function uploadGalleryPhotos(galleryId: string, files: File[], startOrder = 0): Promise<number> {
@@ -155,10 +158,10 @@ export async function uploadGalleryPhotos(galleryId: string, files: File[], star
   if (!galleryId || galleryId === "undefined") throw new Error("Sla de galerij eerst op voordat je foto's uploadt.");
   if (!files.length) return 0;
 
-  const r2Enabled = await getR2GalleryUploadStatus().catch(() => false);
-  if (r2Enabled) {
+  const provider = await getGalleryUploadProvider().catch(() => "supabase");
+  if (["r2", "supabase-optimized"].includes(provider)) {
     for (const [index, file] of files.entries()) {
-      await uploadGalleryPhotoToR2(galleryId, file, startOrder + index);
+      await uploadGalleryPhotoOptimized(provider, galleryId, file, startOrder + index);
     }
     return files.length;
   }
@@ -198,13 +201,53 @@ async function readApiResponse(response: Response, fallback: string) {
   return result;
 }
 
-async function getR2GalleryUploadStatus() {
-  const response = await fetch("/api/r2-gallery-upload-url", { headers: await getAdminHeaders() });
-  const result = await readApiResponse(response, "De opslagstatus kon niet worden opgehaald.");
-  return result.enabled === true;
+async function getAdminGalleryPhotoUrls(photos: GalleryPhoto[]): Promise<Record<string, { thumbnail?: string; medium?: string; full?: string }>> {
+  const photoIds = photos
+    .filter((photo) => photo.object_key && ["supabase", "r2"].includes(photo.storage_provider || ""))
+    .map((photo) => photo.id);
+  if (!photoIds.length) return {};
+  const response = await fetch("/api/gallery-admin-media-urls", {
+    method: "POST",
+    headers: await getAdminHeaders(true),
+    body: JSON.stringify({ photo_ids: photoIds }),
+  });
+  const result = await readApiResponse(response, "De beveiligde fotovoorbeelden konden niet worden geladen.");
+  return result.urls || {};
 }
 
-async function uploadGalleryPhotoToR2(galleryId: string, file: File, sortOrder: number) {
+async function getGalleryUploadProvider() {
+  const response = await fetch("/api/gallery-upload-provider", { headers: await getAdminHeaders() });
+  const result = await readApiResponse(response, "De opslagstatus kon niet worden opgehaald.");
+  return result.provider || "supabase";
+}
+
+async function uploadGalleryPhotoOptimized(provider: string, galleryId: string, file: File, sortOrder: number) {
+  if (provider === "supabase-optimized") {
+    const prepared = await readApiResponse(await fetch("/api/supabase-gallery-upload-url", {
+      method: "POST",
+      headers: await getAdminHeaders(true),
+      body: JSON.stringify({ gallery_id: galleryId, filename: file.name, content_type: file.type, size: file.size }),
+    }), "De geoptimaliseerde upload kon niet worden voorbereid.");
+    const { error: uploadError } = await supabase.storage.from("client-galleries").uploadToSignedUrl(
+      prepared.temporary_path,
+      prepared.upload_token,
+      file,
+      { contentType: file.type, cacheControl: "0", upsert: false },
+    );
+    if (uploadError) throw uploadError;
+    await readApiResponse(await fetch("/api/supabase-gallery-complete", {
+      method: "POST",
+      headers: await getAdminHeaders(true),
+      body: JSON.stringify({
+        gallery_id: galleryId,
+        temporary_path: prepared.temporary_path,
+        title: file.name.replace(/\.[^.]+$/, ""),
+        sort_order: sortOrder,
+      }),
+    }), "De afbeelding kon niet worden geoptimaliseerd.");
+    return;
+  }
+
   const prepared = await readApiResponse(await fetch("/api/r2-gallery-upload-url", {
     method: "POST",
     headers: await getAdminHeaders(true),

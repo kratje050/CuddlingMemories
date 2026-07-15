@@ -7,6 +7,7 @@ import ConfirmDialog from "../components/ConfirmDialog.jsx";
 import { formatDate } from "../../lib/formatDate.js";
 import { supabase } from "../../lib/supabaseClient.js";
 import { galleryPhotoUrl } from "../../lib/galleryMedia.js";
+import { getAdminGalleryPhotoUrls } from "../utils/galleryStoragePublisher.js";
 
 const statusOptions = ["Alles", "Concept", "Gepubliceerd", "Wacht op keuze klant", "Keuze ontvangen", "Extra beelden aangevraagd", "Afgerond", "Verlopen", "Verborgen"];
 
@@ -38,9 +39,13 @@ export default function AdminGalleries() {
         current.push(photo);
         photoMap.set(photo.gallery_id, current);
       }
+      const adminUrls = await getAdminGalleryPhotoUrls(photos || []).catch(() => ({}));
       setRows((galleries || []).map((gallery) => ({
         ...gallery,
-        photos: (photoMap.get(gallery.id) || []).map((photo) => ({ ...photo, image_url: galleryPhotoUrl(photo, gallery.secure_token, "thumbnail") })),
+        photos: (photoMap.get(gallery.id) || []).map((photo) => ({
+          ...photo,
+          image_url: adminUrls[photo.id]?.thumbnail || galleryPhotoUrl(photo, gallery.secure_token, "thumbnail"),
+        })),
       })));
     }
     setLoading(false);

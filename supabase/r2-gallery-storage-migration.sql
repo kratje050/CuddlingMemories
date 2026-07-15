@@ -1,6 +1,6 @@
--- Veilige, optionele R2-opslag voor prive-klantgalerijen.
+-- Variantmetadata voor geoptimaliseerde Supabase-opslag en optionele R2-opslag.
 -- De bestaande image_url blijft verplicht en blijft als terugval behouden.
--- Voer deze migratie pas uit voor de Netlify-previewtest met R2.
+-- Deze migratie is additief en verwijdert of wijzigt geen bestaande foto's.
 
 alter table public.gallery_photos add column if not exists storage_provider text not null default 'supabase';
 alter table public.gallery_photos add column if not exists object_key text;

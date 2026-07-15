@@ -24,10 +24,19 @@ export default async (req: Request) => {
       .eq("id", photoId)
       .eq("gallery_id", gallery.id)
       .maybeSingle();
-    if (!photo || photo.storage_provider !== "r2") return json(404, { ok: false, message: "Foto niet gevonden." });
+    if (!photo || !["r2", "supabase"].includes(photo.storage_provider) || !photo.object_key) {
+      return json(404, { ok: false, message: "Foto niet gevonden." });
+    }
     const key = variant === "thumbnail" ? photo.thumbnail_key : variant === "full" ? photo.object_key : photo.medium_key || photo.object_key;
     if (!key) return json(404, { ok: false, message: "Afbeeldingsbestand ontbreekt." });
-    const signedUrl = await createR2ReadUrl(key, 600);
+    let signedUrl = "";
+    if (photo.storage_provider === "r2") {
+      signedUrl = await createR2ReadUrl(key, 600);
+    } else {
+      const { data, error } = await supabase.storage.from("client-galleries").createSignedUrl(key, 600);
+      if (error || !data?.signedUrl) throw error || new Error("De beveiligde foto-URL kon niet worden gemaakt.");
+      signedUrl = data.signedUrl;
+    }
     return new Response(null, { status: 302, headers: { Location: signedUrl, "Cache-Control": "private, no-store" } });
   } catch (error) {
     return json(500, { ok: false, message: error instanceof Error ? error.message : "Foto openen is mislukt." });

@@ -7,7 +7,7 @@ import DataTable from "../components/DataTable.jsx";
 import { supabase } from "../../lib/supabaseClient.js";
 import { createAutomaticFileName } from "../../lib/automaticFileName.js";
 import { galleryPhotoUrl } from "../../lib/galleryMedia.js";
-import { getR2GalleryUploadStatus, uploadGalleryPhotoToR2 } from "../utils/r2GalleryPublisher.js";
+import { getAdminGalleryPhotoUrls, getGalleryUploadProvider, uploadGalleryPhotoOptimized } from "../utils/galleryStoragePublisher.js";
 
 export default function AdminGalleryPhotos() {
   const { id } = useParams();
@@ -31,13 +31,17 @@ export default function AdminGalleryPhotos() {
     ]);
     const token = gallery?.secure_token || "";
     setSecureToken(token);
-    setPhotos((data || []).map((photo) => ({ ...photo, display_url: galleryPhotoUrl(photo, token, "thumbnail") })));
+    const adminUrls = await getAdminGalleryPhotoUrls(data || []).catch(() => ({}));
+    setPhotos((data || []).map((photo) => ({
+      ...photo,
+      display_url: adminUrls[photo.id]?.thumbnail || galleryPhotoUrl(photo, token, "thumbnail"),
+    })));
   };
 
   useEffect(() => {
     load();
-    getR2GalleryUploadStatus()
-      .then((enabled) => setStorageProvider(enabled ? "r2" : "supabase"))
+    getGalleryUploadProvider()
+      .then(setStorageProvider)
       .catch(() => setStorageProvider("supabase"));
   }, [id]);
 
@@ -53,22 +57,22 @@ export default function AdminGalleryPhotos() {
     const startOrder = Number(sortOrder || 0);
     const rows = [];
 
-    if (storageProvider === "r2") {
+    if (["r2", "supabase-optimized"].includes(storageProvider)) {
       try {
         for (const [index, file] of files.entries()) {
           const photoTitle = files.length === 1 && title ? title : createAutomaticFileName(file, title || `klantgalerij-${id.slice(0, 8)}`, index).replace(/\.[^.]+$/, "");
-          await uploadGalleryPhotoToR2({ galleryId: id, file, title: photoTitle, sortOrder: startOrder + index });
+          await uploadGalleryPhotoOptimized({ provider: storageProvider, galleryId: id, file, title: photoTitle, sortOrder: startOrder + index });
           setMessage(`Foto ${index + 1} van ${files.length} verwerkt en geoptimaliseerd.`);
         }
         setUploading(false);
         setFiles([]);
         setTitle("");
         setSortOrder((value) => Number(value || 0) + files.length);
-        setMessage(`${files.length} foto${files.length === 1 ? "" : "'s"} veilig naar R2 geupload en geoptimaliseerd.`);
+        setMessage(`${files.length} foto${files.length === 1 ? "" : "'s"} veilig geupload en als WebP geoptimaliseerd.`);
         load();
       } catch (error) {
         setUploading(false);
-        setMessage(error instanceof Error ? error.message : "De R2-upload is mislukt.");
+        setMessage(error instanceof Error ? error.message : "De geoptimaliseerde upload is mislukt.");
       }
       return;
     }
@@ -114,7 +118,7 @@ export default function AdminGalleryPhotos() {
     <AdminLayout>
       <h1 className="display-title text-3xl font-semibold text-coffee">Galerijfoto's</h1>
       <p className="mt-1 text-sm text-coffee/65">
-        Upload foto's naar de beveiligde klantgalerij. Opslag: {storageProvider === "r2" ? "Cloudflare R2 met automatische WebP-formaten" : storageProvider === "supabase" ? "Supabase (veilige terugval)" : "controleren..."}.
+        Upload foto's naar de beveiligde klantgalerij. Opslag: {storageProvider === "r2" ? "Cloudflare R2 met automatische WebP-formaten" : storageProvider === "supabase-optimized" ? "Supabase met automatische WebP-formaten" : storageProvider === "supabase" ? "Supabase (bestaande terugvalroute)" : "controleren..."}.
       </p>
       <form onSubmit={upload} className="mt-6 grid gap-4 rounded-lg bg-card p-5 shadow-soft warm-border md:grid-cols-[1fr_1fr_140px_auto]">
         <label className="grid gap-2 text-sm font-semibold text-coffee">

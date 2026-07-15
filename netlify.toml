@@ -9,6 +9,12 @@
     "node_modules/@img/sharp-libvips-linux-x64/**"
   ]
 
+[context.deploy-preview.environment]
+  CLIENT_GALLERY_STORAGE_PROVIDER = "supabase-optimized"
+
+[context.branch-deploy.environment]
+  CLIENT_GALLERY_STORAGE_PROVIDER = "supabase-optimized"
+
 [[headers]]
   for = "/images/portfolio/*"
   [headers.values]

@@ -8,6 +8,7 @@ import { galleryUrl, createSecureToken } from "../../lib/galleryTokens.js";
 import { formatDate } from "../../lib/formatDate.js";
 import { supabase } from "../../lib/supabaseClient.js";
 import { galleryPhotoUrl } from "../../lib/galleryMedia.js";
+import { getAdminGalleryPhotoUrls } from "../utils/galleryStoragePublisher.js";
 
 const statuses = ["Concept", "Gepubliceerd", "Wacht op keuze klant", "Keuze ontvangen", "Extra beelden aangevraagd", "Afgerond", "Verlopen", "Verborgen"];
 
@@ -60,7 +61,12 @@ export default function AdminGalleryDetail() {
         setInitiallyPublished(Boolean(gallery.is_published));
       }
       const token = gallery?.secure_token || "";
-      setPhotos((galleryPhotos || []).map((photo) => ({ ...photo, image_url: galleryPhotoUrl(photo, token, "thumbnail") })));
+      const adminUrls = await getAdminGalleryPhotoUrls(galleryPhotos || []).catch(() => ({}));
+      setPhotos((galleryPhotos || []).map((photo) => ({
+        ...photo,
+        image_url: adminUrls[photo.id]?.thumbnail || galleryPhotoUrl(photo, token, "thumbnail"),
+        full_url: adminUrls[photo.id]?.full || galleryPhotoUrl(photo, token, "full"),
+      })));
     };
     loadGallery();
   }, [id, isNew]);
@@ -253,7 +259,7 @@ export default function AdminGalleryDetail() {
                   {selectedPhotos.map((photo) => {
                     const photoNumber = photos.findIndex((item) => item.id === photo.id) + 1;
                     return (
-                      <a key={photo.id} href={galleryPhotoUrl(photo, form.secure_token, "full")} target="_blank" rel="noopener noreferrer" className="group overflow-hidden rounded-lg border border-cocoa/15 bg-cream transition hover:border-cocoa/40 hover:shadow-soft">
+                      <a key={photo.id} href={photo.full_url || galleryPhotoUrl(photo, form.secure_token, "full")} target="_blank" rel="noopener noreferrer" className="group overflow-hidden rounded-lg border border-cocoa/15 bg-cream transition hover:border-cocoa/40 hover:shadow-soft">
                         <div className="relative aspect-[4/3] overflow-hidden bg-linen">
                           <img src={photo.image_url} alt={photo.title || `Favoriete foto ${photoNumber}`} className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]" />
                           <span className="absolute left-2 top-2 rounded-full bg-card/95 px-2.5 py-1 text-[0.58rem] font-semibold uppercase tracking-[0.08em] text-coffee shadow-soft">Foto {photoNumber}</span>
