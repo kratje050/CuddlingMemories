@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.public-images.json",
+  "include": [
+    "netlify/functions/r2-gallery-upload-url.ts",
+    "netlify/functions/r2-gallery-complete.ts",
+    "netlify/functions/gallery-media.ts",
+    "netlify/functions/_shared/r2.ts",
+    "netlify/functions/_shared/public-image.ts",
+    "scripts/test-r2-helpers.ts"
+  ]
+}

@@ -6,6 +6,8 @@ import AdminLayout from "../components/AdminLayout.jsx";
 import DataTable from "../components/DataTable.jsx";
 import { supabase } from "../../lib/supabaseClient.js";
 import { createAutomaticFileName } from "../../lib/automaticFileName.js";
+import { galleryPhotoUrl } from "../../lib/galleryMedia.js";
+import { getR2GalleryUploadStatus, uploadGalleryPhotoToR2 } from "../utils/r2GalleryPublisher.js";
 
 export default function AdminGalleryPhotos() {
   const { id } = useParams();
@@ -15,18 +17,28 @@ export default function AdminGalleryPhotos() {
   const [sortOrder, setSortOrder] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState("");
+  const [secureToken, setSecureToken] = useState("");
+  const [storageProvider, setStorageProvider] = useState("controleren");
 
-  const load = () => {
+  const load = async () => {
     if (!id || id === "undefined") {
       setMessage("Sla de galerij eerst op voordat je foto's uploadt.");
       return;
     }
-    supabase.from("gallery_photos").select("*").eq("gallery_id", id).order("sort_order", { ascending: true }).then(({ data }) => setPhotos(data || []));
+    const [{ data: gallery }, { data }] = await Promise.all([
+      supabase.from("client_galleries").select("secure_token").eq("id", id).maybeSingle(),
+      supabase.from("gallery_photos").select("*").eq("gallery_id", id).order("sort_order", { ascending: true }),
+    ]);
+    const token = gallery?.secure_token || "";
+    setSecureToken(token);
+    setPhotos((data || []).map((photo) => ({ ...photo, display_url: galleryPhotoUrl(photo, token, "thumbnail") })));
   };
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    getR2GalleryUploadStatus()
+      .then((enabled) => setStorageProvider(enabled ? "r2" : "supabase"))
+      .catch(() => setStorageProvider("supabase"));
   }, [id]);
 
   const upload = async (event) => {
@@ -40,6 +52,26 @@ export default function AdminGalleryPhotos() {
     setMessage("");
     const startOrder = Number(sortOrder || 0);
     const rows = [];
+
+    if (storageProvider === "r2") {
+      try {
+        for (const [index, file] of files.entries()) {
+          const photoTitle = files.length === 1 && title ? title : createAutomaticFileName(file, title || `klantgalerij-${id.slice(0, 8)}`, index).replace(/\.[^.]+$/, "");
+          await uploadGalleryPhotoToR2({ galleryId: id, file, title: photoTitle, sortOrder: startOrder + index });
+          setMessage(`Foto ${index + 1} van ${files.length} verwerkt en geoptimaliseerd.`);
+        }
+        setUploading(false);
+        setFiles([]);
+        setTitle("");
+        setSortOrder((value) => Number(value || 0) + files.length);
+        setMessage(`${files.length} foto${files.length === 1 ? "" : "'s"} veilig naar R2 geupload en geoptimaliseerd.`);
+        load();
+      } catch (error) {
+        setUploading(false);
+        setMessage(error instanceof Error ? error.message : "De R2-upload is mislukt.");
+      }
+      return;
+    }
 
     for (const [index, file] of files.entries()) {
       const safeName = createAutomaticFileName(file, title || `klantgalerij-${id.slice(0, 8)}`, index);
@@ -81,7 +113,9 @@ export default function AdminGalleryPhotos() {
   return (
     <AdminLayout>
       <h1 className="display-title text-3xl font-semibold text-coffee">Galerijfoto's</h1>
-      <p className="mt-1 text-sm text-coffee/65">Upload foto's naar de beveiligde klantgalerij. Foto's worden via Supabase Storage bewaard.</p>
+      <p className="mt-1 text-sm text-coffee/65">
+        Upload foto's naar de beveiligde klantgalerij. Opslag: {storageProvider === "r2" ? "Cloudflare R2 met automatische WebP-formaten" : storageProvider === "supabase" ? "Supabase (veilige terugval)" : "controleren..."}.
+      </p>
       <form onSubmit={upload} className="mt-6 grid gap-4 rounded-lg bg-card p-5 shadow-soft warm-border md:grid-cols-[1fr_1fr_140px_auto]">
         <label className="grid gap-2 text-sm font-semibold text-coffee">
           Foto's
@@ -111,7 +145,7 @@ export default function AdminGalleryPhotos() {
           getRowKey={(row) => row.id}
           emptyLabel="Nog geen foto's."
           columns={[
-            { key: "preview", label: "Preview", render: (row) => <img src={row.image_url} alt="" className="h-14 w-14 rounded-md object-cover" /> },
+            { key: "preview", label: "Preview", render: (row) => <img src={row.display_url || galleryPhotoUrl(row, secureToken, "thumbnail")} alt="" className="h-14 w-14 rounded-md object-cover" /> },
             { key: "title", label: "Titel" },
             { key: "is_favorite", label: "Favoriet", render: (row) => (row.is_favorite ? "Ja" : "Nee") },
             { key: "client_note", label: "Notitie" },

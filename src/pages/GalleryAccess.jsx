@@ -5,6 +5,7 @@ import GalleryGrid from "../components/GalleryGrid.jsx";
 import SEO from "../components/SEO.jsx";
 import { getPublishedPackages } from "../lib/api.js";
 import { supabase } from "../lib/supabaseClient.js";
+import { galleryPhotoUrl, withGalleryPhotoUrl } from "../lib/galleryMedia.js";
 
 export default function GalleryAccess() {
   const secureToken = window.location.pathname.split("/").filter(Boolean).at(-1);
@@ -25,7 +26,7 @@ export default function GalleryAccess() {
     supabase.rpc("get_gallery_access", { p_token: secureToken }).then(({ data, error }) => {
       if (!active) return;
       if (!error && data?.gallery) {
-        const galleryPhotos = data.photos || [];
+        const galleryPhotos = (data.photos || []).map((photo) => withGalleryPhotoUrl(photo, secureToken, "medium"));
         setGallery(data.gallery);
         setPhotos(galleryPhotos);
         setSelectedIds(galleryPhotos.filter((photo) => photo.is_favorite).map((photo) => photo.id));
@@ -244,7 +245,7 @@ export default function GalleryAccess() {
           </div>
           <div className="relative flex min-h-0 flex-1 items-center justify-center">
             {visiblePhotos.length > 1 && <button type="button" onClick={showPrevious} className="absolute left-0 z-10 grid h-11 w-11 place-items-center rounded-full border border-card/25 bg-coffee/55 sm:left-3" aria-label="Vorige foto"><ArrowLeft size={20} /></button>}
-            <img src={activePhoto.image_url} alt={activePhoto.alt_text || readablePhotoTitle(activePhoto, activeIndex)} className="max-h-full max-w-full rounded-md object-contain" />
+            <img src={galleryPhotoUrl(activePhoto, secureToken, "full")} alt={activePhoto.alt_text || readablePhotoTitle(activePhoto, activeIndex)} className="max-h-full max-w-full rounded-md object-contain" />
             {visiblePhotos.length > 1 && <button type="button" onClick={showNext} className="absolute right-0 z-10 grid h-11 w-11 place-items-center rounded-full border border-card/25 bg-coffee/55 sm:right-3" aria-label="Volgende foto"><ArrowRight size={20} /></button>}
           </div>
           <div className="mx-auto mt-3 flex w-full max-w-3xl flex-wrap items-center justify-between gap-3 rounded-lg bg-card p-3 text-coffee sm:p-4">

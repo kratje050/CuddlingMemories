@@ -6,6 +6,7 @@ import AdminLayout from "../components/AdminLayout.jsx";
 import ConfirmDialog from "../components/ConfirmDialog.jsx";
 import { formatDate } from "../../lib/formatDate.js";
 import { supabase } from "../../lib/supabaseClient.js";
+import { galleryPhotoUrl } from "../../lib/galleryMedia.js";
 
 const statusOptions = ["Alles", "Concept", "Gepubliceerd", "Wacht op keuze klant", "Keuze ontvangen", "Extra beelden aangevraagd", "Afgerond", "Verlopen", "Verborgen"];
 
@@ -24,7 +25,7 @@ export default function AdminGalleries() {
     setError("");
     const [{ data: galleries, error: galleryError }, { data: photos, error: photoError }] = await Promise.all([
       supabase.from("client_galleries").select("*").order("created_at", { ascending: false }),
-      supabase.from("gallery_photos").select("id,gallery_id,image_url,is_favorite,is_extra_requested,sort_order").order("sort_order", { ascending: true }),
+      supabase.from("gallery_photos").select("*").order("sort_order", { ascending: true }),
     ]);
 
     if (galleryError || photoError) {
@@ -37,7 +38,10 @@ export default function AdminGalleries() {
         current.push(photo);
         photoMap.set(photo.gallery_id, current);
       }
-      setRows((galleries || []).map((gallery) => ({ ...gallery, photos: photoMap.get(gallery.id) || [] })));
+      setRows((galleries || []).map((gallery) => ({
+        ...gallery,
+        photos: (photoMap.get(gallery.id) || []).map((photo) => ({ ...photo, image_url: galleryPhotoUrl(photo, gallery.secure_token, "thumbnail") })),
+      })));
     }
     setLoading(false);
   };

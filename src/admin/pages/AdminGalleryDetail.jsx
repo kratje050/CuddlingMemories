@@ -7,6 +7,7 @@ import DataTable from "../components/DataTable.jsx";
 import { galleryUrl, createSecureToken } from "../../lib/galleryTokens.js";
 import { formatDate } from "../../lib/formatDate.js";
 import { supabase } from "../../lib/supabaseClient.js";
+import { galleryPhotoUrl } from "../../lib/galleryMedia.js";
 
 const statuses = ["Concept", "Gepubliceerd", "Wacht op keuze klant", "Keuze ontvangen", "Extra beelden aangevraagd", "Afgerond", "Verlopen", "Verborgen"];
 
@@ -49,13 +50,19 @@ export default function AdminGalleryDetail() {
       return;
     }
     if (!id) return;
-    supabase.from("client_galleries").select("*").eq("id", id).maybeSingle().then(({ data }) => {
-      if (data) {
-        setForm({ ...emptyForm, ...data, expires_at: data.expires_at || "" });
-        setInitiallyPublished(Boolean(data.is_published));
+    const loadGallery = async () => {
+      const [{ data: gallery }, { data: galleryPhotos }] = await Promise.all([
+        supabase.from("client_galleries").select("*").eq("id", id).maybeSingle(),
+        supabase.from("gallery_photos").select("*").eq("gallery_id", id).order("sort_order", { ascending: true }),
+      ]);
+      if (gallery) {
+        setForm({ ...emptyForm, ...gallery, expires_at: gallery.expires_at || "" });
+        setInitiallyPublished(Boolean(gallery.is_published));
       }
-    });
-    supabase.from("gallery_photos").select("*").eq("gallery_id", id).order("sort_order", { ascending: true }).then(({ data }) => setPhotos(data || []));
+      const token = gallery?.secure_token || "";
+      setPhotos((galleryPhotos || []).map((photo) => ({ ...photo, image_url: galleryPhotoUrl(photo, token, "thumbnail") })));
+    };
+    loadGallery();
   }, [id, isNew]);
 
   const update = (name, value) => setForm((current) => ({ ...current, [name]: value }));
@@ -246,7 +253,7 @@ export default function AdminGalleryDetail() {
                   {selectedPhotos.map((photo) => {
                     const photoNumber = photos.findIndex((item) => item.id === photo.id) + 1;
                     return (
-                      <a key={photo.id} href={photo.image_url} target="_blank" rel="noopener noreferrer" className="group overflow-hidden rounded-lg border border-cocoa/15 bg-cream transition hover:border-cocoa/40 hover:shadow-soft">
+                      <a key={photo.id} href={galleryPhotoUrl(photo, form.secure_token, "full")} target="_blank" rel="noopener noreferrer" className="group overflow-hidden rounded-lg border border-cocoa/15 bg-cream transition hover:border-cocoa/40 hover:shadow-soft">
                         <div className="relative aspect-[4/3] overflow-hidden bg-linen">
                           <img src={photo.image_url} alt={photo.title || `Favoriete foto ${photoNumber}`} className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]" />
                           <span className="absolute left-2 top-2 rounded-full bg-card/95 px-2.5 py-1 text-[0.58rem] font-semibold uppercase tracking-[0.08em] text-coffee shadow-soft">Foto {photoNumber}</span>

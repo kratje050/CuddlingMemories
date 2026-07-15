@@ -35,6 +35,8 @@ export type GalleryPhoto = {
   is_favorite?: boolean | null;
   client_note?: string | null;
   created_at?: string | null;
+  storage_provider?: string | null;
+  object_key?: string | null;
 };
 
 export type PortfolioAlbum = {
@@ -137,19 +139,29 @@ export async function deleteAdminRow(table: string, id: string) {
 
 export async function listGalleryPhotos(galleryId: string): Promise<GalleryPhoto[]> {
   await requireAdmin(supabase as any);
-  const { data, error } = await supabase
-    .from("gallery_photos")
-    .select("*")
-    .eq("gallery_id", galleryId)
-    .order("sort_order", { ascending: true });
+  const [{ data, error }, { data: gallery }] = await Promise.all([
+    supabase.from("gallery_photos").select("*").eq("gallery_id", galleryId).order("sort_order", { ascending: true }),
+    supabase.from("client_galleries").select("secure_token").eq("id", galleryId).maybeSingle(),
+  ]);
   if (error) throw error;
-  return data || [];
+  return (data || []).map((photo) => photo.storage_provider === "r2"
+    ? { ...photo, image_url: `/api/gallery-media?${new URLSearchParams({ photo: photo.id, token: gallery?.secure_token || "", variant: "thumbnail" })}` }
+    : photo
+  );
 }
 
 export async function uploadGalleryPhotos(galleryId: string, files: File[], startOrder = 0): Promise<number> {
   await requireAdmin(supabase as any);
   if (!galleryId || galleryId === "undefined") throw new Error("Sla de galerij eerst op voordat je foto's uploadt.");
   if (!files.length) return 0;
+
+  const r2Enabled = await getR2GalleryUploadStatus().catch(() => false);
+  if (r2Enabled) {
+    for (const [index, file] of files.entries()) {
+      await uploadGalleryPhotoToR2(galleryId, file, startOrder + index);
+    }
+    return files.length;
+  }
 
   const rows = [];
   for (const [index, file] of files.entries()) {
@@ -171,6 +183,45 @@ export async function uploadGalleryPhotos(galleryId: string, files: File[], star
   const { error } = await supabase.from("gallery_photos").insert(rows);
   if (error) throw error;
   return rows.length;
+}
+
+async function getAdminHeaders(json = false) {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) throw new Error("Log opnieuw in als beheerder.");
+  return { Authorization: `Bearer ${token}`, ...(json ? { "Content-Type": "application/json" } : {}) };
+}
+
+async function readApiResponse(response: Response, fallback: string) {
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result.message || fallback);
+  return result;
+}
+
+async function getR2GalleryUploadStatus() {
+  const response = await fetch("/api/r2-gallery-upload-url", { headers: await getAdminHeaders() });
+  const result = await readApiResponse(response, "De opslagstatus kon niet worden opgehaald.");
+  return result.enabled === true;
+}
+
+async function uploadGalleryPhotoToR2(galleryId: string, file: File, sortOrder: number) {
+  const prepared = await readApiResponse(await fetch("/api/r2-gallery-upload-url", {
+    method: "POST",
+    headers: await getAdminHeaders(true),
+    body: JSON.stringify({ gallery_id: galleryId, filename: file.name, content_type: file.type, size: file.size }),
+  }), "De R2-upload kon niet worden voorbereid.");
+  const uploaded = await fetch(prepared.upload_url, { method: "PUT", headers: { "Content-Type": file.type }, body: file });
+  if (!uploaded.ok) throw new Error("Het bestand kon niet veilig naar R2 worden geupload.");
+  await readApiResponse(await fetch("/api/r2-gallery-complete", {
+    method: "POST",
+    headers: await getAdminHeaders(true),
+    body: JSON.stringify({
+      gallery_id: galleryId,
+      temporary_key: prepared.temporary_key,
+      title: file.name.replace(/\.[^.]+$/, ""),
+      sort_order: sortOrder,
+    }),
+  }), "De afbeelding kon niet worden geoptimaliseerd.");
 }
 
 export async function deleteGalleryPhoto(photoId: string) {

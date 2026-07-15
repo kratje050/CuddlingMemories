@@ -9,9 +9,14 @@
     "preview": "vite preview",
     "lint:public-images": "eslint --config eslint.public-images.config.js src/admin/pages/AdminPortfolio.jsx src/admin/pages/AdminPages.jsx src/admin/utils/publicImagePublisher.js src/components/ResponsiveImage.jsx netlify/functions/public-image-publish.ts netlify/functions/public-image-finalize-background.ts netlify/functions/_shared/public-image.ts netlify/functions/_shared/public-image-processor.ts",
     "typecheck:public-images": "tsc -p tsconfig.public-images.json",
-    "test:public-images": "tsx scripts/test-public-image-processing.ts && tsx scripts/test-public-image-github.ts"
+    "test:public-images": "tsx scripts/test-public-image-processing.ts && tsx scripts/test-public-image-github.ts",
+    "lint:r2": "eslint --config eslint.public-images.config.js src/admin/pages/AdminGalleryPhotos.jsx src/admin/pages/AdminGalleries.jsx src/admin/pages/AdminGalleryDetail.jsx src/admin/utils/r2GalleryPublisher.js src/lib/galleryMedia.js src/pages/GalleryAccess.jsx netlify/functions/r2-gallery-upload-url.ts netlify/functions/r2-gallery-complete.ts netlify/functions/gallery-media.ts netlify/functions/_shared/r2.ts",
+    "typecheck:r2": "tsc -p tsconfig.r2.json",
+    "test:r2": "tsx scripts/test-r2-helpers.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1087.0",
+    "@aws-sdk/s3-request-presigner": "^3.1087.0",
     "@netlify/blobs": "^8.1.0",
     "@supabase/supabase-js": "^2.110.1",
     "date-fns": "^4.4.0",
