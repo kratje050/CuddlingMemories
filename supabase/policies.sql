@@ -333,6 +333,10 @@ alter table giftcards enable row level security;
 create policy "giftcards_admin_all" on giftcards
   for all using (is_admin()) with check (is_admin());
 
+alter table discount_codes enable row level security;
+create policy "discount_codes_admin_all" on discount_codes
+  for all using (is_admin()) with check (is_admin());
+
 alter table mini_sessions enable row level security;
 create policy "mini_sessions_public_read" on mini_sessions
   for select using ((is_published = true and status = 'Gepubliceerd') or is_admin());

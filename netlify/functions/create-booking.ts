@@ -70,6 +70,7 @@ const normalizePayload = (payload: Record<string, unknown>) => {
       ? [...new Set(payload.addonPackageIds.map((value) => clean(value, 60)).filter(isUuid))].slice(0, 12)
       : [],
     giftcardCode: clean(payload.giftcardCode, 40).toUpperCase() || null,
+    discountCode: clean(payload.discountCode, 40).toUpperCase() || null,
     waitlistOfferToken: clean(payload.waitlistOfferToken, 100) || null,
     botField: clean(payload["bot-field"], 200),
     renderedAt: Number(payload.renderedAt) || 0,
@@ -263,6 +264,10 @@ const BOOKING_ERROR_MESSAGES: Record<string, string> = {
   GIFTCARD_INVALID: "Deze cadeaubon-code is niet bekend. Controleer de spelling.",
   GIFTCARD_NOT_REDEEMABLE: "Deze cadeaubon is nog niet betaald of al gebruikt/geannuleerd.",
   GIFTCARD_EXPIRED: "Deze cadeaubon is verlopen.",
+  DISCOUNT_INVALID: "Deze kortingscode is niet bekend. Controleer de spelling.",
+  DISCOUNT_NOT_ACTIVE: "Deze kortingscode is niet meer actief.",
+  DISCOUNT_EXPIRED: "Deze kortingscode is verlopen.",
+  DISCOUNT_LIMIT_REACHED: "Deze kortingscode is al het maximaal aantal keer gebruikt.",
 };
 
 async function bookSlot(values: ReturnType<typeof normalizePayload>["values"]) {
@@ -281,6 +286,7 @@ async function bookSlot(values: ReturnType<typeof normalizePayload>["values"]) {
       message,
       privacy_accepted: values.privacy,
       giftcard_code: values.giftcardCode,
+      discount_code: values.discountCode,
     },
   });
 
@@ -369,14 +375,41 @@ async function saveBookingAddons(booking: unknown, values: ReturnType<typeof nor
   const addonTotal = validAddons.reduce((sum, addon) => sum + Number(addon.price || 0), 0);
   const primaryPrice = Number(primaryPackage?.price || 0) * (isModelDiscount ? 0.5 : 1);
   const combinedTotal = Math.round((primaryPrice + addonTotal + Number.EPSILON) * 100) / 100;
+
+  // Een toegepaste kortingscode verlaagt, anders dan een cadeaubon, meteen
+  // het boekingsbedrag en dus ook de aanbetaling — het percentage/vaste
+  // bedrag kan pas nu berekend worden, omdat book_slot() het pakket en de
+  // add-ons nog niet kende.
+  const discountCodeId = (booking as Record<string, unknown> | null)?.discount_code_id as string | null | undefined;
+  let discountAmount = 0;
+  if (discountCodeId) {
+    const { data: discountRow, error: discountError } = await supabase
+      .from("discount_codes")
+      .select("discount_type,discount_value")
+      .eq("id", discountCodeId)
+      .maybeSingle();
+    if (discountError) throw discountError;
+    if (discountRow) {
+      const rawAmount = discountRow.discount_type === "percentage"
+        ? combinedTotal * (Number(discountRow.discount_value || 0) / 100)
+        : Number(discountRow.discount_value || 0);
+      discountAmount = Math.min(combinedTotal, Math.round((rawAmount + Number.EPSILON) * 100) / 100);
+    }
+  }
+  const discountedTotal = Math.round((combinedTotal - discountAmount + Number.EPSILON) * 100) / 100;
+
   const depositAmount = primaryPackage?.deposit_type === "percentage"
-    ? Math.round(combinedTotal * Number(primaryPackage.deposit_value || 0)) / 100
+    ? Math.round(discountedTotal * Number(primaryPackage.deposit_value || 0)) / 100
     : primaryPackage?.deposit_type === "fixed"
-      ? Math.min(Number(primaryPackage.deposit_value || 0), combinedTotal)
+      ? Math.min(Number(primaryPackage.deposit_value || 0), discountedTotal)
       : null;
   const { data: updatedBooking, error: updateError } = await supabase
     .from("bookings")
-    .update({ budget: combinedTotal, ...(depositAmount == null ? {} : { deposit_amount: depositAmount, deposit_payment_method: "bank_transfer" }) })
+    .update({
+      budget: discountedTotal,
+      discount_amount: discountAmount || null,
+      ...(depositAmount == null ? {} : { deposit_amount: depositAmount, deposit_payment_method: "bank_transfer" }),
+    })
     .eq("id", bookingId)
     .select("*")
     .single();
@@ -468,6 +501,10 @@ export default async (req: Request) => {
       ? `\n\nJe cadeaubon ${giftcard.code} is toegepast op deze boeking: ${formatEuro(giftcard.amount)} gaat van het totaalbedrag af.`
       : "";
     const bookingRecord = booking && typeof booking === "object" ? (booking as Record<string, unknown>) : {};
+    const discountAmountValue = bookingRecord.discount_amount == null ? null : Number(bookingRecord.discount_amount);
+    const discountLine = discountAmountValue && bookingRecord.discount_code
+      ? `\n\nJe kortingscode ${bookingRecord.discount_code} is toegepast op deze boeking: ${formatEuro(discountAmountValue)} gaat van het totaalbedrag af.`
+      : "";
     const addonPackages = Array.isArray(bookingRecord.addon_packages) ? bookingRecord.addon_packages as Array<Record<string, unknown>> : [];
     let automaticInvoice = null;
     try {
@@ -487,7 +524,7 @@ export default async (req: Request) => {
     const depositLine = depositAmount != null
       ? `Voor dit pakket geldt een aanbetaling van ${formatEuro(depositAmount)}${depositDueMode === "booking" ? ", direct te voldoen na het boeken" : depositDueDate ? `, uiterlijk te betalen op ${formatDate(depositDueDate)}` : ""}.`
       : "";
-    const bookingExtrasLine = `${addonPackages.length ? `\n\nGekozen add-ons: ${addonPackages.map((addon) => addon.title).join(", ")}.` : ""}${giftcardLine}${depositLine ? `\n\n${depositLine}` : ""}`;
+    const bookingExtrasLine = `${addonPackages.length ? `\n\nGekozen add-ons: ${addonPackages.map((addon) => addon.title).join(", ")}.` : ""}${giftcardLine}${discountLine}${depositLine ? `\n\n${depositLine}` : ""}`;
 
     const adminEmail = getAdminNotificationEmail();
     if (adminEmail) {

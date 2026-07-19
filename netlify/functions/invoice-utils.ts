@@ -14,6 +14,8 @@ type BookingForInvoice = {
   location?: string | null;
   budget?: number | string | null;
   model_discount?: boolean | null;
+  discount_code?: string | null;
+  discount_amount?: number | string | null;
   auto_invoice_disabled?: boolean | null;
   packages?: { title?: string | null; price?: number | string | null } | null;
 };
@@ -114,6 +116,8 @@ export async function ensureAutomaticInvoice(supabase: SupabaseAdmin, booking: B
       addon_total: addonTotal,
       giftcard_code: giftcard?.code || null,
       giftcard_amount: giftcardAmount,
+      discount_code: booking.discount_code || null,
+      discount_amount: booking.discount_amount == null ? 0 : Number(booking.discount_amount),
       full_payment_due_date: dueAt,
     }),
   };

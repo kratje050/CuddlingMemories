@@ -22,6 +22,7 @@ import {
   Sparkles,
   WalletCards,
   MailCheck,
+  Percent,
 } from "lucide-react";
 
 const navItems = [
@@ -38,6 +39,7 @@ const navItems = [
   { to: "/admin/email-templates", label: "E-mailtemplates", icon: Mail },
   { to: "/admin/waitlist", label: "Wachtlijst", icon: Users },
   { to: "/admin/giftcards", label: "Cadeaubonnen", icon: Gift },
+  { to: "/admin/discount-codes", label: "Kortingscodes", icon: Percent },
   { to: "/admin/mini-shoots", label: "Mini-shoots", icon: Sparkles },
   { to: "/admin/albums", label: "Albums", icon: FolderHeart },
   { to: "/admin/portfolio", label: "Foto's", icon: Image },

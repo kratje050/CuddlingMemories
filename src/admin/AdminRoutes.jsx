@@ -28,6 +28,7 @@ import AdminEmailTemplates from "./pages/AdminEmailTemplates.jsx";
 import AdminEmailControl from "./pages/AdminEmailControl.jsx";
 import AdminWaitlist from "./pages/AdminWaitlist.jsx";
 import AdminGiftcards from "./pages/AdminGiftcards.jsx";
+import AdminDiscountCodes from "./pages/AdminDiscountCodes.jsx";
 import AdminMiniSessions from "./pages/AdminMiniSessions.jsx";
 import AdminMiniSessionDetail from "./pages/AdminMiniSessionDetail.jsx";
 
@@ -177,6 +178,14 @@ export default function AdminRoutes() {
           element={
             <RequireAdmin>
               <AdminGiftcards />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="discount-codes"
+          element={
+            <RequireAdmin>
+              <AdminDiscountCodes />
             </RequireAdmin>
           }
         />

@@ -8,11 +8,19 @@ export default function BookingSummaryContent({ shootType, pkg, addons = [], dat
       ? [details?.locationStreet, details?.locationHouseNumber, details?.locationPostalCode, details?.locationCity].filter(Boolean).join(" ") || "Op locatie"
       : "Bij mij thuis in Zoutkamp";
 
-  const total = Number(pkg?.price || 0) + addons.reduce((sum, addon) => sum + Number(addon.price || 0), 0);
+  const subtotal = Number(pkg?.price || 0) + addons.reduce((sum, addon) => sum + Number(addon.price || 0), 0);
+  const discountStatus = details?.discountStatus;
+  const discountAmount = discountStatus?.valid
+    ? discountStatus.discountType === "percentage"
+      ? Math.round(subtotal * (Number(discountStatus.discountValue || 0) / 100) * 100) / 100
+      : Math.min(subtotal, Number(discountStatus.discountValue || 0))
+    : 0;
+  const total = Math.max(0, subtotal - discountAmount);
   const rows = [
     ["Shoot", shootType || "-"],
     ["Pakket", pkg ? `${pkg.title} (EUR ${Number(pkg.price).toFixed(2)})` : "Geen specifiek pakket"],
     ["Add-ons", addons.length ? addons.map((addon) => `${addon.title} (EUR ${Number(addon.price).toFixed(2)})`).join(", ") : "Geen"],
+    ...(discountAmount > 0 ? [["Korting", `- EUR ${discountAmount.toFixed(2)}`]] : []),
     ["Totaal", pkg || addons.length ? `EUR ${total.toFixed(2)}` : "Volgens afspraak"],
     ["Aanbetaling", pkg ? formatDepositRule(pkg) : "Niet van toepassing"],
     ["Volledige betaling", pkg ? formatFullPaymentRule(pkg) : "Volgens afspraak"],

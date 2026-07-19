@@ -1,14 +1,16 @@
 import { Link } from "react-router-dom";
-import { Home, MapPin, Gift, ClipboardList, Images } from "lucide-react";
+import { Home, MapPin, Gift, ClipboardList, Images, Tag } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "../../lib/supabaseClient.js";
 import { checkGiftcardCode } from "../../lib/giftcards.js";
+import { checkDiscountCode, formatDiscountValue } from "../../lib/discountCodes.js";
 
 const inputClass =
   "rounded-lg border border-cocoa/20 bg-cream px-4 py-3 text-sm outline-none transition focus:border-cocoa";
 
 export default function DetailsStep({ values, onChange, shootType, modelUsageConsentRequired = false }) {
   const [giftcardStatus, setGiftcardStatus] = useState(null); // null | "checking" | {valid, message?, amount?, giftcardType?}
+  const [discountStatus, setDiscountStatus] = useState(null); // null | "checking" | {valid, message?, discountType?, discountValue?}
 
   const update = (field) => (event) => {
     const value = ["privacy", "termsAccepted", "modelUsageConsent"].includes(field) ? event.target.checked : event.target.value;
@@ -31,6 +33,19 @@ export default function DetailsStep({ values, onChange, shootType, modelUsageCon
     setGiftcardStatus("checking");
     const result = await checkGiftcardCode(code, supabase);
     setGiftcardStatus(result);
+  };
+
+  const handleDiscountBlur = async () => {
+    const code = (values.discountCode || "").trim();
+    if (!code) {
+      setDiscountStatus(null);
+      onChange({ ...values, discountStatus: null });
+      return;
+    }
+    setDiscountStatus("checking");
+    const result = await checkDiscountCode(code, supabase);
+    setDiscountStatus(result);
+    onChange({ ...values, discountStatus: result.valid ? result : null });
   };
 
   const chooseLocationType = (locationType) => {
@@ -167,6 +182,30 @@ export default function DetailsStep({ values, onChange, shootType, modelUsageCon
         )}
         {giftcardStatus && giftcardStatus !== "checking" && !giftcardStatus.valid && (
           <p className="mt-2 text-xs font-semibold text-red-700">{giftcardStatus.message}</p>
+        )}
+      </div>
+      <div className="rounded-lg bg-linen/50 p-4">
+        <label className="grid gap-2 text-sm font-semibold text-coffee">
+          <span className="inline-flex items-center gap-2">
+            <Tag size={16} className="text-cocoa" /> Heb je een kortingscode? (optioneel)
+          </span>
+          <input
+            type="text"
+            placeholder="Bijv. KORTING-A1B2C3"
+            value={values.discountCode || ""}
+            onChange={update("discountCode")}
+            onBlur={handleDiscountBlur}
+            className={`${inputClass} uppercase`}
+          />
+        </label>
+        {discountStatus === "checking" && <p className="mt-2 text-xs text-coffee/60">Code controleren...</p>}
+        {discountStatus && discountStatus !== "checking" && discountStatus.valid && (
+          <p className="mt-2 text-xs font-semibold text-cocoa">
+            Kortingscode geldig ({formatDiscountValue(discountStatus.discountType, discountStatus.discountValue)} korting). Wordt bij het versturen van je aanvraag toegepast.
+          </p>
+        )}
+        {discountStatus && discountStatus !== "checking" && !discountStatus.valid && (
+          <p className="mt-2 text-xs font-semibold text-red-700">{discountStatus.message}</p>
         )}
       </div>
       <label className="flex gap-3 rounded-lg bg-linen/70 p-4 text-sm leading-6 text-coffee/78">

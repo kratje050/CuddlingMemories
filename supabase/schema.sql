@@ -847,6 +847,8 @@ declare
   v_new_row bookings%rowtype;
   v_giftcard_code text := upper(nullif(trim(p_payload->>'giftcard_code'), ''));
   v_giftcard giftcards%rowtype;
+  v_discount_code text := upper(nullif(trim(p_payload->>'discount_code'), ''));
+  v_discount discount_codes%rowtype;
 begin
   select * into v_shoot from shoot_type_settings where shoot_type = v_shoot_type;
   if not found or (not v_shoot.is_bookable and not v_is_admin) then
@@ -865,6 +867,25 @@ begin
     end if;
     if v_giftcard.expires_at is not null and v_giftcard.expires_at < current_date then
       raise exception 'GIFTCARD_EXPIRED';
+    end if;
+  end if;
+
+  -- Kortingscode (optioneel): zelfde vergrendel-patroon, zodat een
+  -- usage_limit nooit door twee gelijktijdige boekingen tegelijk
+  -- overschreden kan worden.
+  if v_discount_code is not null then
+    select * into v_discount from discount_codes where code = v_discount_code for update;
+    if not found then
+      raise exception 'DISCOUNT_INVALID';
+    end if;
+    if not v_discount.is_active then
+      raise exception 'DISCOUNT_NOT_ACTIVE';
+    end if;
+    if v_discount.expires_at is not null and v_discount.expires_at < current_date then
+      raise exception 'DISCOUNT_EXPIRED';
+    end if;
+    if v_discount.usage_limit is not null and v_discount.times_used >= v_discount.usage_limit then
+      raise exception 'DISCOUNT_LIMIT_REACHED';
     end if;
   end if;
 
@@ -948,7 +969,8 @@ begin
     privacy_accepted, model_discount, status, source,
     booking_date, start_time, end_time, duration_minutes,
     buffer_before_minutes, buffer_after_minutes, selected_slot_id,
-    preferred_date, preferred_period, admin_notes
+    preferred_date, preferred_period, admin_notes,
+    discount_code_id, discount_code
   ) values (
     p_payload->>'customer_name',
     p_payload->>'customer_email',
@@ -969,7 +991,9 @@ begin
     v_manual_slot_id,
     v_booking_date,
     to_char(v_booking_date, 'DD-MM-YYYY') || ', ' || to_char(v_start_time, 'HH24:MI'),
-    nullif(p_payload->>'admin_notes', '')
+    nullif(p_payload->>'admin_notes', ''),
+    v_discount.id,
+    v_discount_code
   )
   returning * into v_new_row;
 
@@ -983,12 +1007,21 @@ begin
       where id = v_giftcard.id;
   end if;
 
+  if v_discount_code is not null then
+    update discount_codes
+      set times_used = times_used + 1, updated_at = now()
+      where id = v_discount.id;
+  end if;
+
   insert into booking_status_history (booking_id, old_status, new_status, changed_by)
   values (v_new_row.id, null, v_new_row.status, v_source);
 
   -- giftcard_amount/giftcard_type worden meegegeven zodat de aanroepende
   -- Netlify Function (create-booking.ts) dit direct in de bevestigingsmail
-  -- aan klant én admin kan vermelden, zonder een tweede round-trip.
+  -- aan klant én admin kan vermelden, zonder een tweede round-trip. Voor de
+  -- kortingscode is dat niet nodig: discount_code_id/discount_code staan al
+  -- als gewone kolommen op v_new_row, en het daadwerkelijke bedrag wordt
+  -- pas bekend zodra create-booking.ts het pakket + de add-ons kent.
   if v_giftcard_code is not null then
     return to_jsonb(v_new_row) || jsonb_build_object(
       'giftcard_amount', v_giftcard.amount,
@@ -1045,6 +1078,49 @@ end;
 $$;
 
 grant execute on function check_giftcard_code(text) to anon, authenticated;
+
+-- Publieke, alleen-lezen check of een kortingscode geldig is (zonder 'm te
+-- verzilveren) — gebruikt door de boekingswizard voor live feedback.
+-- discount_codes zelf is admin-only (RLS), vandaar security definer.
+create or replace function check_discount_code(p_code text)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+declare
+  v_discount discount_codes%rowtype;
+  v_code text := upper(nullif(trim(p_code), ''));
+begin
+  if v_code is null then
+    return jsonb_build_object('valid', false, 'reason', 'DISCOUNT_INVALID');
+  end if;
+
+  select * into v_discount from discount_codes where code = v_code;
+
+  if not found then
+    return jsonb_build_object('valid', false, 'reason', 'DISCOUNT_INVALID');
+  end if;
+  if not v_discount.is_active then
+    return jsonb_build_object('valid', false, 'reason', 'DISCOUNT_NOT_ACTIVE');
+  end if;
+  if v_discount.expires_at is not null and v_discount.expires_at < current_date then
+    return jsonb_build_object('valid', false, 'reason', 'DISCOUNT_EXPIRED');
+  end if;
+  if v_discount.usage_limit is not null and v_discount.times_used >= v_discount.usage_limit then
+    return jsonb_build_object('valid', false, 'reason', 'DISCOUNT_LIMIT_REACHED');
+  end if;
+
+  return jsonb_build_object(
+    'valid', true,
+    'discount_type', v_discount.discount_type,
+    'discount_value', v_discount.discount_value
+  );
+end;
+$$;
+
+grant execute on function check_discount_code(text) to anon, authenticated;
 
 -- Herplannen (admin-kalender, slepen): hergebruikt dezelfde overlap-toets,
 -- alleen bereikbaar voor admins.
@@ -1664,6 +1740,32 @@ create table giftcards (
 create trigger trg_giftcards_updated_at
   before update on giftcards
   for each row execute function set_updated_at();
+
+-- ---------------------------------------------------------------------------
+-- 23b. Kortingscodes
+-- ---------------------------------------------------------------------------
+create table discount_codes (
+  id uuid primary key default gen_random_uuid(),
+  code text not null unique,
+  description text,
+  discount_type text not null check (discount_type in ('percentage', 'vast_bedrag')),
+  discount_value numeric(10,2) not null,
+  usage_limit integer,
+  times_used integer not null default 0,
+  is_active boolean not null default true,
+  expires_at date,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create trigger trg_discount_codes_updated_at
+  before update on discount_codes
+  for each row execute function set_updated_at();
+
+alter table bookings
+  add column if not exists discount_code_id uuid references discount_codes(id) on delete set null,
+  add column if not exists discount_code text,
+  add column if not exists discount_amount numeric(10,2);
 
 -- ---------------------------------------------------------------------------
 -- 24. Mini-shoot dagen

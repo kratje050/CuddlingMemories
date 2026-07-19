@@ -40,6 +40,8 @@ const emptyDetails = {
   modelUsageConsent: false,
   questionnaire: {},
   giftcardCode: "",
+  discountCode: "",
+  discountStatus: null,
 };
 
 const isModelDiscountShootType = (value) => {
@@ -315,6 +317,7 @@ export default function Booking() {
           termsVersion: CANCELLATION_TERMS_VERSION,
           questionnaire: details.questionnaire || {},
           giftcardCode: details.giftcardCode || "",
+          discountCode: details.discountCode || "",
           waitlistOfferToken: waitlistOfferToken || "",
           "bot-field": botField,
           renderedAt: formRenderedAt.current,
