@@ -171,7 +171,7 @@ export default function DetailsStep({ values, onChange, shootType, modelUsageCon
             value={values.giftcardCode || ""}
             onChange={update("giftcardCode")}
             onBlur={handleGiftcardBlur}
-            className={`${inputClass} uppercase`}
+            className={inputClass}
           />
         </label>
         {giftcardStatus === "checking" && <p className="mt-2 text-xs text-coffee/60">Code controleren...</p>}

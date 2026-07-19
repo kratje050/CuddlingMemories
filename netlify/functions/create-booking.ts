@@ -69,7 +69,7 @@ const normalizePayload = (payload: Record<string, unknown>) => {
     addonPackageIds: Array.isArray(payload.addonPackageIds)
       ? [...new Set(payload.addonPackageIds.map((value) => clean(value, 60)).filter(isUuid))].slice(0, 12)
       : [],
-    giftcardCode: clean(payload.giftcardCode, 40).toUpperCase() || null,
+    giftcardCode: clean(payload.giftcardCode, 40) || null,
     discountCode: clean(payload.discountCode, 40) || null,
     waitlistOfferToken: clean(payload.waitlistOfferToken, 100) || null,
     botField: clean(payload["bot-field"], 200),

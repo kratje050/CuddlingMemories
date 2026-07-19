@@ -845,7 +845,7 @@ declare
   v_status text;
   v_source text;
   v_new_row bookings%rowtype;
-  v_giftcard_code text := upper(nullif(trim(p_payload->>'giftcard_code'), ''));
+  v_giftcard_code text := nullif(trim(p_payload->>'giftcard_code'), '');
   v_giftcard giftcards%rowtype;
   v_discount_code text := nullif(trim(p_payload->>'discount_code'), '');
   v_discount discount_codes%rowtype;
@@ -1051,7 +1051,7 @@ set search_path = public
 as $$
 declare
   v_giftcard giftcards%rowtype;
-  v_code text := upper(nullif(trim(p_code), ''));
+  v_code text := nullif(trim(p_code), '');
 begin
   if v_code is null then
     return jsonb_build_object('valid', false, 'reason', 'GIFTCARD_INVALID');

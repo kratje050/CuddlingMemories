@@ -72,7 +72,7 @@ declare
   v_status text;
   v_source text;
   v_new_row bookings%rowtype;
-  v_giftcard_code text := upper(nullif(trim(p_payload->>'giftcard_code'), ''));
+  v_giftcard_code text := nullif(trim(p_payload->>'giftcard_code'), '');
   v_giftcard giftcards%rowtype;
   v_discount_code text := nullif(trim(p_payload->>'discount_code'), '');
   v_discount discount_codes%rowtype;
