@@ -191,11 +191,11 @@ export default function DetailsStep({ values, onChange, shootType, modelUsageCon
           </span>
           <input
             type="text"
-            placeholder="Bijv. KORTING-A1B2C3"
+            placeholder="Bijv. korting-a1b2c3"
             value={values.discountCode || ""}
             onChange={update("discountCode")}
             onBlur={handleDiscountBlur}
-            className={`${inputClass} uppercase`}
+            className={inputClass}
           />
         </label>
         {discountStatus === "checking" && <p className="mt-2 text-xs text-coffee/60">Code controleren...</p>}

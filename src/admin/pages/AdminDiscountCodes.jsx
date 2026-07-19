@@ -32,6 +32,10 @@ const columns = [
   { key: "expires_at", label: "Vervalt", render: (row) => (row.expires_at ? formatDate(row.expires_at) : "-") },
 ];
 
+// Kortingscodes zijn hoofdlettergevoelig: wat je hier intypt is exact de
+// code die de klant moet invullen (geen automatische hoofdletters).
+const preparePayload = (payload) => ({ ...payload, code: (payload.code || "").trim() });
+
 export default function AdminDiscountCodes() {
   return (
     <AdminLayout>
@@ -43,6 +47,7 @@ export default function AdminDiscountCodes() {
         orderBy="created_at"
         emptyLabel="Nog geen kortingscodes."
         newLabel="Kortingscode toevoegen"
+        preparePayload={preparePayload}
       />
     </AdminLayout>
   );

@@ -70,7 +70,7 @@ const normalizePayload = (payload: Record<string, unknown>) => {
       ? [...new Set(payload.addonPackageIds.map((value) => clean(value, 60)).filter(isUuid))].slice(0, 12)
       : [],
     giftcardCode: clean(payload.giftcardCode, 40).toUpperCase() || null,
-    discountCode: clean(payload.discountCode, 40).toUpperCase() || null,
+    discountCode: clean(payload.discountCode, 40) || null,
     waitlistOfferToken: clean(payload.waitlistOfferToken, 100) || null,
     botField: clean(payload["bot-field"], 200),
     renderedAt: Number(payload.renderedAt) || 0,
